@@ -1,28 +1,28 @@
 {
   "expo": {
-    "name": "Amazon Photo Editor",
-    "slug": "amazon-photo-editor",
+    "name": "FotoBox AI",
+    "slug": "fotobox-ai",
     "version": "1.0.0",
     "owner": "flashingpoint87",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "amazonphotoeditor",
+    "scheme": "fotoboxai",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.amazonphotoeditor.app"
+      "bundleIdentifier": "com.fotoboxai.app"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#6200EE",
+        "backgroundColor": "#F97316",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.amazonphotoeditor.app",
+      "package": "com.fotoboxai.app",
       "permissions": [
         "CAMERA",
         "READ_MEDIA_IMAGES",
@@ -50,9 +50,9 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#6200EE",
+          "backgroundColor": "#F97316",
           "dark": {
-            "backgroundColor": "#3700B3"
+            "backgroundColor": "#EA580C"
           }
         }
       ],
@@ -60,14 +60,14 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow Amazon Photo Editor to access your camera to capture product photos."
+          "cameraPermission": "Allow FotoBox AI to access your camera to capture product photos."
         }
       ],
       [
         "expo-media-library",
         {
-          "photosPermission": "Allow Amazon Photo Editor to save edited photos to your gallery.",
-          "savePhotosPermission": "Allow Amazon Photo Editor to save edited photos to your gallery.",
+          "photosPermission": "Allow FotoBox AI to save edited photos to your gallery.",
+          "savePhotosPermission": "Allow FotoBox AI to save edited photos to your gallery.",
           "isAccessMediaLocationEnabled": false
         }
       ]

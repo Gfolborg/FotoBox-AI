@@ -63,7 +63,7 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
         </ThemedText>
 
         <ThemedText type="body" style={styles.message}>
-          Amazon Photo Editor encountered an issue. Tap below to restart and try again.
+          FotoBox AI encountered an issue. Tap below to restart and try again.
         </ThemedText>
 
         <Pressable

@@ -33,7 +33,7 @@ interface ProcessingResult {
 export default function BatchProcessingScreen() {
   const route = useRoute<RouteProps>();
   const navigation = useNavigation<NavigationProp>();
-  const { imageUris } = route.params;
+  const { imageUris, backgroundColor = "#FFFFFF" } = route.params;
 
   const [results, setResults] = useState<ProcessingResult[]>(
     imageUris.map((uri) => ({
@@ -52,7 +52,11 @@ export default function BatchProcessingScreen() {
       await processImage(imageUris[i], i);
     }
 
-    navigation.replace("BatchResult", { results });
+    // Use callback to get the most up-to-date results
+    setResults((finalResults) => {
+      navigation.replace("BatchResult", { results: finalResults });
+      return finalResults;
+    });
   };
 
   const processImage = async (imageUri: string, index: number) => {
@@ -71,7 +75,10 @@ export default function BatchProcessingScreen() {
       } as unknown as Blob);
 
       const apiUrl = getApiUrl();
-      const endpoint = `${apiUrl}api/amazon-main`;
+      const bgColorParam = encodeURIComponent(backgroundColor);
+      const endpoint = `${apiUrl}api/amazon-main?backgroundColor=${bgColorParam}`;
+      console.log(`[BatchProcessing] Image ${index + 1} - Background Color:`, backgroundColor);
+      console.log(`[BatchProcessing] Image ${index + 1} - API Endpoint:`, endpoint);
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 300000);
@@ -195,7 +202,7 @@ export default function BatchProcessingScreen() {
 
       <View style={styles.note}>
         <ThemedText type="small" style={styles.noteText}>
-          AI is removing backgrounds and creating Amazon-ready images...
+          AI is removing backgrounds and creating listing-ready images...
         </ThemedText>
       </View>
     </ThemedView>

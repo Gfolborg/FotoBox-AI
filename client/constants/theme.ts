@@ -1,47 +1,79 @@
 import { Platform } from "react-native";
 
-const primaryLight = "#6200EE";
-const primaryDark = "#BB86FC";
-const primaryVariant = "#3700B3";
+// Warm & Approachable Theme - Ecommerce Seller Tool
+const coral = "#F97316";
+const coralDark = "#EA580C";
+const coralLight = "#FB923C";
+
+// Light theme backgrounds (warm whites/grays)
+const warmWhite = "#FAFAF9";
+const pureWhite = "#FFFFFF";
+const warmGrayLight = "#F5F5F4";
+const warmGrayMedium = "#E7E5E4";
+const warmGrayDark = "#D6D3D1";
+
+// Dark theme backgrounds (warm darks)
+const warmCharcoal = "#1C1917";
+const warmCharcoalLight = "#292524";
+const warmCharcoalMedium = "#44403C";
+
+// Text colors
+const textDark = "#1C1917";
+const textMedium = "#78716C";
+const textLight = "#A8A29E";
 
 export const Colors = {
   light: {
-    text: "#000000",
-    textSecondary: "#757575",
+    // Warm light theme for ecommerce sellers
+    text: textDark,
+    textSecondary: textMedium,
+    textTertiary: textLight,
     buttonText: "#FFFFFF",
-    tabIconDefault: "#687076",
-    tabIconSelected: primaryLight,
-    link: primaryLight,
-    primary: primaryLight,
-    primaryVariant: primaryVariant,
-    backgroundRoot: "#FFFFFF",
-    backgroundDefault: "#F5F5F5",
-    backgroundSecondary: "#E0E0E0",
-    backgroundTertiary: "#D9D9D9",
-    border: "#E0E0E0",
-    error: "#B00020",
-    success: "#00C853",
-    overlay: "rgba(0, 0, 0, 0.5)",
+    tabIconDefault: textMedium,
+    tabIconSelected: coral,
+    link: coral,
+    primary: coral,
+    primaryVariant: coralDark,
+    secondary: warmGrayDark,
+    backgroundRoot: warmWhite,
+    backgroundDefault: pureWhite,
+    backgroundSecondary: warmGrayLight,
+    backgroundTertiary: warmGrayMedium,
+    border: warmGrayMedium,
+    borderLight: warmGrayLight,
+    error: "#DC2626",
+    success: "#16A34A",
+    warning: "#F59E0B",
+    overlay: "rgba(28, 25, 23, 0.85)",
+    overlayLight: "rgba(28, 25, 23, 0.6)",
     white: "#FFFFFF",
+    black: "#000000",
   },
   dark: {
-    text: "#FFFFFF",
-    textSecondary: "#B0B0B0",
-    buttonText: "#000000",
-    tabIconDefault: "#9BA1A6",
-    tabIconSelected: primaryDark,
-    link: primaryDark,
-    primary: primaryDark,
-    primaryVariant: "#6200EE",
-    backgroundRoot: "#1F2123",
-    backgroundDefault: "#2A2C2E",
-    backgroundSecondary: "#353739",
-    backgroundTertiary: "#404244",
-    border: "#404244",
-    error: "#CF6679",
-    success: "#00E676",
-    overlay: "rgba(0, 0, 0, 0.7)",
+    // Warm dark theme option
+    text: "#FAFAF9",
+    textSecondary: "#A8A29E",
+    textTertiary: "#78716C",
+    buttonText: "#FFFFFF",
+    tabIconDefault: "#78716C",
+    tabIconSelected: coralLight,
+    link: coralLight,
+    primary: coral,
+    primaryVariant: coralDark,
+    secondary: warmCharcoalMedium,
+    backgroundRoot: warmCharcoal,
+    backgroundDefault: warmCharcoalLight,
+    backgroundSecondary: warmCharcoalMedium,
+    backgroundTertiary: "#57534E",
+    border: "#57534E",
+    borderLight: warmCharcoalMedium,
+    error: "#EF4444",
+    success: "#22C55E",
+    warning: "#FBBF24",
+    overlay: "rgba(0, 0, 0, 0.85)",
+    overlayLight: "rgba(0, 0, 0, 0.6)",
     white: "#FFFFFF",
+    black: "#000000",
   },
 };
 
@@ -55,10 +87,42 @@ export const Spacing = {
   "3xl": 48,
   "4xl": 56,
   "5xl": 64,
-  inputHeight: 48,
-  buttonHeight: 48,
-  captureButtonSize: 72,
-  captureButtonBorder: 4,
+  inputHeight: 52,
+  buttonHeight: 52,
+  captureButtonSize: 80,
+  captureButtonBorder: 5,
+};
+
+// Shadows for depth
+export const Shadows = {
+  sm: {
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  md: {
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  lg: {
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  accent: {
+    shadowColor: "#F97316", // Coral
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 6,
+  },
 };
 
 export const BorderRadius = {

@@ -8,13 +8,13 @@ import {
   Dimensions,
   Alert,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
-import * as MediaLibrary from "expo-media-library";
 import * as FileSystem from "expo-file-system/legacy";
 
 import { ThemedView } from "@/components/ThemedView";
@@ -22,6 +22,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
+import { saveToFotoBoxAlbum } from "@/lib/save-to-album";
 
 type NavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -40,47 +41,26 @@ export default function BatchResultScreen() {
 
   const [savedUris, setSavedUris] = useState<Set<string>>(new Set());
   const [savingUris, setSavingUris] = useState<Set<string>>(new Set());
-  const [permissionResponse, requestPermission] = MediaLibrary.usePermissions();
 
   const successfulResults = results.filter((r) => r.resultUri !== null);
 
   const handleSaveImage = async (resultUri: string, originalUri: string) => {
     setSavingUris((prev) => new Set([...prev, originalUri]));
 
-    try {
-      if (!permissionResponse?.granted) {
-        const newPermission = await requestPermission();
-        if (!newPermission.granted) {
-          Alert.alert(
-            "Permission Required",
-            "Please grant permission to save images to your gallery."
-          );
-          return;
-        }
-      }
+    const result = await saveToFotoBoxAlbum(resultUri, "product_image");
 
-      const filename = `amazon_main_${Date.now()}.jpg`;
-      const fileUri = FileSystem.documentDirectory + filename;
-      const base64Data = resultUri.split(",")[1];
-
-      await FileSystem.writeAsStringAsync(fileUri, base64Data, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-      await MediaLibrary.saveToLibraryAsync(fileUri);
-      await FileSystem.deleteAsync(fileUri, { idempotent: true });
-
+    if (result.success) {
       setSavedUris((prev) => new Set([...prev, originalUri]));
-      Alert.alert("Saved", "Image saved to gallery");
-    } catch (error) {
-      Alert.alert("Error", "Failed to save image");
-      console.error("Save error:", error);
-    } finally {
-      setSavingUris((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(originalUri);
-        return newSet;
-      });
+      Alert.alert("Saved", "Image saved to FotoBox album");
+    } else {
+      Alert.alert("Error", result.error || "Failed to save image");
     }
+
+    setSavingUris((prev) => {
+      const newSet = new Set(prev);
+      newSet.delete(originalUri);
+      return newSet;
+    });
   };
 
   const handleSaveAll = async () => {
@@ -93,6 +73,29 @@ export default function BatchResultScreen() {
 
   const handleGenerateMore = () => {
     navigation.popToTop();
+  };
+
+  const handleEditImage = async (resultUri: string, originalUri: string) => {
+    try {
+      const filename = `edit_temp_${Date.now()}.jpg`;
+      const fileUri = FileSystem.documentDirectory + filename;
+
+      const base64Data = resultUri.split(",")[1];
+      await FileSystem.writeAsStringAsync(fileUri, base64Data, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      navigation.navigate("EditImage", {
+        imageUri: fileUri,
+        originalUri: originalUri,
+      });
+    } catch (error) {
+      console.error("Failed to prepare image for editing:", error);
+
+      if (Platform.OS !== "web") {
+        Alert.alert("Error", "Could not prepare image for editing. Please try again.");
+      }
+    }
   };
 
   return (
@@ -114,36 +117,49 @@ export default function BatchResultScreen() {
             <View style={styles.resultCard}>
               {item.resultUri ? (
                 <>
-                  <Image source={{ uri: item.resultUri }} style={styles.image} />
                   <Pressable
-                    style={[
-                      styles.saveButton,
-                      (savingUris.has(item.originalUri) ||
-                        savedUris.has(item.originalUri)) &&
-                        styles.saveButtonDisabled,
-                    ]}
-                    onPress={() =>
-                      handleSaveImage(item.resultUri!, item.originalUri)
-                    }
-                    disabled={
-                      savingUris.has(item.originalUri) ||
-                      savedUris.has(item.originalUri)
-                    }
+                    style={styles.imageContainer}
+                    onPress={() => handleEditImage(item.resultUri!, item.originalUri)}
                   >
-                    {savingUris.has(item.originalUri) ? (
-                      <ActivityIndicator
-                        size="small"
-                        color={Colors.light.white}
-                      />
-                    ) : savedUris.has(item.originalUri) ? (
-                      <View style={styles.savedRow}>
-                        <Feather name="check" size={14} color={Colors.light.white} />
-                        <ThemedText style={styles.saveButtonText}>Saved</ThemedText>
-                      </View>
-                    ) : (
-                      <ThemedText style={styles.saveButtonText}>Save</ThemedText>
-                    )}
+                    <Image source={{ uri: item.resultUri }} style={styles.image} />
                   </Pressable>
+                  <View style={styles.actionButtonsRow}>
+                    <Pressable
+                      style={styles.editButton}
+                      onPress={() => handleEditImage(item.resultUri!, item.originalUri)}
+                    >
+                      <Feather name="edit-2" size={14} color={Colors.light.buttonText} />
+                    </Pressable>
+                    <Pressable
+                      style={[
+                        styles.saveButton,
+                        (savingUris.has(item.originalUri) ||
+                          savedUris.has(item.originalUri)) &&
+                          styles.saveButtonDisabled,
+                      ]}
+                      onPress={() =>
+                        handleSaveImage(item.resultUri!, item.originalUri)
+                      }
+                      disabled={
+                        savingUris.has(item.originalUri) ||
+                        savedUris.has(item.originalUri)
+                      }
+                    >
+                      {savingUris.has(item.originalUri) ? (
+                        <ActivityIndicator
+                          size="small"
+                          color={Colors.light.buttonText}
+                        />
+                      ) : savedUris.has(item.originalUri) ? (
+                        <View style={styles.savedRow}>
+                          <Feather name="check" size={14} color={Colors.light.white} />
+                          <ThemedText style={styles.saveButtonText}>Saved</ThemedText>
+                        </View>
+                      ) : (
+                        <ThemedText style={styles.saveButtonText}>Save</ThemedText>
+                      )}
+                    </Pressable>
+                  </View>
                 </>
               ) : (
                 <View style={styles.failedCard}>
@@ -174,8 +190,10 @@ export default function BatchResultScreen() {
             disabled={savedUris.size === successfulResults.length}
             style={styles.saveAllButton}
           >
-            Save All to Gallery ({successfulResults.length - savedUris.size}{" "}
-            remaining)
+            <ThemedText style={styles.saveAllButtonText}>
+              Save All to Gallery ({successfulResults.length - savedUris.size}{" "}
+              remaining)
+            </ThemedText>
           </Button>
         )}
 
@@ -220,16 +238,32 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     backgroundColor: Colors.light.border,
   },
+  imageContainer: {
+    flex: 1,
+  },
   image: {
     width: "100%",
     height: "100%",
     resizeMode: "contain",
   },
-  saveButton: {
+  actionButtonsRow: {
     position: "absolute",
     bottom: Spacing.xs,
     left: Spacing.xs,
     right: Spacing.xs,
+    flexDirection: "row",
+    gap: Spacing.xs,
+  },
+  editButton: {
+    backgroundColor: Colors.light.primary,
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: BorderRadius.sm,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  saveButton: {
+    flex: 1,
     backgroundColor: Colors.light.primary,
     paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.sm,
@@ -239,7 +273,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.success,
   },
   saveButtonText: {
-    color: Colors.light.white,
+    color: Colors.light.buttonText,
     fontSize: 12,
     fontWeight: "600",
   },
@@ -269,6 +303,11 @@ const styles = StyleSheet.create({
   },
   saveAllButton: {
     marginBottom: Spacing.sm,
+  },
+  saveAllButtonText: {
+    color: Colors.light.buttonText,
+    fontWeight: "700",
+    fontSize: 16,
   },
   secondaryButton: {
     paddingVertical: Spacing.md,
