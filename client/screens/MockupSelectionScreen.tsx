@@ -64,6 +64,7 @@ export default function MockupSelectionScreen() {
   const [selectedVibe, setSelectedVibe] = useState<SceneVibe>(SCENE_VIBES[0]);
   const [selectedCamera, setSelectedCamera] = useState<CameraOption>(CAMERA_OPTIONS[0]);
   const [customDescription, setCustomDescription] = useState("");
+  const [customProductName, setCustomProductName] = useState("");
 
   const handleSelectImages = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -88,7 +89,19 @@ export default function MockupSelectionScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedCategory(categoryId);
     setSelectedItem(null);
+    if (categoryId !== "custom") {
+      setCustomProductName("");
+    }
   };
+
+  const customMockupItem: MockupItem | null = customProductName.trim() ? {
+    id: "custom",
+    label: customProductName.trim(),
+    description: `Custom product: ${customProductName.trim()}`,
+    hasColorPicker: true,
+    defaultColors: ["#FFFFFF", "#000000", "#F97316", "#0EA5E9", "#22C55E"],
+    image: null,
+  } : null;
 
   const handleItemSelect = (item: MockupItem) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -119,25 +132,25 @@ export default function MockupSelectionScreen() {
   };
 
   const handleGenerate = () => {
-    if (!selectedItem || imageUris.length === 0) return;
+    if (!effectiveItem || imageUris.length === 0) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     if (imageUris.length === 1) {
       navigation.navigate("MockupProcessing", {
         imageUri: imageUris[0],
-        mockupItem: selectedItem,
+        mockupItem: effectiveItem,
         sceneVibe: selectedVibe,
         cameraOption: selectedCamera,
-        mockupColor: selectedItem.hasColorPicker ? selectedColor : undefined,
+        mockupColor: effectiveItem.hasColorPicker ? selectedColor : undefined,
         customDescription: customDescription || undefined,
       });
     } else {
       navigation.navigate("BatchMockupProcessing", {
         imageUris,
-        mockupItem: selectedItem,
+        mockupItem: effectiveItem,
         sceneVibe: selectedVibe,
         cameraOption: selectedCamera,
-        mockupColor: selectedItem.hasColorPicker ? selectedColor : undefined,
+        mockupColor: effectiveItem.hasColorPicker ? selectedColor : undefined,
         customDescription: customDescription || undefined,
       });
     }
@@ -147,7 +160,8 @@ export default function MockupSelectionScreen() {
     (c) => c.id === selectedCategory
   );
 
-  const canGenerate = selectedItem && imageUris.length > 0;
+  const effectiveItem = selectedCategory === "custom" ? customMockupItem : selectedItem;
+  const canGenerate = effectiveItem && imageUris.length > 0;
 
   const renderProductTab = () => (
     <Animated.View
@@ -190,7 +204,76 @@ export default function MockupSelectionScreen() {
             </ThemedText>
           </Pressable>
         ))}
+        <Pressable
+          onPress={() => handleCategorySelect("custom")}
+          style={[
+            styles.categoryCard,
+            selectedCategory === "custom" && styles.categoryCardSelected,
+          ]}
+        >
+          <View style={styles.categoryIconContainer}>
+            <Feather
+              name="edit-3"
+              size={24}
+              color={
+                selectedCategory === "custom"
+                  ? Colors.light.white
+                  : Colors.light.primary
+              }
+            />
+          </View>
+          <ThemedText
+            style={[
+              styles.categoryLabel,
+              selectedCategory === "custom" && styles.categoryLabelSelected,
+            ]}
+          >
+            Custom
+          </ThemedText>
+        </Pressable>
       </ScrollView>
+
+      {selectedCategory === "custom" && (
+        <Animated.View entering={FadeInDown.duration(300)}>
+          <ThemedText style={styles.sectionTitle}>Describe Your Product</ThemedText>
+          <GlassCard style={styles.inputCard}>
+            <TextInput
+              style={styles.textInput}
+              placeholder="e.g., skateboard, yoga mat, water bottle..."
+              placeholderTextColor={Colors.light.textTertiary}
+              value={customProductName}
+              onChangeText={setCustomProductName}
+              autoFocus
+            />
+          </GlassCard>
+          {customMockupItem && (
+            <View style={styles.colorPickerSection}>
+              <ThemedText style={styles.sectionTitle}>Product Color</ThemedText>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.colorScroll}
+              >
+                {customMockupItem.defaultColors?.map((color) => (
+                  <Pressable
+                    key={color}
+                    onPress={() => handleColorSelect(color)}
+                    style={[
+                      styles.colorSwatch,
+                      { backgroundColor: color },
+                      selectedColor === color && styles.colorSwatchSelected,
+                    ]}
+                  >
+                    {selectedColor === color && (
+                      <Feather name="check" size={16} color={color === "#FFFFFF" ? "#000" : "#FFF"} />
+                    )}
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+        </Animated.View>
+      )}
 
       {selectedCategoryData && (
         <Animated.View entering={FadeInDown.duration(300)}>
@@ -679,6 +762,13 @@ const styles = StyleSheet.create({
   },
   itemDescriptionSelected: {
     color: "rgba(255, 255, 255, 0.8)",
+  },
+  colorPickerSection: {
+    marginTop: Spacing.md,
+  },
+  colorScroll: {
+    gap: Spacing.sm,
+    paddingVertical: Spacing.xs,
   },
   colorRow: {
     flexDirection: "row",

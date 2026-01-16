@@ -102,6 +102,26 @@ export default function MockupResultScreen() {
     }
   };
 
+  const handleEditImage = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    let imageUri = resultUri;
+    
+    if (resultUri.startsWith("data:")) {
+      const base64Data = resultUri.split(",")[1];
+      const filename = `mockup_edit_${Date.now()}.jpg`;
+      imageUri = FileSystem.documentDirectory + filename;
+      await FileSystem.writeAsStringAsync(imageUri, base64Data, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+    }
+    
+    navigation.navigate("EditImage", {
+      imageUri,
+      originalUri,
+    });
+  };
+
   const handleNewMockup = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     navigation.navigate("MockupSelection", {});
@@ -153,6 +173,11 @@ export default function MockupResultScreen() {
           <IconButton
             icon="share-2"
             onPress={handleShare}
+            style={styles.iconButton}
+          />
+          <IconButton
+            icon="edit-2"
+            onPress={handleEditImage}
             style={styles.iconButton}
           />
           <GradientButton

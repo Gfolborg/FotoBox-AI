@@ -12,6 +12,7 @@ import { Feather } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
 import { GlassCard } from "@/components/GlassCard";
 import { GradientButton } from "@/components/GradientButton";
+import { IconButton } from "@/components/IconButton";
 import { SuccessAnimation } from "@/components/SuccessAnimation";
 import { GradientBackground } from "@/components/GradientBackground";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
@@ -84,6 +85,30 @@ export default function BatchMockupResultScreen() {
     }
   };
 
+  const currentResult = successResults[selectedIndex];
+
+  const handleEditSelected = async () => {
+    if (!currentResult?.resultUri) return;
+    
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    let imageUri = currentResult.resultUri;
+    
+    if (currentResult.resultUri.startsWith("data:")) {
+      const base64Data = currentResult.resultUri.split(",")[1];
+      const filename = `mockup_edit_${Date.now()}.jpg`;
+      imageUri = FileSystem.documentDirectory + filename;
+      await FileSystem.writeAsStringAsync(imageUri, base64Data, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+    }
+    
+    navigation.navigate("EditImage", {
+      imageUri,
+      originalUri: currentResult.originalUri,
+    });
+  };
+
   const handleNewMockup = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     navigation.navigate("MockupSelection", {});
@@ -93,8 +118,6 @@ export default function BatchMockupResultScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     navigation.navigate("Home");
   };
-
-  const currentResult = successResults[selectedIndex];
 
   return (
     <GradientBackground variant="warm">
@@ -188,18 +211,25 @@ export default function BatchMockupResultScreen() {
           entering={FadeInDown.delay(400).duration(400)}
           style={styles.actions}
         >
-          <GradientButton
-            title={
-              saved
-                ? "Saved!"
-                : saving
-                ? "Saving..."
-                : `Save All (${successResults.length})`
-            }
-            onPress={handleSaveAll}
-            disabled={saving || saved || successResults.length === 0}
-            style={styles.saveButton}
-          />
+          <View style={styles.actionRow}>
+            <IconButton
+              icon="edit-2"
+              onPress={handleEditSelected}
+              style={styles.iconButton}
+            />
+            <GradientButton
+              title={
+                saved
+                  ? "Saved!"
+                  : saving
+                  ? "Saving..."
+                  : `Save All (${successResults.length})`
+              }
+              onPress={handleSaveAll}
+              disabled={saving || saved || successResults.length === 0}
+              style={styles.saveButton}
+            />
+          </View>
           <GradientButton
             title="Create More Mockups"
             onPress={handleNewMockup}
@@ -298,8 +328,15 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xl,
     gap: Spacing.md,
   },
+  actionRow: {
+    flexDirection: "row",
+    gap: Spacing.md,
+  },
+  iconButton: {
+    flex: 0,
+  },
   saveButton: {
-    width: "100%",
+    flex: 1,
   },
   secondaryButton: {
     width: "100%",
