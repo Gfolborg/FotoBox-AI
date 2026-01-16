@@ -877,11 +877,11 @@ const styles = StyleSheet.create({
   },
   sceneCardWrapper: {
     alignItems: "center",
-    width: 100,
+    width: 110,
   },
   sceneCard: {
-    width: 100,
-    height: 100,
+    width: 110,
+    height: 110,
     borderRadius: BorderRadius.lg,
     overflow: "hidden",
     borderWidth: 1,
