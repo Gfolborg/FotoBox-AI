@@ -4,6 +4,8 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeInDown, FadeIn } from "react-native-reanimated";
+import * as ImagePicker from "expo-image-picker";
+import * as Haptics from "expo-haptics";
 import { ThemedText } from "@/components/ThemedText";
 import { WorkflowCard } from "@/components/WorkflowCard";
 
@@ -21,6 +23,22 @@ type HomeScreenNavigationProp = NativeStackNavigationProp<
 export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const insets = useSafeAreaInsets();
+
+  const handleBatchEdit = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      quality: 1,
+      selectionLimit: 20,
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      const imageUris = result.assets.map((asset) => asset.uri);
+      navigation.navigate("BatchPreview", { imageUris });
+    }
+  };
 
   return (
     <GradientBackground variant="warm">
@@ -93,7 +111,7 @@ export default function HomeScreen() {
                 icon="layers"
                 title="Batch Edit Photos"
                 description="Process multiple images at once"
-                onPress={() => navigation.navigate("Camera")}
+                onPress={handleBatchEdit}
               />
             </Animated.View>
           </View>
