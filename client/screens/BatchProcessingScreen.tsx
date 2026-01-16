@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   View,
   StyleSheet,
@@ -55,12 +55,26 @@ export default function BatchProcessingScreen() {
       status: "pending" as const,
     }))
   );
+  const [isComplete, setIsComplete] = useState(false);
+  const resultsRef = useRef<ProcessingResult[]>(results);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    resultsRef.current = results;
+  }, [results]);
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: false,
     });
   }, [navigation]);
+
+  // Navigate when processing is complete
+  useEffect(() => {
+    if (isComplete) {
+      navigation.replace("BatchResult", { results: resultsRef.current });
+    }
+  }, [isComplete, navigation]);
 
   useEffect(() => {
     processImages();
@@ -75,10 +89,8 @@ export default function BatchProcessingScreen() {
 
     await Promise.all(processingPromises);
 
-    setResults((finalResults) => {
-      navigation.replace("BatchResult", { results: finalResults });
-      return finalResults;
-    });
+    // Signal completion - navigation happens in useEffect
+    setIsComplete(true);
   };
 
   const processImage = async (imageUri: string, index: number) => {
