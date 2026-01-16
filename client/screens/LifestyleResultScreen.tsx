@@ -7,6 +7,7 @@ import {
   Alert,
   Platform,
   Dimensions,
+  ScrollView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
@@ -152,7 +153,11 @@ export default function LifestyleResultScreen() {
         </View>
       </Animated.View>
 
-      <View style={[styles.content, { paddingBottom: 220 }]}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 240 }]}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Image Display */}
         {showComparison ? (
           <Animated.View
@@ -216,7 +221,7 @@ export default function LifestyleResultScreen() {
             </ThemedText>
           </Pressable>
         </Animated.View>
-      </View>
+      </ScrollView>
 
       {/* Bottom Action Bar */}
       <Animated.View
@@ -329,8 +334,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
   },
-  content: {
+  scrollView: {
     flex: 1,
+  },
+  content: {
     alignItems: "center",
     paddingHorizontal: Spacing.lg,
     paddingTop: 110,
