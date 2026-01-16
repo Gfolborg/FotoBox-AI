@@ -72,7 +72,7 @@ export default function HomeScreen() {
                 icon="image"
                 title="Create Lifestyle Scene"
                 description="Place products in AI-generated environments"
-                onPress={() => navigation.navigate("EnvironmentSelection")}
+                onPress={() => navigation.navigate("EnvironmentSelection", {})}
                 badge="AI"
               />
             </Animated.View>

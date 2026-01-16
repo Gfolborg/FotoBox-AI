@@ -1,17 +1,19 @@
 import React, { useRef, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Dimensions, Pressable } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Dimensions, Pressable, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { Colors, Spacing, BorderRadius, Typography } from '@/constants/theme';
+
+const logoImage = require("../../assets/images/fotobox-logo.png");
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const onboardingSlides = [
   {
     id: '1',
-    icon: 'camera',
-    title: 'Instant Product Shots',
+    icon: 'logo',
+    title: 'Welcome to FotoBox AI',
     description: 'Create professional product images with one tap. Our AI removes backgrounds and creates perfect listings.',
   },
   {
@@ -35,7 +37,11 @@ interface OnboardingSlideProps {
 const OnboardingSlide = ({ item }: OnboardingSlideProps) => (
   <View style={styles.slide}>
     <View style={styles.iconContainer}>
-      <Feather name={item.icon as any} size={64} color={Colors.light.primary} />
+      {item.icon === 'logo' ? (
+        <Image source={logoImage} style={styles.logoImage} resizeMode="contain" />
+      ) : (
+        <Feather name={item.icon as any} size={64} color={Colors.light.primary} />
+      )}
     </View>
     <Text style={styles.slideTitle}>{item.title}</Text>
     <Text style={styles.slideDescription}>{item.description}</Text>
@@ -121,6 +127,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: Spacing.xl,
+  },
+  logoImage: {
+    width: 80,
+    height: 80,
   },
   slideTitle: {
     ...Typography.h3,
