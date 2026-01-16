@@ -1,0 +1,810 @@
+import React, { useState, useCallback } from "react";
+import {
+  StyleSheet,
+  View,
+  ScrollView,
+  Pressable,
+  Image,
+  TextInput,
+  Platform,
+} from "react-native";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useHeaderHeight } from "@react-navigation/elements";
+import Animated, { FadeInDown, FadeInRight, FadeOutLeft } from "react-native-reanimated";
+import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
+
+import { ThemedText } from "@/components/ThemedText";
+import { GlassCard } from "@/components/GlassCard";
+import { GradientButton } from "@/components/GradientButton";
+import { GradientBackground } from "@/components/GradientBackground";
+import { ScrollIndicator } from "@/components/ScrollIndicator";
+import { RootStackParamList } from "@/navigation/RootStackNavigator";
+import { Colors, Spacing, BorderRadius } from "@/constants/theme";
+import {
+  MOCKUP_CATEGORIES,
+  SCENE_VIBES,
+  CAMERA_OPTIONS,
+  MockupItem,
+  SceneVibe,
+  CameraOption,
+} from "@/lib/mockup-presets";
+
+type MockupSelectionScreenNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  "MockupSelection"
+>;
+
+type MockupSelectionScreenRouteProp = RouteProp<
+  RootStackParamList,
+  "MockupSelection"
+>;
+
+type TabType = "product" | "style" | "camera";
+
+export default function MockupSelectionScreen() {
+  const navigation = useNavigation<MockupSelectionScreenNavigationProp>();
+  const route = useRoute<MockupSelectionScreenRouteProp>();
+  const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
+
+  const initialImageUris = route.params?.imageUris || [];
+  const initialImageUri = route.params?.imageUri;
+
+  const [imageUris, setImageUris] = useState<string[]>(
+    initialImageUri ? [initialImageUri] : initialImageUris
+  );
+  const [activeTab, setActiveTab] = useState<TabType>("product");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedItem, setSelectedItem] = useState<MockupItem | null>(null);
+  const [selectedColor, setSelectedColor] = useState<string>("#FFFFFF");
+  const [selectedVibe, setSelectedVibe] = useState<SceneVibe>(SCENE_VIBES[0]);
+  const [selectedCamera, setSelectedCamera] = useState<CameraOption>(CAMERA_OPTIONS[0]);
+  const [customDescription, setCustomDescription] = useState("");
+
+  const handleSelectImages = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      quality: 1,
+      selectionLimit: 10,
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      setImageUris(result.assets.map((asset) => asset.uri));
+    }
+  };
+
+  const handleRemoveImage = (index: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setImageUris((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleCategorySelect = (categoryId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedCategory(categoryId);
+    setSelectedItem(null);
+  };
+
+  const handleItemSelect = (item: MockupItem) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedItem(item);
+    if (item.defaultColors && item.defaultColors.length > 0) {
+      setSelectedColor(item.defaultColors[0]);
+    }
+  };
+
+  const handleVibeSelect = (vibe: SceneVibe) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedVibe(vibe);
+  };
+
+  const handleCameraSelect = (camera: CameraOption) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedCamera(camera);
+  };
+
+  const handleColorSelect = (color: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedColor(color);
+  };
+
+  const handleTabChange = (tab: TabType) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setActiveTab(tab);
+  };
+
+  const handleGenerate = () => {
+    if (!selectedItem || imageUris.length === 0) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    if (imageUris.length === 1) {
+      navigation.navigate("MockupProcessing", {
+        imageUri: imageUris[0],
+        mockupItem: selectedItem,
+        sceneVibe: selectedVibe,
+        cameraOption: selectedCamera,
+        mockupColor: selectedItem.hasColorPicker ? selectedColor : undefined,
+        customDescription: customDescription || undefined,
+      });
+    } else {
+      navigation.navigate("BatchMockupProcessing", {
+        imageUris,
+        mockupItem: selectedItem,
+        sceneVibe: selectedVibe,
+        cameraOption: selectedCamera,
+        mockupColor: selectedItem.hasColorPicker ? selectedColor : undefined,
+        customDescription: customDescription || undefined,
+      });
+    }
+  };
+
+  const selectedCategoryData = MOCKUP_CATEGORIES.find(
+    (c) => c.id === selectedCategory
+  );
+
+  const canGenerate = selectedItem && imageUris.length > 0;
+
+  const renderProductTab = () => (
+    <Animated.View
+      entering={FadeInRight.duration(300)}
+      exiting={FadeOutLeft.duration(200)}
+    >
+      <ThemedText style={styles.sectionTitle}>Select Category</ThemedText>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.categoryScroll}
+      >
+        {MOCKUP_CATEGORIES.map((category) => (
+          <Pressable
+            key={category.id}
+            onPress={() => handleCategorySelect(category.id)}
+            style={[
+              styles.categoryCard,
+              selectedCategory === category.id && styles.categoryCardSelected,
+            ]}
+          >
+            <View style={styles.categoryIconContainer}>
+              <Feather
+                name={category.icon as any}
+                size={24}
+                color={
+                  selectedCategory === category.id
+                    ? Colors.light.white
+                    : Colors.light.primary
+                }
+              />
+            </View>
+            <ThemedText
+              style={[
+                styles.categoryLabel,
+                selectedCategory === category.id && styles.categoryLabelSelected,
+              ]}
+            >
+              {category.label}
+            </ThemedText>
+          </Pressable>
+        ))}
+      </ScrollView>
+
+      {selectedCategoryData && (
+        <Animated.View entering={FadeInDown.duration(300)}>
+          <ThemedText style={styles.sectionTitle}>Select Product</ThemedText>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.itemScroll}
+          >
+            {selectedCategoryData.items.map((item) => (
+              <Pressable
+                key={item.id}
+                onPress={() => handleItemSelect(item)}
+                style={[
+                  styles.itemCard,
+                  selectedItem?.id === item.id && styles.itemCardSelected,
+                ]}
+              >
+                <View style={styles.itemIconContainer}>
+                  <Feather
+                    name="package"
+                    size={32}
+                    color={
+                      selectedItem?.id === item.id
+                        ? Colors.light.white
+                        : Colors.light.primary
+                    }
+                  />
+                </View>
+                <ThemedText
+                  style={[
+                    styles.itemLabel,
+                    selectedItem?.id === item.id && styles.itemLabelSelected,
+                  ]}
+                >
+                  {item.label}
+                </ThemedText>
+                <ThemedText
+                  style={[
+                    styles.itemDescription,
+                    selectedItem?.id === item.id && styles.itemDescriptionSelected,
+                  ]}
+                  numberOfLines={2}
+                >
+                  {item.description}
+                </ThemedText>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </Animated.View>
+      )}
+
+      {selectedItem?.hasColorPicker && selectedItem.defaultColors && (
+        <Animated.View entering={FadeInDown.duration(300)}>
+          <ThemedText style={styles.sectionTitle}>Product Color</ThemedText>
+          <View style={styles.colorRow}>
+            {selectedItem.defaultColors.map((color) => (
+              <Pressable
+                key={color}
+                onPress={() => handleColorSelect(color)}
+                style={[
+                  styles.colorSwatch,
+                  { backgroundColor: color },
+                  selectedColor === color && styles.colorSwatchSelected,
+                  color === "#FFFFFF" && styles.colorSwatchWhite,
+                ]}
+              >
+                {selectedColor === color && (
+                  <Feather
+                    name="check"
+                    size={18}
+                    color={color === "#FFFFFF" || color === "#F5F5DC" ? "#000" : "#FFF"}
+                  />
+                )}
+              </Pressable>
+            ))}
+          </View>
+        </Animated.View>
+      )}
+    </Animated.View>
+  );
+
+  const renderStyleTab = () => (
+    <Animated.View
+      entering={FadeInRight.duration(300)}
+      exiting={FadeOutLeft.duration(200)}
+    >
+      <ThemedText style={styles.sectionTitle}>Scene Vibe</ThemedText>
+      <ThemedText style={styles.sectionSubtitle}>
+        Choose a mood that matches your brand energy
+      </ThemedText>
+
+      <View style={styles.vibeGrid}>
+        {SCENE_VIBES.map((vibe) => (
+          <Pressable
+            key={vibe.id}
+            onPress={() => handleVibeSelect(vibe)}
+            style={[
+              styles.vibeCard,
+              selectedVibe.id === vibe.id && styles.vibeCardSelected,
+            ]}
+          >
+            <View style={styles.vibeIconContainer}>
+              <Feather
+                name={vibe.icon as any}
+                size={24}
+                color={
+                  selectedVibe.id === vibe.id
+                    ? Colors.light.white
+                    : Colors.light.primary
+                }
+              />
+            </View>
+            <ThemedText
+              style={[
+                styles.vibeLabel,
+                selectedVibe.id === vibe.id && styles.vibeLabelSelected,
+              ]}
+            >
+              {vibe.label}
+            </ThemedText>
+            <ThemedText
+              style={[
+                styles.vibeDescription,
+                selectedVibe.id === vibe.id && styles.vibeDescriptionSelected,
+              ]}
+              numberOfLines={3}
+            >
+              {vibe.description}
+            </ThemedText>
+          </Pressable>
+        ))}
+      </View>
+
+      <ThemedText style={[styles.sectionTitle, { marginTop: Spacing.lg }]}>
+        Custom Description (Optional)
+      </ThemedText>
+      <GlassCard style={styles.inputCard}>
+        <TextInput
+          style={styles.textInput}
+          placeholder="Add specific details for your scene..."
+          placeholderTextColor={Colors.light.textTertiary}
+          value={customDescription}
+          onChangeText={setCustomDescription}
+          multiline
+          numberOfLines={3}
+        />
+      </GlassCard>
+    </Animated.View>
+  );
+
+  const renderCameraTab = () => (
+    <Animated.View
+      entering={FadeInRight.duration(300)}
+      exiting={FadeOutLeft.duration(200)}
+    >
+      <ThemedText style={styles.sectionTitle}>Camera Angle</ThemedText>
+      <ThemedText style={styles.sectionSubtitle}>
+        Choose how your product will be photographed
+      </ThemedText>
+
+      <View style={styles.cameraGrid}>
+        {CAMERA_OPTIONS.map((camera) => (
+          <Pressable
+            key={camera.id}
+            onPress={() => handleCameraSelect(camera)}
+            style={[
+              styles.cameraCard,
+              selectedCamera.id === camera.id && styles.cameraCardSelected,
+            ]}
+          >
+            <Feather
+              name={camera.icon as any}
+              size={28}
+              color={
+                selectedCamera.id === camera.id
+                  ? Colors.light.white
+                  : Colors.light.primary
+              }
+            />
+            <ThemedText
+              style={[
+                styles.cameraLabel,
+                selectedCamera.id === camera.id && styles.cameraLabelSelected,
+              ]}
+            >
+              {camera.label}
+            </ThemedText>
+            <ThemedText
+              style={[
+                styles.cameraDescription,
+                selectedCamera.id === camera.id && styles.cameraDescriptionSelected,
+              ]}
+            >
+              {camera.description}
+            </ThemedText>
+          </Pressable>
+        ))}
+      </View>
+    </Animated.View>
+  );
+
+  return (
+    <GradientBackground variant="warm">
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingTop: headerHeight + Spacing.md,
+            paddingBottom: insets.bottom + 100,
+          },
+        ]}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <ThemedText style={styles.sectionTitle}>Your Images</ThemedText>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.imageRow}
+        >
+          {imageUris.map((uri, index) => (
+            <Animated.View
+              key={uri}
+              entering={FadeInDown.delay(index * 50).duration(300)}
+              style={styles.imageContainer}
+            >
+              <Image source={{ uri }} style={styles.thumbnail} />
+              <Pressable
+                onPress={() => handleRemoveImage(index)}
+                style={styles.removeButton}
+              >
+                <Feather name="x" size={14} color="#FFF" />
+              </Pressable>
+            </Animated.View>
+          ))}
+          <Pressable onPress={handleSelectImages} style={styles.addImageButton}>
+            <Feather name="plus" size={24} color={Colors.light.primary} />
+            <ThemedText style={styles.addImageText}>
+              {imageUris.length === 0 ? "Select" : "Add"}
+            </ThemedText>
+          </Pressable>
+        </ScrollView>
+        {imageUris.length > 0 && (
+          <ThemedText style={styles.imageCount}>
+            {imageUris.length} image{imageUris.length > 1 ? "s" : ""} selected (max 10)
+          </ThemedText>
+        )}
+
+        <View style={styles.tabBar}>
+          {(["product", "style", "camera"] as TabType[]).map((tab) => (
+            <Pressable
+              key={tab}
+              onPress={() => handleTabChange(tab)}
+              style={[styles.tab, activeTab === tab && styles.tabActive]}
+            >
+              <Feather
+                name={
+                  tab === "product"
+                    ? "box"
+                    : tab === "style"
+                    ? "sun"
+                    : "aperture"
+                }
+                size={18}
+                color={
+                  activeTab === tab
+                    ? Colors.light.primary
+                    : Colors.light.textSecondary
+                }
+              />
+              <ThemedText
+                style={[
+                  styles.tabText,
+                  activeTab === tab && styles.tabTextActive,
+                ]}
+              >
+                {tab === "product"
+                  ? "Product"
+                  : tab === "style"
+                  ? "Style"
+                  : "Camera"}
+              </ThemedText>
+            </Pressable>
+          ))}
+        </View>
+
+        <View style={styles.tabContent}>
+          {activeTab === "product" && renderProductTab()}
+          {activeTab === "style" && renderStyleTab()}
+          {activeTab === "camera" && renderCameraTab()}
+        </View>
+      </ScrollView>
+
+      <View
+        style={[
+          styles.bottomBar,
+          { paddingBottom: insets.bottom + Spacing.md },
+        ]}
+      >
+        <View style={styles.selectionSummary}>
+          {selectedItem && (
+            <ThemedText style={styles.summaryText}>
+              {selectedItem.label} • {selectedVibe.label} • {selectedCamera.label}
+            </ThemedText>
+          )}
+        </View>
+        <GradientButton
+          title={`Generate Mockup${imageUris.length > 1 ? "s" : ""}`}
+          onPress={handleGenerate}
+          disabled={!canGenerate}
+          style={styles.generateButton}
+        />
+      </View>
+    </GradientBackground>
+  );
+}
+
+const styles = StyleSheet.create({
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: Spacing.lg,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: Colors.light.text,
+    marginBottom: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  sectionSubtitle: {
+    fontSize: 13,
+    color: Colors.light.textSecondary,
+    marginBottom: Spacing.md,
+    marginTop: -Spacing.xs,
+  },
+  imageRow: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+    paddingVertical: Spacing.xs,
+  },
+  imageContainer: {
+    position: "relative",
+  },
+  thumbnail: {
+    width: 70,
+    height: 70,
+    borderRadius: BorderRadius.md,
+  },
+  removeButton: {
+    position: "absolute",
+    top: -6,
+    right: -6,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: Colors.light.error,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addImageButton: {
+    width: 70,
+    height: 70,
+    borderRadius: BorderRadius.md,
+    borderWidth: 2,
+    borderColor: Colors.light.primary,
+    borderStyle: "dashed",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(249, 115, 22, 0.05)",
+  },
+  addImageText: {
+    fontSize: 11,
+    color: Colors.light.primary,
+    marginTop: 2,
+  },
+  imageCount: {
+    fontSize: 12,
+    color: Colors.light.textSecondary,
+    marginTop: Spacing.xs,
+  },
+  tabBar: {
+    flexDirection: "row",
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
+    borderRadius: BorderRadius.lg,
+    padding: 4,
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.md,
+  },
+  tab: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: Spacing.sm,
+    gap: 6,
+    borderRadius: BorderRadius.md,
+  },
+  tabActive: {
+    backgroundColor: "#FFF",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  tabText: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: Colors.light.textSecondary,
+  },
+  tabTextActive: {
+    color: Colors.light.primary,
+  },
+  tabContent: {
+    minHeight: 300,
+  },
+  categoryScroll: {
+    gap: Spacing.sm,
+    paddingVertical: Spacing.xs,
+  },
+  categoryCard: {
+    width: 90,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    borderRadius: BorderRadius.lg,
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+  categoryCardSelected: {
+    backgroundColor: Colors.light.primary,
+    borderColor: Colors.light.primary,
+  },
+  categoryIconContainer: {
+    marginBottom: Spacing.xs,
+  },
+  categoryLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: Colors.light.text,
+    textAlign: "center",
+  },
+  categoryLabelSelected: {
+    color: Colors.light.white,
+  },
+  itemScroll: {
+    gap: Spacing.sm,
+    paddingVertical: Spacing.xs,
+  },
+  itemCard: {
+    width: 110,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    borderRadius: BorderRadius.lg,
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+  itemCardSelected: {
+    backgroundColor: Colors.light.primary,
+    borderColor: Colors.light.primary,
+  },
+  itemIconContainer: {
+    marginBottom: Spacing.xs,
+  },
+  itemLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: Colors.light.text,
+    textAlign: "center",
+    marginBottom: 2,
+  },
+  itemLabelSelected: {
+    color: Colors.light.white,
+  },
+  itemDescription: {
+    fontSize: 10,
+    color: Colors.light.textSecondary,
+    textAlign: "center",
+  },
+  itemDescriptionSelected: {
+    color: "rgba(255, 255, 255, 0.8)",
+  },
+  colorRow: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+    flexWrap: "wrap",
+  },
+  colorSwatch: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  colorSwatchSelected: {
+    borderWidth: 3,
+    borderColor: Colors.light.primary,
+  },
+  colorSwatchWhite: {
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  vibeGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.sm,
+  },
+  vibeCard: {
+    width: "48%",
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    borderRadius: BorderRadius.lg,
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+  vibeCardSelected: {
+    backgroundColor: Colors.light.primary,
+    borderColor: Colors.light.primary,
+  },
+  vibeIconContainer: {
+    marginBottom: Spacing.xs,
+  },
+  vibeLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.light.text,
+    marginBottom: 2,
+  },
+  vibeLabelSelected: {
+    color: Colors.light.white,
+  },
+  vibeDescription: {
+    fontSize: 11,
+    color: Colors.light.textSecondary,
+    lineHeight: 14,
+  },
+  vibeDescriptionSelected: {
+    color: "rgba(255, 255, 255, 0.8)",
+  },
+  inputCard: {
+    padding: Spacing.md,
+  },
+  textInput: {
+    fontSize: 14,
+    color: Colors.light.text,
+    minHeight: 60,
+    textAlignVertical: "top",
+  },
+  cameraGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.sm,
+  },
+  cameraCard: {
+    width: "31%",
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xs,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    borderRadius: BorderRadius.lg,
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+  cameraCardSelected: {
+    backgroundColor: Colors.light.primary,
+    borderColor: Colors.light.primary,
+  },
+  cameraLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: Colors.light.text,
+    textAlign: "center",
+    marginTop: Spacing.xs,
+    marginBottom: 2,
+  },
+  cameraLabelSelected: {
+    color: Colors.light.white,
+  },
+  cameraDescription: {
+    fontSize: 9,
+    color: Colors.light.textSecondary,
+    textAlign: "center",
+  },
+  cameraDescriptionSelected: {
+    color: "rgba(255, 255, 255, 0.8)",
+  },
+  bottomBar: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    borderTopWidth: 1,
+    borderTopColor: Colors.light.border,
+  },
+  selectionSummary: {
+    marginBottom: Spacing.sm,
+  },
+  summaryText: {
+    fontSize: 12,
+    color: Colors.light.textSecondary,
+    textAlign: "center",
+  },
+  generateButton: {
+    width: "100%",
+  },
+});

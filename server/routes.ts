@@ -552,6 +552,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
+  // Mockup generation endpoint
+  app.post(
+    "/api/mockup",
+    upload.single("file"),
+    async (req: Request, res: Response) => {
+      try {
+        if (!req.file) {
+          return res.status(400).json({ error: "No image file provided" });
+        }
+
+        if (
+          !process.env.AI_INTEGRATIONS_GEMINI_API_KEY ||
+          !process.env.AI_INTEGRATIONS_GEMINI_BASE_URL
+        ) {
+          return res.status(500).json({
+            error:
+              "Gemini AI integration is not configured. Please set up the AI integration.",
+          });
+        }
+
+        const ai = new GoogleGenAI({
+          apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY,
+          httpOptions: {
+            apiVersion: "",
+            baseUrl: process.env.AI_INTEGRATIONS_GEMINI_BASE_URL,
+          },
+        });
+
+        // Parse mockup parameters from body
+        const prompt = req.body?.prompt || "Create a professional product mockup";
+        const mockupType = req.body?.mockupType || "generic";
+        const sceneVibe = req.body?.sceneVibe || "casual";
+        const cameraOption = req.body?.cameraOption || "medium";
+        const mockupColor = req.body?.mockupColor;
+
+        const imageBuffer = req.file.buffer;
+        const base64Image = imageBuffer.toString("base64");
+        const mimeType = req.file.mimetype || "image/jpeg";
+
+        // Build enhanced prompt for mockup generation
+        const enhancedPrompt = `${prompt}
+
+Additional requirements:
+- The design/logo from the input image should be clearly visible and properly placed on the product
+- Maintain realistic proportions and perspective
+- Use professional lighting that matches the scene vibe
+- The mockup should look like a real photograph, not a digital render
+- High quality, photorealistic result
+- No text watermarks or borders`;
+
+        const response = await ai.models.generateContent({
+          model: "gemini-2.5-flash-image",
+          contents: [
+            {
+              role: "user",
+              parts: [
+                {
+                  inlineData: {
+                    mimeType: mimeType,
+                    data: base64Image,
+                  },
+                },
+                { text: enhancedPrompt },
+              ],
+            },
+          ],
+          config: {
+            responseModalities: [Modality.TEXT, Modality.IMAGE],
+          },
+        });
+
+        const candidate = response.candidates?.[0];
+        const imagePart = candidate?.content?.parts?.find(
+          (part: { inlineData?: { data?: string; mimeType?: string } }) =>
+            part.inlineData,
+        );
+
+        if (!imagePart?.inlineData?.data) {
+          return res.status(500).json({
+            error: "AI did not return an image. Please try again.",
+          });
+        }
+
+        const generatedImageBuffer = Buffer.from(
+          imagePart.inlineData.data,
+          "base64",
+        );
+
+        // Resize and format to 2000x2000 JPEG
+        const finalBuffer = await sharp(generatedImageBuffer)
+          .resize(2000, 2000, {
+            fit: "contain",
+            background: { r: 255, g: 255, b: 255 },
+          })
+          .jpeg({ quality: 95 })
+          .toBuffer();
+
+        // Return as base64 data URI for easy handling on client
+        const base64Result = finalBuffer.toString("base64");
+        const resultUri = `data:image/jpeg;base64,${base64Result}`;
+
+        res.json({
+          resultUri,
+          mockupType,
+          sceneVibe,
+          cameraOption,
+        });
+      } catch (error) {
+        console.error("Error generating mockup:", error);
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        res.status(500).json({
+          error: `Failed to generate mockup: ${errorMessage}`,
+        });
+      }
+    },
+  );
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -18,6 +18,12 @@ import BatchLifestyleResultScreen from "@/screens/BatchLifestyleResultScreen";
 import OnboardingScreen from "@/screens/OnboardingScreen";
 import BackgroundColorSelectionScreen from "@/screens/BackgroundColorSelectionScreen";
 import BatchActionSelectionScreen from "@/screens/BatchActionSelectionScreen";
+import MockupSelectionScreen from "@/screens/MockupSelectionScreen";
+import MockupProcessingScreen from "@/screens/MockupProcessingScreen";
+import MockupResultScreen from "@/screens/MockupResultScreen";
+import BatchMockupProcessingScreen from "@/screens/BatchMockupProcessingScreen";
+import BatchMockupResultScreen from "@/screens/BatchMockupResultScreen";
+import { MockupItem, SceneVibe, CameraOption } from "@/lib/mockup-presets";
 
 
 
@@ -55,6 +61,39 @@ export type RootStackParamList = {
       status: "pending" | "processing" | "completed" | "failed";
     }[];
     environment: string;
+  };
+
+  // Mockup flows
+  MockupSelection: { imageUri?: string; imageUris?: string[] };
+  MockupProcessing: {
+    imageUri: string;
+    mockupItem: MockupItem;
+    sceneVibe: SceneVibe;
+    cameraOption: CameraOption;
+    mockupColor?: string;
+    customDescription?: string;
+  };
+  MockupResult: {
+    resultUri: string;
+    originalUri: string;
+    mockupType: string;
+  };
+  BatchMockupProcessing: {
+    imageUris: string[];
+    mockupItem: MockupItem;
+    sceneVibe: SceneVibe;
+    cameraOption: CameraOption;
+    mockupColor?: string;
+    customDescription?: string;
+  };
+  BatchMockupResult: {
+    results: {
+      originalUri: string;
+      resultUri: string | null;
+      error?: string;
+      status: "pending" | "processing" | "completed" | "failed";
+    }[];
+    mockupType: string;
   };
 };
 
@@ -175,6 +214,31 @@ export default function RootStackNavigator() {
       <Stack.Screen
         name="BatchLifestyleResult"
         component={BatchLifestyleResultScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="MockupSelection"
+        component={MockupSelectionScreen}
+        options={{ headerTitle: "Create Mockup" }}
+      />
+      <Stack.Screen
+        name="MockupProcessing"
+        component={MockupProcessingScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="MockupResult"
+        component={MockupResultScreen}
+        options={{ headerTitle: "Mockup Ready", headerBackVisible: false }}
+      />
+      <Stack.Screen
+        name="BatchMockupProcessing"
+        component={BatchMockupProcessingScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="BatchMockupResult"
+        component={BatchMockupResultScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>
