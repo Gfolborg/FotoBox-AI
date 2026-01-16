@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -10,28 +10,37 @@ import {
   Platform,
   TextInput,
   FlatList,
+  Dimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import * as ImagePicker from "expo-image-picker";
 import { Feather } from "@expo/vector-icons";
+import { StatusBar } from "expo-status-bar";
+import { BlurView } from "expo-blur";
+import * as Haptics from "expo-haptics";
 import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
-  FadeInDown,
-  FadeInLeft,
-  FadeInRight,
 } from "react-native-reanimated";
 
-import { GradientBackground } from "@/components/GradientBackground";
 import { ThemedText } from "@/components/ThemedText";
-import { Button } from "@/components/Button";
+import { GlassCard } from "@/components/GlassCard";
+import { GlassPill } from "@/components/GlassPill";
+import { GradientButton } from "@/components/GradientButton";
+import { ProgressRing } from "@/components/ProgressRing";
 import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getApiUrl } from "@/lib/query-client";
 import { SCENES, Scene } from "@/lib/lifestyle-scenes";
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const IMAGE_SIZE = Math.min(SCREEN_WIDTH - Spacing.lg * 2, 320);
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, "EnvironmentSelection">;
@@ -42,51 +51,54 @@ function SceneCard({
   scene,
   selected,
   onPress,
+  index,
 }: {
   scene: Scene;
   selected: boolean;
   onPress: () => void;
+  index: number;
 }) {
   const scale = useSharedValue(1);
-  const isSelected = useSharedValue(selected ? 1 : 0);
 
-  useEffect(() => {
-    isSelected.value = withSpring(selected ? 1 : 0, {
-      damping: 10,
-      stiffness: 200,
-    });
-  }, [selected]);
-
-  const animatedContainerStyle = useAnimatedStyle(() => ({
+  const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
-    borderColor: isSelected.value === 1 ? Colors.light.primary : Colors.light.border,
-    borderWidth: isSelected.value === 1 ? 2 : 1,
-  }));
-
-  const animatedIconContainerStyle = useAnimatedStyle(() => ({
-    backgroundColor: isSelected.value === 1 ? Colors.light.primary : Colors.light.backgroundSecondary,
-  }));
-
-  const animatedIconStyle = useAnimatedStyle(() => ({
-    color: isSelected.value === 1 ? Colors.light.white : Colors.light.primary,
   }));
 
   return (
     <AnimatedPressable
-      onPress={onPress}
+      onPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        onPress();
+      }}
       onPressIn={() => (scale.value = withSpring(0.95))}
       onPressOut={() => (scale.value = withSpring(1))}
-      style={[styles.sceneCard, animatedContainerStyle]}
+      style={[
+        styles.sceneCard,
+        selected && styles.sceneCardSelected,
+        animatedStyle,
+      ]}
     >
-      <Animated.View style={[styles.sceneIconContainer, animatedIconContainerStyle]}>
-        <Feather name={scene.icon} size={24} color={Colors.light.primary} style={animatedIconStyle} />
-      </Animated.View>
-      <ThemedText style={styles.sceneLabel} numberOfLines={2}>
+      <View
+        style={[
+          styles.sceneIconContainer,
+          selected && styles.sceneIconContainerSelected,
+        ]}
+      >
+        <Feather
+          name={scene.icon as any}
+          size={22}
+          color={selected ? Colors.editing.text : Colors.editing.primary}
+        />
+      </View>
+      <ThemedText
+        style={[styles.sceneLabel, selected && styles.sceneLabelSelected]}
+        numberOfLines={2}
+      >
         {scene.label}
       </ThemedText>
       {selected && (
         <View style={styles.selectedCheck}>
-          <Feather name="check" size={12} color={Colors.light.white} />
+          <Feather name="check" size={10} color={Colors.editing.text} />
         </View>
       )}
     </AnimatedPressable>
@@ -102,66 +114,29 @@ export default function EnvironmentSelectionScreen() {
   const [imageUri, setImageUri] = useState<string | null>(
     route.params?.imageUri || null,
   );
-  const [customScene, setCustomScene] = useState('');
-  const [productKeywords, setProductKeywords] = useState('');
-  const [selectedScene, setSelectedScene] = useState<string>('studio');
+  const [customScene, setCustomScene] = useState("");
+  const [productKeywords, setProductKeywords] = useState("");
+  const [selectedScene, setSelectedScene] = useState<string>("studio");
   const [selectedShadowControl, setSelectedShadowControl] =
-    useState<string>('natural');
+    useState<string>("natural");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [showLeftArrow, setShowLeftArrow] = useState(false);
-  const [showRightArrow, setShowRightArrow] = useState(false);
-  const [scrollOffset, setScrollOffset] = useState(0);
-  const [contentWidth, setContentWidth] = useState(0);
-  const [layoutWidth, setLayoutWidth] = useState(0);
 
-  const handleScroll = (event: any) => {
-    const offset = event.nativeEvent.contentOffset.x;
-    setScrollOffset(offset);
-    setShowLeftArrow(offset > 0);
-    setShowRightArrow(offset < contentWidth - layoutWidth - 1);
-  };
+  React.useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    });
+  }, [navigation]);
 
-  const handleContentSizeChange = (width: number) => {
-    setContentWidth(width);
-    setShowRightArrow(width > layoutWidth);
-  };
-
-  const handleLayout = (event: any) => {
-    setLayoutWidth(event.nativeEvent.layout.width);
-  };
-
-  const scrollLeft = () => {
-    if (flatListRef.current) {
-      flatListRef.current.scrollToOffset({
-        offset: Math.max(0, scrollOffset - layoutWidth),
-        animated: true,
-      });
-    }
-  };
-
-  const scrollRight = () => {
-    if (flatListRef.current) {
-      flatListRef.current.scrollToOffset({
-        offset: Math.min(contentWidth - layoutWidth, scrollOffset + layoutWidth),
-        animated: true,
-      });
-    }
-  };
-
-  // When a user types a custom scene, deselect the card
   useEffect(() => {
     if (customScene.trim()) {
-      setSelectedScene('');
+      setSelectedScene("");
     }
   }, [customScene]);
 
-  // If no image provided, prompt user to select one
   useEffect(() => {
     if (!imageUri) {
       handlePickImage();
     }
-    // Run once on mount to prompt for image selection
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handlePickImage = async () => {
@@ -179,7 +154,7 @@ export default function EnvironmentSelectionScreen() {
   };
 
   const handleSelectSceneCard = (sceneId: string) => {
-    setCustomScene(""); // Clear custom scene input
+    setCustomScene("");
     setSelectedScene(sceneId);
   };
 
@@ -187,6 +162,7 @@ export default function EnvironmentSelectionScreen() {
     if (!imageUri || (!customScene.trim() && !selectedScene)) return;
 
     setIsProcessing(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
       const formData = new FormData();
@@ -200,7 +176,6 @@ export default function EnvironmentSelectionScreen() {
       let endpoint = `${apiUrl}api/lifestyle-scene`;
       const params = new URLSearchParams();
 
-      // Prioritize custom scene description
       if (customScene.trim()) {
         params.append("environment", customScene.trim());
         params.append("isCustom", "true");
@@ -208,16 +183,14 @@ export default function EnvironmentSelectionScreen() {
         params.append("environment", selectedScene);
       }
 
-      // Add product keywords if provided
       if (productKeywords.trim()) {
         params.append("productDescription", productKeywords.trim());
       }
 
-      // Add shadow control if not natural
       if (selectedShadowControl !== "natural") {
         params.append("shadowControl", selectedShadowControl);
       }
-      
+
       endpoint += `?${params.toString()}`;
 
       const controller = new AbortController();
@@ -275,438 +248,511 @@ export default function EnvironmentSelectionScreen() {
     }
   };
 
+  const shadowOptions = [
+    { id: "natural", label: "Natural" },
+    { id: "no shadows", label: "None" },
+    { id: "subtle shadows", label: "Subtle" },
+    { id: "prominent shadows", label: "Strong" },
+  ];
+
   return (
-    <GradientBackground variant="subtle">
+    <View style={styles.container}>
+      <StatusBar style="light" />
+
+      {/* Header */}
+      <Animated.View
+        entering={FadeIn.duration(300)}
+        style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}
+      >
+        <BlurView intensity={40} tint="dark" style={styles.headerBlur} />
+        <View style={styles.headerContent}>
+          <Pressable
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Feather
+              name="chevron-left"
+              size={24}
+              color={Colors.editing.text}
+            />
+          </Pressable>
+
+          <GlassPill>
+            <Feather name="layers" size={16} color={Colors.editing.primary} />
+            <ThemedText style={styles.headerTitle}>Lifestyle Scene</ThemedText>
+          </GlassPill>
+
+          <View style={{ width: 44 }} />
+        </View>
+      </Animated.View>
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: insets.bottom + 100 },
+          { paddingBottom: insets.bottom + 140 },
         ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Selected Image Preview */}
-        <Animated.View entering={FadeInDown.delay(100).duration(400)}>
-          <Pressable style={styles.imageContainer} onPress={handlePickImage}>
+        {/* Image Preview Section */}
+        <Animated.View
+          entering={FadeInDown.delay(100).duration(400)}
+          style={styles.imageSection}
+        >
+          <Pressable onPress={handlePickImage} style={styles.imageWrapper}>
             {imageUri ? (
-              <>
+              <View style={styles.imageContainer}>
                 <Image source={{ uri: imageUri }} style={styles.previewImage} />
-                <View style={styles.changeImageOverlay}>
-                  <Feather name="camera" size={20} color={Colors.light.white} />
-                  <ThemedText style={styles.changeImageText}>
-                    Tap to change
+                <View style={styles.changeImageBadge}>
+                  <Feather
+                    name="camera"
+                    size={14}
+                    color={Colors.editing.text}
+                  />
+                  <ThemedText style={styles.changeImageText}>Change</ThemedText>
+                </View>
+              </View>
+            ) : (
+              <GlassCard theme="dark" padding="xl" borderRadius="xl">
+                <View style={styles.placeholderContainer}>
+                  <Feather
+                    name="image"
+                    size={48}
+                    color={Colors.editing.textTertiary}
+                  />
+                  <ThemedText style={styles.placeholderText}>
+                    Select a product image
                   </ThemedText>
                 </View>
-              </>
-            ) : (
-              <View style={styles.placeholderContainer}>
-                <Feather
-                  name="image"
-                  size={48}
-                  color={Colors.light.textTertiary}
-                />
-                <ThemedText style={styles.placeholderText}>
-                  Select a product image
-                </ThemedText>
-              </View>
+              </GlassCard>
             )}
           </Pressable>
         </Animated.View>
 
-        {/* Custom Scene Input */}
+        {/* Scene Description Input */}
         <Animated.View
           entering={FadeInDown.delay(200).duration(400)}
           style={styles.section}
         >
-          <ThemedText type="h4" style={styles.sectionTitle}>
-            Describe Your Desired Scene
-          </ThemedText>
+          <View style={styles.sectionHeader}>
+            <Feather name="edit-3" size={18} color={Colors.editing.primary} />
+            <ThemedText style={styles.sectionTitle}>
+              Describe Your Scene
+            </ThemedText>
+          </View>
           <ThemedText style={styles.sectionSubtitle}>
-            Be descriptive for the best results.
+            Be descriptive for the best results
           </ThemedText>
-          <TextInput
-            style={styles.descriptionInput}
-            placeholder="e.g., On a marble countertop next to a plant"
-            placeholderTextColor={Colors.light.textTertiary}
-            value={customScene}
-            onChangeText={setCustomScene}
-            multiline={false}
-            returnKeyType="done"
-          />
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.textInput}
+              placeholder="e.g., On a marble countertop next to a plant"
+              placeholderTextColor={Colors.editing.textTertiary}
+              value={customScene}
+              onChangeText={setCustomScene}
+              multiline={false}
+              returnKeyType="done"
+            />
+          </View>
         </Animated.View>
 
         {/* Product Keywords Input */}
-                    <Animated.View
-                      entering={FadeInDown.delay(300).duration(400)}
-                      style={styles.section}
-                    >
-                      <ThemedText type="h4" style={styles.sectionTitle}>
-                        Product Keywords (Optional)
-                      </ThemedText>
-                      <ThemedText style={styles.sectionSubtitle}>
-                        Helps the AI understand your product.
-                      </ThemedText>
-                      <TextInput
-                        style={styles.keywordsInput}
-                        placeholder="e.g., red glossy lipstick"
-                        placeholderTextColor={Colors.light.textTertiary}
-                        value={productKeywords}
-                        onChangeText={setProductKeywords}
-                        multiline={false}
-                        returnKeyType="done"
-                      />
-                    </Animated.View>
-        
-                    {/* Shadow Control Selection */}
-                    <Animated.View
-                      entering={FadeInDown.delay(350).duration(400)}
-                      style={styles.section}
-                    >
-                      <ThemedText type="h4" style={styles.sectionTitle}>
-                        Shadow Control
-                      </ThemedText>
-                      <ThemedText style={styles.sectionSubtitle}>
-                        Adjust the prominence of shadows in the scene.
-                      </ThemedText>
-                      <View style={styles.shadowControlGrid}>
-                        {["natural", "no shadows", "subtle shadows", "prominent shadows"].map((option) => (
-                          <Pressable
-                            key={option}
-                            style={[
-                              styles.shadowOptionChip,
-                              selectedShadowControl === option && styles.shadowOptionChipSelected,
-                            ]}
-                            onPress={() => setSelectedShadowControl(option)}
-                          >
-                            <ThemedText
-                              style={[
-                                styles.shadowOptionChipText,
-                                selectedShadowControl === option && styles.shadowOptionChipTextSelected,
-                              ]}
-                            >
-                              {option}
-                            </ThemedText>
-                          </Pressable>
-                        ))}
-                      </View>
-                    </Animated.View>
-        {/* Scene Selection */}
+        <Animated.View
+          entering={FadeInDown.delay(300).duration(400)}
+          style={styles.section}
+        >
+          <View style={styles.sectionHeader}>
+            <Feather name="tag" size={18} color={Colors.editing.secondary} />
+            <ThemedText style={styles.sectionTitle}>
+              Product Keywords
+            </ThemedText>
+            <ThemedText style={styles.optionalBadge}>Optional</ThemedText>
+          </View>
+          <ThemedText style={styles.sectionSubtitle}>
+            Helps the AI understand your product better
+          </ThemedText>
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.textInput}
+              placeholder="e.g., red glossy lipstick"
+              placeholderTextColor={Colors.editing.textTertiary}
+              value={productKeywords}
+              onChangeText={setProductKeywords}
+              multiline={false}
+              returnKeyType="done"
+            />
+          </View>
+        </Animated.View>
+
+        {/* Shadow Control */}
+        <Animated.View
+          entering={FadeInDown.delay(350).duration(400)}
+          style={styles.section}
+        >
+          <View style={styles.sectionHeader}>
+            <Feather name="sun" size={18} color={Colors.editing.primary} />
+            <ThemedText style={styles.sectionTitle}>Shadow Style</ThemedText>
+          </View>
+          <View style={styles.shadowGrid}>
+            {shadowOptions.map((option) => (
+              <Pressable
+                key={option.id}
+                style={[
+                  styles.shadowChip,
+                  selectedShadowControl === option.id &&
+                    styles.shadowChipSelected,
+                ]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setSelectedShadowControl(option.id);
+                }}
+              >
+                <ThemedText
+                  style={[
+                    styles.shadowChipText,
+                    selectedShadowControl === option.id &&
+                      styles.shadowChipTextSelected,
+                  ]}
+                >
+                  {option.label}
+                </ThemedText>
+              </Pressable>
+            ))}
+          </View>
+        </Animated.View>
+
+        {/* Scene Presets */}
         <Animated.View
           entering={FadeInDown.delay(400).duration(400)}
           style={styles.section}
         >
-          <ThemedText type="h4" style={styles.sectionTitle}>
-            Or Get Inspired
-          </ThemedText>
+          <View style={styles.sectionHeader}>
+            <Feather name="grid" size={18} color={Colors.editing.primary} />
+            <ThemedText style={styles.sectionTitle}>Or Choose a Preset</ThemedText>
+          </View>
           <ThemedText style={styles.sectionSubtitle}>
-            Select a preset scene to start with.
+            Quick-start with popular scene styles
           </ThemedText>
-          <View style={styles.flatListContainer}>
+          <View style={styles.scenesContainer}>
             <FlatList
               ref={flatListRef}
               data={SCENES}
-              renderItem={({ item }) => (
+              renderItem={({ item, index }) => (
                 <SceneCard
                   scene={item}
                   selected={selectedScene === item.id}
                   onPress={() => handleSelectSceneCard(item.id)}
+                  index={index}
                 />
               )}
               keyExtractor={(item) => item.id}
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.scenesGrid}
-              onScroll={handleScroll}
-              onContentSizeChange={handleContentSizeChange}
-              onLayout={handleLayout}
-              scrollEventThrottle={16}
             />
-            {showLeftArrow && (
-              <Animated.View entering={FadeInLeft}>
-                <Pressable style={[styles.arrow, styles.leftArrow]} onPress={scrollLeft}>
-                  <Feather name="chevron-left" size={24} color={Colors.light.text} />
-                </Pressable>
-              </Animated.View>
-            )}
-            {showRightArrow && (
-              <Animated.View entering={FadeInRight}>
-                <Pressable style={[styles.arrow, styles.rightArrow]} onPress={scrollRight}>
-                  <Feather name="chevron-right" size={24} color={Colors.light.text} />
-                </Pressable>
-              </Animated.View>
-            )}
           </View>
         </Animated.View>
       </ScrollView>
 
-      {/* Generate Button */}
-      <View
-        style={[
-          styles.bottomAction,
-          { paddingBottom: insets.bottom + Spacing.md },
-        ]}
+      {/* Bottom Action Bar */}
+      <Animated.View
+        entering={FadeInUp.delay(500).duration(400)}
+        style={[styles.bottomBar, { paddingBottom: insets.bottom + Spacing.md }]}
       >
-        <Button
-          onPress={handleGenerate}
-          disabled={!imageUri || isProcessing || (!customScene && !selectedScene)}
-        >
-          {isProcessing ? (
-            <View style={styles.loadingContent}>
-              <ActivityIndicator color={Colors.light.buttonText} size="small" />
-              <ThemedText style={styles.buttonText}>Generating...</ThemedText>
-            </View>
-          ) : (
-            <View style={styles.buttonContent}>
-              <Feather name="zap" size={20} color={Colors.light.buttonText} />
-              <ThemedText style={styles.buttonText}>
-                Generate Lifestyle Scene
-              </ThemedText>
-            </View>
-          )}
-        </Button>
-      </View>
+        <BlurView intensity={60} tint="dark" style={styles.bottomBlur} />
+        <View style={styles.bottomContent}>
+          <GradientButton
+            title={isProcessing ? "Generating..." : "Generate Lifestyle Scene"}
+            onPress={handleGenerate}
+            disabled={!imageUri || isProcessing || (!customScene && !selectedScene)}
+            loading={isProcessing}
+            icon="zap"
+            fullWidth
+          />
+        </View>
+      </Animated.View>
 
       {/* Processing Overlay */}
       {isProcessing && (
-        <View style={styles.processingOverlay}>
-          <View style={styles.processingCard}>
-            <ActivityIndicator size="large" color={Colors.light.primary} />
-            <ThemedText style={styles.processingText}>
-              Creating your lifestyle scene...
-            </ThemedText>
-            <ThemedText style={styles.processingHint}>
-              This may take up to 30 seconds
-            </ThemedText>
-          </View>
-        </View>
+        <Animated.View
+          entering={FadeIn.duration(200)}
+          style={styles.processingOverlay}
+        >
+          <GlassCard theme="dark" padding="xl" borderRadius="2xl">
+            <View style={styles.processingContent}>
+              <ProgressRing
+                progress={0.7}
+                size={80}
+                strokeWidth={6}
+                color={Colors.editing.primary}
+                backgroundColor="rgba(255, 255, 255, 0.1)"
+              >
+                <Feather
+                  name="zap"
+                  size={28}
+                  color={Colors.editing.primary}
+                />
+              </ProgressRing>
+              <ThemedText style={styles.processingTitle}>
+                Creating Your Scene
+              </ThemedText>
+              <ThemedText style={styles.processingHint}>
+                This may take up to 30 seconds
+              </ThemedText>
+            </View>
+          </GlassCard>
+        </Animated.View>
       )}
-    </GradientBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: Colors.editing.backgroundRoot,
+  },
+  header: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+  },
+  headerBlur: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  headerContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerTitle: {
+    color: Colors.editing.text,
+    fontSize: 15,
+    fontWeight: "600",
   },
   scrollView: {
     flex: 1,
+    marginTop: 100,
   },
   scrollContent: {
     padding: Spacing.lg,
   },
+  imageSection: {
+    alignItems: "center",
+    marginBottom: Spacing.xl,
+  },
+  imageWrapper: {
+    width: IMAGE_SIZE,
+    height: IMAGE_SIZE,
+  },
   imageContainer: {
     width: "100%",
-    aspectRatio: 4 / 3,
+    height: "100%",
     borderRadius: BorderRadius.xl,
     overflow: "hidden",
-    backgroundColor: Colors.light.backgroundSecondary,
-    marginBottom: Spacing.lg,
+    backgroundColor: Colors.editing.backgroundSecondary,
+    ...Shadows.lg,
   },
   previewImage: {
     width: "100%",
     height: "100%",
     resizeMode: "cover",
   },
-  changeImageOverlay: {
+  changeImageBadge: {
     position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
+    bottom: Spacing.md,
+    right: Spacing.md,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: Spacing.sm,
-    padding: Spacing.md,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
   },
   changeImageText: {
-    color: Colors.light.white,
-    fontSize: 14,
+    color: Colors.editing.text,
+    fontSize: 13,
+    fontWeight: "500",
   },
   placeholderContainer: {
-    flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    height: IMAGE_SIZE - 48,
     gap: Spacing.md,
   },
   placeholderText: {
-    color: Colors.light.textTertiary,
+    color: Colors.editing.textTertiary,
+    fontSize: 15,
   },
   section: {
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.xl,
   },
-  sectionTitle: {
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
     marginBottom: Spacing.xs,
   },
+  sectionTitle: {
+    color: Colors.editing.text,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  optionalBadge: {
+    color: Colors.editing.textTertiary,
+    fontSize: 12,
+    fontWeight: "500",
+    marginLeft: "auto",
+  },
   sectionSubtitle: {
-    color: Colors.light.textSecondary,
+    color: Colors.editing.textSecondary,
     fontSize: 13,
     marginBottom: Spacing.md,
+    marginLeft: Spacing.sm + 18,
   },
-  descriptionInput: {
-    backgroundColor: Colors.light.backgroundSecondary,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    fontSize: 16,
-    color: Colors.light.text,
+  inputContainer: {
+    backgroundColor: Colors.editing.backgroundSecondary,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1,
-    borderColor: Colors.light.border,
+    borderColor: Colors.editing.border,
+  },
+  textInput: {
+    padding: Spacing.md,
+    fontSize: 15,
+    color: Colors.editing.text,
     minHeight: 50,
   },
-  keywordsInput: {
-    backgroundColor: Colors.light.backgroundSecondary,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.sm,
-    fontSize: 14,
-    color: Colors.light.text,
-    borderWidth: 1,
-    borderColor: Colors.light.border,
-  },
-  shadowControlGrid: {
+  shadowGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: Spacing.sm,
   },
-  shadowOptionChip: {
-    paddingHorizontal: Spacing.md,
+  shadowChip: {
+    paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.full,
-    backgroundColor: Colors.light.backgroundSecondary,
+    backgroundColor: Colors.editing.backgroundSecondary,
     borderWidth: 1,
-    borderColor: Colors.light.border,
+    borderColor: Colors.editing.border,
   },
-  shadowOptionChipSelected: {
-    borderColor: Colors.light.primary,
-    backgroundColor: Colors.light.primary,
+  shadowChipSelected: {
+    backgroundColor: Colors.editing.primary,
+    borderColor: Colors.editing.primary,
   },
-  shadowOptionChipText: {
-    fontSize: 13,
-    color: Colors.light.textSecondary,
-    textTransform: "capitalize",
+  shadowChipText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: Colors.editing.textSecondary,
   },
-  shadowOptionChipTextSelected: {
-    color: Colors.light.buttonText,
-    fontWeight: "600",
+  shadowChipTextSelected: {
+    color: Colors.editing.text,
   },
-  flatListContainer: {
-    position: 'relative',
+  scenesContainer: {
     marginHorizontal: -Spacing.lg,
   },
   scenesGrid: {
     paddingHorizontal: Spacing.lg,
     gap: Spacing.sm,
   },
-  arrow: {
-    position: 'absolute',
-    top: '50%',
-    marginTop: -22,
+  sceneCard: {
+    width: 100,
+    height: 100,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.sm,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.editing.backgroundSecondary,
+    borderWidth: 1,
+    borderColor: Colors.editing.border,
+  },
+  sceneCardSelected: {
+    borderColor: Colors.editing.primary,
+    borderWidth: 2,
+    backgroundColor: Colors.editing.primarySubtle,
+  },
+  sceneIconContainer: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Shadows.md,
-    zIndex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.editing.backgroundTertiary,
+    marginBottom: Spacing.xs,
   },
-  leftArrow: {
-    left: Spacing.sm,
-  },
-  rightArrow: {
-    right: Spacing.sm,
-  },
-  sceneCard: {
-    width: 110,
-    aspectRatio: 1,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.light.backgroundSecondary,
-    borderWidth: 1,
-    borderColor: Colors.light.border,
-    ...Shadows.sm,
-  },
-  sceneCardSelected: {
-    borderColor: Colors.light.primary,
-    borderWidth: 2,
-  },
-  sceneIconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: BorderRadius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.sm,
+  sceneIconContainerSelected: {
+    backgroundColor: Colors.editing.primary,
   },
   sceneLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-    textAlign: 'center',
-    color: Colors.light.textSecondary,
+    fontSize: 11,
+    fontWeight: "500",
+    textAlign: "center",
+    color: Colors.editing.textSecondary,
+    lineHeight: 14,
+  },
+  sceneLabelSelected: {
+    color: Colors.editing.text,
   },
   selectedCheck: {
-    position: 'absolute',
+    position: "absolute",
     top: Spacing.xs,
     right: Spacing.xs,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: Colors.light.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Shadows.sm,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: Colors.editing.primary,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  bottomAction: {
+  bottomBar: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    padding: Spacing.lg,
-    backgroundColor: Colors.light.backgroundRoot,
-    borderTopWidth: 1,
-    borderTopColor: Colors.light.border,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
   },
-  buttonContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
+  bottomBlur: {
+    ...StyleSheet.absoluteFillObject,
   },
-  loadingContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-  },
-  buttonText: {
-    color: Colors.light.buttonText,
-    fontWeight: "600",
-    fontSize: 16,
+  bottomContent: {
+    position: "relative",
+    zIndex: 1,
   },
   processingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
     justifyContent: "center",
     alignItems: "center",
     zIndex: 1000,
-  },
-  processingCard: {
-    backgroundColor: Colors.light.backgroundRoot,
     padding: Spacing.xl,
-    borderRadius: BorderRadius.xl,
-    alignItems: "center",
-    gap: Spacing.md,
-    minWidth: 250,
-    ...Shadows.lg,
   },
-  processingText: {
-    fontSize: 16,
+  processingContent: {
+    alignItems: "center",
+    gap: Spacing.lg,
+  },
+  processingTitle: {
+    color: Colors.editing.text,
+    fontSize: 18,
     fontWeight: "600",
     textAlign: "center",
   },
   processingHint: {
-    fontSize: 13,
-    color: Colors.light.textSecondary,
+    color: Colors.editing.textSecondary,
+    fontSize: 14,
     textAlign: "center",
   },
 });
