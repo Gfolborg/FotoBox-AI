@@ -279,7 +279,7 @@ export const CAMERA_OPTIONS: CameraOption[] = [
     id: "handheld",
     label: "In-Use",
     description: "Product being used/held",
-    icon: "hand",
+    icon: "user",
   },
 ];
 
