@@ -4,7 +4,6 @@ import {
   StyleSheet,
   Image,
   Dimensions,
-  ActivityIndicator,
   ScrollView,
   Alert,
   Platform,
@@ -13,25 +12,30 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { HeaderButton } from "@react-navigation/elements";
-import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
+import { StatusBar } from "expo-status-bar";
+import { BlurView } from "expo-blur";
+import Animated, { FadeIn, FadeOut, FadeInUp, FadeInDown } from "react-native-reanimated";
 import * as FileSystem from "expo-file-system/legacy";
+import * as Haptics from "expo-haptics";
+import { Feather } from "@expo/vector-icons";
 
 import { ThemedText } from "@/components/ThemedText";
-import { Button } from "@/components/Button";
-import { GradientBackground } from "@/components/GradientBackground";
+import { GradientButton } from "@/components/GradientButton";
+import { IconButton } from "@/components/IconButton";
+import { GlassPill } from "@/components/GlassPill";
+import { GlassCard } from "@/components/GlassCard";
+import { SuccessAnimation } from "@/components/SuccessAnimation";
 import { BeforeAfterSlider } from "@/components/BeforeAfterSlider";
 import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getApiUrl } from "@/lib/query-client";
 import { saveToFotoBoxAlbum } from "@/lib/save-to-album";
-import { Feather } from "@expo/vector-icons";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "Result">;
 type ResultRouteProp = RouteProp<RootStackParamList, "Result">;
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const IMAGE_SIZE = SCREEN_WIDTH * 0.85;
+const IMAGE_SIZE = SCREEN_WIDTH - Spacing.xl * 2;
 
 export default function ResultScreen() {
   const insets = useSafeAreaInsets();
@@ -48,32 +52,23 @@ export default function ResultScreen() {
   const [saved, setSaved] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
-
-  React.useLayoutEffect(() => {
-    navigation.setOptions({
-      headerLeft: () => (
-        <HeaderButton onPress={() => navigation.popToTop()} pressOpacity={0.7}>
-          <ThemedText style={styles.headerButton}>Done</ThemedText>
-        </HeaderButton>
-      ),
-    });
-  }, [navigation]);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const handleSaveToGallery = async () => {
     setIsSaving(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     const result = await saveToFotoBoxAlbum(resultUri, "product_image");
 
     if (result.success) {
       setSaved(true);
-      if (Platform.OS !== "web") {
-        Alert.alert("Saved", "Your image has been saved to the FotoBox album.");
-      }
+      setShowSuccess(true);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } else {
       if (Platform.OS !== "web") {
         Alert.alert(
           "Save Failed",
-          result.error || "Could not save the image. Please try again.",
+          result.error || "Could not save the image. Please try again."
         );
       }
     }
@@ -87,7 +82,6 @@ export default function ResultScreen() {
 
   const handleEdit = async () => {
     try {
-      // Save base64 image to file for editing (Skia needs file URIs)
       const filename = `edit_temp_${Date.now()}.jpg`;
       const fileUri = FileSystem.documentDirectory + filename;
 
@@ -102,11 +96,10 @@ export default function ResultScreen() {
       });
     } catch (error) {
       console.error("Failed to prepare image for editing:", error);
-
       if (Platform.OS !== "web") {
         Alert.alert(
           "Error",
-          "Could not prepare image for editing. Please try again.",
+          "Could not prepare image for editing. Please try again."
         );
       }
     }
@@ -114,6 +107,7 @@ export default function ResultScreen() {
 
   const handleRetry = async () => {
     setIsRetrying(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     try {
       const formData = new FormData();
@@ -126,11 +120,6 @@ export default function ResultScreen() {
       const apiUrl = getApiUrl();
       const bgColorParam = encodeURIComponent(backgroundColor);
       const endpoint = `${apiUrl}api/amazon-main?backgroundColor=${bgColorParam}`;
-
-      console.log(
-        "[ResultScreen] Retrying generation with backgroundColor:",
-        backgroundColor,
-      );
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 300000);
@@ -157,7 +146,7 @@ export default function ResultScreen() {
       reader.onload = () => {
         const base64data = reader.result as string;
         setResultUri(base64data);
-        setSaved(false); // Reset saved state for new image
+        setSaved(false);
       };
 
       reader.onerror = () => {
@@ -176,7 +165,7 @@ export default function ResultScreen() {
           err.message.includes("TypeError")
         ) {
           errorMessage =
-            "Unable to connect to server. Please check your connection and try again.";
+            "Unable to connect to server. Please check your connection.";
         } else {
           errorMessage = err.message;
         }
@@ -191,15 +180,41 @@ export default function ResultScreen() {
   };
 
   return (
-    <GradientBackground variant="subtle">
+    <View style={styles.container}>
+      <StatusBar style="light" />
+
+      {/* Header */}
+      <Animated.View
+        entering={FadeInDown.duration(400)}
+        style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}
+      >
+        <BlurView intensity={40} tint="dark" style={styles.headerBlur} />
+        <View style={styles.headerContent}>
+          <Pressable
+            style={styles.headerButton}
+            onPress={() => navigation.popToTop()}
+          >
+            <ThemedText style={styles.headerButtonText}>Done</ThemedText>
+          </Pressable>
+
+          <GlassPill>
+            <Feather name="check-circle" size={16} color={Colors.editing.success} />
+            <ThemedText style={styles.headerTitle}>Result</ThemedText>
+          </GlassPill>
+
+          <View style={{ width: 60 }} />
+        </View>
+      </Animated.View>
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
           styles.content,
           { paddingBottom: insets.bottom + Spacing.xl },
         ]}
+        showsVerticalScrollIndicator={false}
       >
-        {/* Image display - toggles between normal and comparison view */}
+        {/* Image Display */}
         {showComparison ? (
           <Animated.View
             entering={FadeIn.duration(300)}
@@ -213,7 +228,7 @@ export default function ResultScreen() {
           </Animated.View>
         ) : (
           <Animated.View
-            entering={FadeIn.duration(300)}
+            entering={FadeIn.duration(400)}
             exiting={FadeOut.duration(200)}
             style={styles.imageContainer}
           >
@@ -225,21 +240,36 @@ export default function ResultScreen() {
           </Animated.View>
         )}
 
-        {/* Comparison toggle */}
-        <View style={styles.toggleContainer}>
+        {/* Image Specs Pill */}
+        <Animated.View
+          entering={FadeInUp.delay(200).duration(400)}
+          style={styles.specContainer}
+        >
+          <GlassPill>
+            <Feather name="image" size={14} color={Colors.editing.textSecondary} />
+            <ThemedText style={styles.specText}>2000 x 2000 - JPG</ThemedText>
+          </GlassPill>
+        </Animated.View>
+
+        {/* Compare Toggle */}
+        <Animated.View
+          entering={FadeInUp.delay(300).duration(400)}
+          style={styles.toggleContainer}
+        >
           <Pressable
             style={[
               styles.toggleButton,
               showComparison && styles.toggleButtonActive,
             ]}
-            onPress={() => setShowComparison(!showComparison)}
+            onPress={() => {
+              setShowComparison(!showComparison);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }}
           >
             <Feather
               name={showComparison ? "eye" : "sliders"}
               size={16}
-              color={
-                showComparison ? Colors.light.white : Colors.light.textSecondary
-              }
+              color={showComparison ? Colors.editing.text : Colors.editing.textSecondary}
             />
             <ThemedText
               style={[
@@ -250,150 +280,169 @@ export default function ResultScreen() {
               {showComparison ? "View Result" : "Compare"}
             </ThemedText>
           </Pressable>
-        </View>
+        </Animated.View>
 
-        <View style={styles.specContainer}>
-          <ThemedText type="small" style={styles.specText}>
-            2000 x 2000 - JPG
-          </ThemedText>
-        </View>
-
-        <View style={styles.buttonContainer}>
-          <Button
-            onPress={handleSaveToGallery}
-            disabled={isSaving || saved}
-            variant={saved ? "secondary" : "primary"}
-          >
-            {isSaving ? (
-              <View style={styles.loadingContent}>
-                <ActivityIndicator
-                  color={Colors.light.buttonText}
-                  size="small"
+        {/* Action Buttons */}
+        <Animated.View
+          entering={FadeInUp.delay(400).duration(400)}
+          style={styles.actionsContainer}
+        >
+          <GlassCard theme="dark" padding="lg" borderRadius="xl">
+            <View style={styles.actionButtons}>
+              {/* Primary Save Button */}
+              {saved ? (
+                <View style={styles.savedButton}>
+                  <Feather name="check-circle" size={20} color={Colors.editing.success} />
+                  <ThemedText style={styles.savedText}>Saved to Gallery</ThemedText>
+                </View>
+              ) : (
+                <GradientButton
+                  title={isSaving ? "Saving..." : "Save to Gallery"}
+                  onPress={handleSaveToGallery}
+                  disabled={isSaving}
+                  loading={isSaving}
+                  icon="download"
+                  fullWidth
                 />
-                <ThemedText style={styles.buttonText}>Saving...</ThemedText>
-              </View>
-            ) : saved ? (
-              <View style={styles.loadingContent}>
-                <Feather
-                  name="check-circle"
-                  size={18}
-                  color={Colors.light.success}
-                />
-                <ThemedText style={styles.savedButtonText}>
-                  Saved to Gallery
-                </ThemedText>
-              </View>
-            ) : (
-              "Save to Gallery"
-            )}
-          </Button>
+              )}
 
-          <Button onPress={handleEdit} variant="outline" disabled={isRetrying}>
-            Edit Image
-          </Button>
+              {/* Secondary Actions */}
+              <View style={styles.secondaryActions}>
+                <Pressable
+                  style={styles.actionButton}
+                  onPress={handleEdit}
+                  disabled={isRetrying}
+                >
+                  <IconButton
+                    icon="edit-2"
+                    onPress={handleEdit}
+                    size={48}
+                    iconSize={22}
+                    variant="glass"
+                    disabled={isRetrying}
+                  />
+                  <ThemedText style={styles.actionLabel}>Edit</ThemedText>
+                </Pressable>
 
-          <Button onPress={handleRetry} disabled={isRetrying} variant="outline">
-            {isRetrying ? (
-              <View style={styles.loadingContent}>
-                <ActivityIndicator color={Colors.light.primary} size="small" />
-                <ThemedText style={styles.retryButtonText}>
-                  Regenerating...
-                </ThemedText>
-              </View>
-            ) : (
-              <View style={styles.loadingContent}>
-                <Feather
-                  name="refresh-cw"
-                  size={16}
-                  color={Colors.light.primary}
-                />
-                <ThemedText style={styles.retryButtonText}>
-                  Retry Generation
-                </ThemedText>
-              </View>
-            )}
-          </Button>
+                <Pressable
+                  style={styles.actionButton}
+                  onPress={handleRetry}
+                  disabled={isRetrying}
+                >
+                  <IconButton
+                    icon={isRetrying ? "loader" : "refresh-cw"}
+                    onPress={handleRetry}
+                    size={48}
+                    iconSize={22}
+                    variant="glass"
+                    disabled={isRetrying}
+                  />
+                  <ThemedText style={styles.actionLabel}>
+                    {isRetrying ? "Retrying..." : "Retry"}
+                  </ThemedText>
+                </Pressable>
 
-          <Button
-            onPress={handleGenerateAnother}
-            variant="outline"
-            disabled={isRetrying}
-          >
-            Generate Another
-          </Button>
-        </View>
+                <Pressable
+                  style={styles.actionButton}
+                  onPress={handleGenerateAnother}
+                  disabled={isRetrying}
+                >
+                  <IconButton
+                    icon="plus"
+                    onPress={handleGenerateAnother}
+                    size={48}
+                    iconSize={22}
+                    variant="glass"
+                    disabled={isRetrying}
+                  />
+                  <ThemedText style={styles.actionLabel}>New</ThemedText>
+                </Pressable>
+              </View>
+            </View>
+          </GlassCard>
+        </Animated.View>
       </ScrollView>
-    </GradientBackground>
+
+      {/* Success Animation Overlay */}
+      {showSuccess && (
+        <View style={styles.successOverlay}>
+          <SuccessAnimation
+            onComplete={() => setShowSuccess(false)}
+            size={140}
+            delay={0}
+          />
+        </View>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: Colors.editing.backgroundRoot,
+  },
+  header: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+  },
+  headerBlur: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  headerContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  headerButton: {
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
+    minWidth: 60,
+  },
+  headerButtonText: {
+    color: Colors.editing.primary,
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  headerTitle: {
+    color: Colors.editing.text,
+    fontSize: 15,
+    fontWeight: "600",
   },
   scrollView: {
     flex: 1,
+    marginTop: 90,
   },
   content: {
-    paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.xl,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
     alignItems: "center",
-  },
-  headerButton: {
-    color: Colors.light.primary,
-    fontWeight: "500",
   },
   imageContainer: {
     width: IMAGE_SIZE,
     height: IMAGE_SIZE,
     borderRadius: BorderRadius.xl,
-    borderWidth: 2,
-    borderColor: "rgba(255, 255, 255, 0.9)",
-    backgroundColor: Colors.light.white,
+    backgroundColor: Colors.editing.backgroundSecondary,
     overflow: "hidden",
-    justifyContent: "center",
-    alignItems: "center",
-    // Enhanced layered shadow for depth
-    shadowColor: Colors.light.primary,
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
-    elevation: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
+    ...Shadows.lg,
   },
   image: {
     width: "100%",
     height: "100%",
   },
   specContainer: {
-    marginTop: Spacing.md,
+    marginTop: Spacing.lg,
   },
   specText: {
-    color: Colors.light.textSecondary,
-  },
-  buttonContainer: {
-    width: "100%",
-    marginTop: Spacing.xl,
-    gap: Spacing.md,
-  },
-  loadingContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-  },
-  buttonText: {
-    color: Colors.light.buttonText,
-    fontWeight: "700",
-    fontSize: 16,
-  },
-  savedButtonText: {
-    color: Colors.light.text,
-    fontWeight: "600",
-    fontSize: 16,
-  },
-  retryButtonText: {
-    color: Colors.light.primary,
-    fontWeight: "600",
-    fontSize: 16,
+    color: Colors.editing.textSecondary,
+    fontSize: 13,
   },
   toggleContainer: {
     marginTop: Spacing.md,
@@ -402,24 +451,67 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.xs,
-    paddingHorizontal: Spacing.md,
+    paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.full,
-    backgroundColor: Colors.light.backgroundTertiary,
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
     borderWidth: 1,
-    borderColor: Colors.light.border,
+    borderColor: "rgba(255, 255, 255, 0.1)",
   },
   toggleButtonActive: {
-    backgroundColor: Colors.light.primary,
-    borderColor: Colors.light.primary,
-    ...Shadows.accent,
+    backgroundColor: Colors.editing.primary,
+    borderColor: Colors.editing.primary,
   },
   toggleText: {
     fontSize: 14,
     fontWeight: "500",
-    color: Colors.light.textSecondary,
+    color: Colors.editing.textSecondary,
   },
   toggleTextActive: {
-    color: Colors.light.white,
+    color: Colors.editing.text,
+  },
+  actionsContainer: {
+    width: "100%",
+    marginTop: Spacing.xl,
+  },
+  actionButtons: {
+    gap: Spacing.lg,
+  },
+  savedButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.sm,
+    height: 52,
+    borderRadius: BorderRadius.xl,
+    backgroundColor: Colors.editing.successSubtle,
+    borderWidth: 1,
+    borderColor: Colors.editing.success,
+  },
+  savedText: {
+    color: Colors.editing.success,
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  secondaryActions: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    paddingTop: Spacing.sm,
+  },
+  actionButton: {
+    alignItems: "center",
+    gap: Spacing.xs,
+  },
+  actionLabel: {
+    color: Colors.editing.textSecondary,
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  successOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1000,
   },
 });

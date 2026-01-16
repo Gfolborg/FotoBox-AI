@@ -2,17 +2,23 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   StyleSheet,
-  ActivityIndicator,
   Pressable,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
-import Animated, { FadeIn } from "react-native-reanimated";
+import { StatusBar } from "expo-status-bar";
+import { BlurView } from "expo-blur";
+import Animated, { FadeIn, FadeInUp } from "react-native-reanimated";
+import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
+import { GradientButton } from "@/components/GradientButton";
+import { IconButton } from "@/components/IconButton";
+import { GlassPill } from "@/components/GlassPill";
+import { ProgressRing } from "@/components/ProgressRing";
 import {
   SkiaEditableImage,
   SkiaEditableImageRef,
@@ -59,7 +65,6 @@ export default function EditImageScreen() {
 
   const { saveCurrentAsPreset, applyPresetToState, isSaving } = usePresets();
 
-  // Load preset if provided
   useEffect(() => {
     if (presetId) {
       getPresetById(presetId).then((preset) => {
@@ -68,17 +73,12 @@ export default function EditImageScreen() {
         }
       });
     }
-    // Only re-run when presetId changes, not when helper functions change
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [presetId]);
 
   const handleSavePreset = async (name: string) => {
     try {
       await saveCurrentAsPreset(name, state);
-      showNotification(
-        `"${name}" has been saved to your presets.`,
-        "success",
-      );
+      showNotification(`"${name}" has been saved to your presets.`, "success");
     } catch {
       showNotification("Failed to save preset. Please try again.", "error");
     }
@@ -86,35 +86,13 @@ export default function EditImageScreen() {
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
-      headerLeft: () => (
-        <Button onPress={() => navigation.goBack()} style={styles.headerButton}>
-          <ThemedText style={styles.headerButtonText}>Cancel</ThemedText>
-        </Button>
-      ),
-      headerRight: () => (
-        <View style={styles.headerRightContainer}>
-          <Pressable
-            onPressIn={toggleBeforeAfter}
-            onPressOut={toggleBeforeAfter}
-            hitSlop={8}
-          >
-            <ThemedText style={styles.headerButtonText}>Compare</ThemedText>
-          </Pressable>
-          <Pressable
-            onPress={() => setShowSavePresetModal(true)}
-            hitSlop={8}
-            style={styles.bookmarkButton}
-          >
-            <Feather name="bookmark" size={22} color={Colors.light.primary} />
-          </Pressable>
-        </View>
-      ),
+      headerShown: false,
     });
-  }, [navigation, toggleBeforeAfter]);
+  }, [navigation]);
 
-  // This function still needs to exist for the AI-specific generation
-  const handleGenerateMainImage = async () => { // Renamed function
+  const handleGenerateMainImage = async () => {
     setIsProcessing(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       const formData = new FormData();
       formData.append("file", {
@@ -125,7 +103,6 @@ export default function EditImageScreen() {
 
       const apiUrl = getApiUrl();
       const bgColorParam = encodeURIComponent(state.selectedBackgroundColor);
-      // Pass selectedPlatform to the endpoint
       const endpoint = `${apiUrl}api/main-image?platform=${selectedPlatform}&backgroundColor=${bgColorParam}`;
 
       const response = await fetch(endpoint, { method: "POST", body: formData });
@@ -155,7 +132,6 @@ export default function EditImageScreen() {
     }
   };
 
-  // NEW: Client-side rendering for non-AI edits
   const handleDone = async () => {
     if (!imageRef.current) {
       showNotification("An unexpected error occurred. Please try again.", "error");
@@ -163,11 +139,9 @@ export default function EditImageScreen() {
     }
 
     setIsProcessing(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
-      // 1. Take snapshot using the component's method
       const base64data = await imageRef.current.snapshot();
-
-      // 2. Navigate to result screen with the new image data
       navigation.replace("Result", {
         resultUri: base64data,
         originalUri: route.params.originalUri || imageUri,
@@ -181,16 +155,55 @@ export default function EditImageScreen() {
     }
   };
 
-  // Show crop overlay only when crop tool is actively selected
   const showCropOverlay = state.activeTab === "crop";
 
   return (
     <View style={styles.container}>
+      <StatusBar style="light" />
+
+      {/* Custom Header */}
+      <Animated.View
+        entering={FadeIn.duration(300)}
+        style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}
+      >
+        <BlurView intensity={40} tint="dark" style={styles.headerBlur} />
+        <View style={styles.headerContent}>
+          <Pressable
+            style={styles.headerButton}
+            onPress={() => navigation.goBack()}
+          >
+            <ThemedText style={styles.headerButtonText}>Cancel</ThemedText>
+          </Pressable>
+
+          <GlassPill>
+            <ThemedText style={styles.headerTitle}>Edit</ThemedText>
+          </GlassPill>
+
+          <View style={styles.headerRight}>
+            <Pressable
+              onPressIn={toggleBeforeAfter}
+              onPressOut={toggleBeforeAfter}
+              style={styles.compareButton}
+            >
+              <Feather name="eye" size={18} color={Colors.editing.text} />
+            </Pressable>
+            <IconButton
+              icon="bookmark"
+              onPress={() => setShowSavePresetModal(true)}
+              size={40}
+              iconSize={20}
+              variant="ghost"
+              color={Colors.editing.primary}
+            />
+          </View>
+        </View>
+      </Animated.View>
+
+      {/* Image Preview */}
       <Animated.View
         entering={FadeIn.duration(400)}
-        style={[styles.content, { paddingTop: Spacing.xs }]}
+        style={styles.imageContainer}
       >
-        {/* Image Preview with Real-time Skia Filters */}
         <SkiaEditableImage
           ref={imageRef}
           originalUri={imageUri}
@@ -215,10 +228,19 @@ export default function EditImageScreen() {
         {/* Processing Overlay */}
         {isProcessing && (
           <View style={styles.processingOverlay}>
-            <View style={styles.processingCard}>
-              <ActivityIndicator size="large" color={Colors.light.primary} />
+            <BlurView intensity={60} tint="dark" style={styles.processingBlur} />
+            <View style={styles.processingContent}>
+              <ProgressRing
+                progress={0.7}
+                size={72}
+                strokeWidth={5}
+                color={Colors.editing.primary}
+                backgroundColor="rgba(255, 255, 255, 0.1)"
+              >
+                <Feather name="cpu" size={24} color={Colors.editing.primary} />
+              </ProgressRing>
               <ThemedText style={styles.processingText}>
-                Processing your image...
+                Processing...
               </ThemedText>
               <ThemedText style={styles.processingHint}>
                 This may take a moment
@@ -229,28 +251,37 @@ export default function EditImageScreen() {
       </Animated.View>
 
       {/* Platform Selection */}
-      <Animated.View entering={FadeIn.delay(500).duration(400)} style={styles.platformSelectionContainer}>
-        <ThemedText style={styles.platformSelectionTitle}>Target Platform</ThemedText>
-        <View style={styles.platformChipsContainer}>
-          {["amazon", "shopify", "etsy"].map((platform) => (
-            <Pressable
-              key={platform}
-              style={[
-                styles.platformChip,
-                selectedPlatform === platform && styles.platformChipSelected,
-              ]}
-              onPress={() => setSelectedPlatform(platform)}
-            >
-              <ThemedText
+      <Animated.View
+        entering={FadeInUp.delay(200).duration(400)}
+        style={styles.platformSection}
+      >
+        <BlurView intensity={30} tint="dark" style={styles.platformBlur} />
+        <View style={styles.platformContent}>
+          <ThemedText style={styles.platformLabel}>Platform</ThemedText>
+          <View style={styles.platformChips}>
+            {["amazon", "shopify", "etsy"].map((platform) => (
+              <Pressable
+                key={platform}
                 style={[
-                  styles.platformChipText,
-                  selectedPlatform === platform && styles.platformChipTextSelected,
+                  styles.platformChip,
+                  selectedPlatform === platform && styles.platformChipActive,
                 ]}
+                onPress={() => {
+                  setSelectedPlatform(platform);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}
               >
-                {platform.charAt(0).toUpperCase() + platform.slice(1)}
-              </ThemedText>
-            </Pressable>
-          ))}
+                <ThemedText
+                  style={[
+                    styles.platformChipText,
+                    selectedPlatform === platform && styles.platformChipTextActive,
+                  ]}
+                >
+                  {platform.charAt(0).toUpperCase() + platform.slice(1)}
+                </ThemedText>
+              </Pressable>
+            ))}
+          </View>
         </View>
       </Animated.View>
 
@@ -262,39 +293,36 @@ export default function EditImageScreen() {
         onRotateCCW={rotateCCW}
         onToggleFlipHorizontal={toggleFlipHorizontal}
         onToggleFlipVertical={toggleFlipVertical}
-        onGenerate={handleGenerateMainImage} // Updated function name
+        onGenerate={handleGenerateMainImage}
         isProcessing={isProcessing}
       />
 
       {/* Action Buttons */}
-      <View
-        style={[
-          styles.buttonContainer,
-          { paddingBottom: insets.bottom + Spacing.sm },
-        ]}
+      <Animated.View
+        entering={FadeInUp.delay(300).duration(400)}
+        style={[styles.buttonContainer, { paddingBottom: insets.bottom + Spacing.md }]}
       >
-        <Button
-          onPress={resetAll}
-          variant="outline"
-          disabled={isProcessing || !hasChanges()}
-        >
-          Reset
-        </Button>
+        <BlurView intensity={40} tint="dark" style={styles.buttonBlur} />
+        <View style={styles.buttonContent}>
+          <Button
+            onPress={resetAll}
+            variant="outline"
+            disabled={isProcessing || !hasChanges()}
+            style={styles.resetButton}
+          >
+            Reset
+          </Button>
 
-
-        <Button onPress={handleDone} disabled={isProcessing} variant="primary">
-          {isProcessing ? (
-            <View style={styles.loadingContent}>
-              <ActivityIndicator color={Colors.light.buttonText} size="small" />
-              <ThemedText style={styles.doneButtonText}>
-                Saving...
-              </ThemedText>
-            </View>
-          ) : (
-            "Done"
-          )}
-        </Button>
-      </View>
+          <GradientButton
+            title={isProcessing ? "Saving..." : "Done"}
+            onPress={handleDone}
+            disabled={isProcessing}
+            loading={isProcessing}
+            icon="check"
+            style={styles.doneButton}
+          />
+        </View>
+      </Animated.View>
 
       {/* Save Preset Modal */}
       <SavePresetModal
@@ -311,7 +339,7 @@ export default function EditImageScreen() {
           warmth: state.warmth,
         }}
         backgroundColor={state.selectedBackgroundColor}
-        aiSettings={{ // Pass AI-related settings
+        aiSettings={{
           environment: state.aiEnvironment,
           isCustom: state.aiIsCustom,
           productDescription: state.aiProductDescription,
@@ -326,112 +354,146 @@ export default function EditImageScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.backgroundRoot,
+    backgroundColor: Colors.editing.backgroundRoot,
   },
-  content: {
-    flex: 1,
+  header: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+  },
+  headerBlur: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  headerContent: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
   },
   headerButton: {
-    backgroundColor: "transparent",
-    paddingHorizontal: 0,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
   },
   headerButtonText: {
-    color: Colors.light.primary,
+    color: Colors.editing.text,
     fontWeight: "500",
     fontSize: 16,
   },
-  headerRightContainer: {
+  headerTitle: {
+    color: Colors.editing.text,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  headerRight: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.md,
+    gap: Spacing.xs,
   },
-  bookmarkButton: {
-    padding: Spacing.xs,
+  compareButton: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  imageContainer: {
+    flex: 1,
+    marginTop: 100,
   },
   processingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
     justifyContent: "center",
     alignItems: "center",
     zIndex: 1000,
   },
-  processingCard: {
-    backgroundColor: Colors.light.backgroundRoot,
-    padding: Spacing.xl,
-    borderRadius: 16,
+  processingBlur: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  processingContent: {
     alignItems: "center",
     gap: Spacing.md,
-    minWidth: 200,
   },
   processingText: {
-    fontSize: 16,
+    color: Colors.editing.text,
+    fontSize: 18,
     fontWeight: "600",
-    textAlign: "center",
   },
   processingHint: {
-    fontSize: 13,
-    color: Colors.light.textSecondary,
-    textAlign: "center",
+    color: Colors.editing.textSecondary,
+    fontSize: 14,
   },
-  buttonContainer: {
-    flexDirection: "row",
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.md,
-    gap: Spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: Colors.light.border,
-    backgroundColor: Colors.light.backgroundRoot,
+  platformSection: {
+    marginHorizontal: Spacing.md,
+    marginBottom: Spacing.sm,
+    borderRadius: BorderRadius.xl,
+    overflow: "hidden",
   },
-  doneButtonText: {
-    color: Colors.light.buttonText,
-    fontWeight: "700",
-    fontSize: 16,
+  platformBlur: {
+    ...StyleSheet.absoluteFillObject,
   },
-  loadingContent: {
+  platformContent: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.sm,
-    justifyContent: "center",
+    justifyContent: "space-between",
+    padding: Spacing.md,
+    backgroundColor: "rgba(26, 26, 26, 0.7)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.08)",
+    borderRadius: BorderRadius.xl,
   },
-  platformSelectionContainer: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    backgroundColor: Colors.light.backgroundRoot,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
-    alignItems: "center",
-  },
-  platformSelectionTitle: {
+  platformLabel: {
+    color: Colors.editing.textSecondary,
     fontSize: 13,
     fontWeight: "600",
-    color: Colors.light.textSecondary,
-    marginBottom: Spacing.sm,
   },
-  platformChipsContainer: {
+  platformChips: {
     flexDirection: "row",
-    gap: Spacing.sm,
+    gap: Spacing.xs,
   },
   platformChip: {
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.full,
-    backgroundColor: Colors.light.backgroundSecondary,
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
     borderWidth: 1,
-    borderColor: Colors.light.border,
+    borderColor: "rgba(255, 255, 255, 0.1)",
   },
-  platformChipSelected: {
-    borderColor: Colors.light.primary,
-    backgroundColor: Colors.light.primary,
+  platformChipActive: {
+    backgroundColor: Colors.editing.primary,
+    borderColor: Colors.editing.primary,
   },
   platformChipText: {
-    fontSize: 14,
-    color: Colors.light.textSecondary,
+    color: Colors.editing.textSecondary,
+    fontSize: 13,
     fontWeight: "500",
   },
-  platformChipTextSelected: {
-    color: Colors.light.buttonText,
+  platformChipTextActive: {
+    color: Colors.editing.buttonText,
     fontWeight: "600",
+  },
+  buttonContainer: {
+    marginHorizontal: Spacing.md,
+    borderRadius: BorderRadius.xl,
+    overflow: "hidden",
+  },
+  buttonBlur: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  buttonContent: {
+    flexDirection: "row",
+    gap: Spacing.md,
+    padding: Spacing.md,
+    backgroundColor: "rgba(26, 26, 26, 0.7)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.08)",
+    borderRadius: BorderRadius.xl,
+  },
+  resetButton: {
+    flex: 1,
+  },
+  doneButton: {
+    flex: 2,
   },
 });
