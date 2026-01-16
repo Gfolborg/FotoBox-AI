@@ -78,6 +78,18 @@ assets/images/      # App icons and splash screens
   - Redesigned all screens with consistent dark theme and glass effects
   - Added success animations and improved loading states
   - Updated ErrorFallback with modern styling
+- **EditImageScreen Toolbar Redesign (January 2026)**:
+  - Redesigned DialToolbar with 3 organized tabs: Adjust, Fine Tune, Transform
+  - Adjust tab: Brightness, Contrast, Saturation, Exposure
+  - Fine Tune tab: Highlights, Shadows, Warmth
+  - Transform tab: Rotate, Flip, Crop, Background color picker
+  - Added smooth tab switching animations (FadeInRight/FadeOutLeft)
+  - Moved Platform selection and Generate button to bottom action bar
+  - Updated CircularDial to use dark editing theme colors
+  - Increased image preview area by reducing toolbar footprint
+- **Batch Edit Photos Flow (January 2026)**:
+  - Fixed to open gallery with multi-select instead of camera
+  - Supports selecting up to 20 images at once
 
 ## Troubleshooting: Network/Server Connectivity Issues
 
