@@ -15,9 +15,10 @@ import Animated, {
   interpolate,
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { ThemedText } from "@/components/ThemedText";
-import { BorderRadius, Spacing, Colors } from "@/constants/theme";
+import { BorderRadius, Spacing, Colors, Gradients } from "@/constants/theme";
 
 interface ButtonProps {
   onPress?: () => void;
@@ -25,7 +26,7 @@ interface ButtonProps {
   style?: StyleProp<ViewStyle>;
   disabled?: boolean;
   textStyle?: StyleProp<any>;
-  variant?: "primary" | "secondary" | "outline" | "ghost";
+  variant?: "primary" | "secondary" | "outline" | "ghost" | "glass";
 }
 
 const springConfig: WithSpringConfig = {
@@ -52,7 +53,6 @@ export function Button({
     transform: [{ scale: scale.value }],
   }));
 
-  // Animated glow effect for primary button
   const glowStyle = useAnimatedStyle(() => {
     if (variant !== "primary") return {};
     return {
@@ -65,7 +65,6 @@ export function Button({
     if (!disabled) {
       scale.value = withSpring(0.96, springConfig);
       pressed.value = withTiming(1, { duration: 150 });
-      // Light haptic feedback
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
   };
@@ -89,6 +88,8 @@ export function Button({
         return styles.outline;
       case "ghost":
         return styles.ghost;
+      case "glass":
+        return styles.glass;
       default:
         return styles.primary;
     }
@@ -104,10 +105,43 @@ export function Button({
         return styles.outlineText;
       case "ghost":
         return styles.ghostText;
+      case "glass":
+        return styles.glassText;
       default:
         return styles.primaryText;
     }
   };
+
+  if (variant === "primary") {
+    return (
+      <AnimatedPressable
+        onPress={disabled ? undefined : onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        disabled={disabled}
+        style={[
+          styles.button,
+          disabled && styles.disabled,
+          style,
+          animatedStyle,
+          glowStyle,
+        ]}
+      >
+        <LinearGradient
+          colors={Gradients.primary as [string, string, ...string[]]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBackground}
+        >
+          {isStringChild ? (
+            <ThemedText style={[getTextStyle(), textStyle]}>{children}</ThemedText>
+          ) : (
+            <View style={styles.childContainer}>{children}</View>
+          )}
+        </LinearGradient>
+      </AnimatedPressable>
+    );
+  }
 
   return (
     <AnimatedPressable
@@ -121,7 +155,6 @@ export function Button({
         disabled && styles.disabled,
         style,
         animatedStyle,
-        variant === "primary" && glowStyle,
       ]}
     >
       {isStringChild ? (
@@ -141,8 +174,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     overflow: "hidden",
   },
+  gradientBackground: {
+    flex: 1,
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: Colors.light.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+  },
   primary: {
-    backgroundColor: Colors.light.primary,
     shadowColor: Colors.light.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,
@@ -167,6 +209,15 @@ const styles = StyleSheet.create({
   ghost: {
     backgroundColor: "transparent",
   },
+  glass: {
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.15)",
+    shadowColor: Colors.light.black,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+  },
   disabled: {
     opacity: 0.4,
   },
@@ -190,6 +241,11 @@ const styles = StyleSheet.create({
   ghostText: {
     color: Colors.light.textSecondary,
     fontWeight: "500",
+    fontSize: 16,
+  },
+  glassText: {
+    color: Colors.editing.text,
+    fontWeight: "600",
     fontSize: 16,
   },
   childContainer: {
