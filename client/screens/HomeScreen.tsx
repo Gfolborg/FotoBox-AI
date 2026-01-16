@@ -97,10 +97,11 @@ export default function HomeScreen() {
               style={styles.cardWrapper}
             >
               <WorkflowCard
-                icon="bookmark"
-                title="Apply Saved Style"
-                description="Apply your saved presets to new photos"
-                onPress={() => navigation.navigate("PresetSelection")}
+                icon="box"
+                title="Create Mockup"
+                description="Place products on apparel, mugs, posters & more"
+                onPress={() => navigation.navigate("MockupSelection", {})}
+                badge="AI"
               />
             </Animated.View>
             <Animated.View
