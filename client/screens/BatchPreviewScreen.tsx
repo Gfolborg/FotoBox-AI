@@ -158,7 +158,7 @@ export default function BatchPreviewScreen() {
             </Animated.View>
           ))}
           
-          {selectedImages.length < 20 && (
+          {selectedImages.length < 10 && (
             <Animated.View
               entering={FadeInDown.delay(selectedImages.length * 60).duration(400)}
             >
@@ -167,7 +167,7 @@ export default function BatchPreviewScreen() {
                   <Feather name="plus" size={28} color={Colors.editing.primary} />
                   <ThemedText style={styles.addMoreText}>Add More</ThemedText>
                   <ThemedText style={styles.addMoreLimit}>
-                    {20 - selectedImages.length} remaining
+                    {10 - selectedImages.length} remaining
                   </ThemedText>
                 </View>
               </Pressable>

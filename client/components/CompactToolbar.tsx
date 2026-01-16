@@ -25,7 +25,7 @@ type ToolKey =
   | "warmth"
   | "rotate"
   | "flip"
-  | "background";
+  | "crop";
 
 export interface ToolConfig {
   key: ToolKey;
@@ -130,9 +130,9 @@ export const ADJUSTMENT_TOOLS: ToolConfig[] = [
     category: "transform",
   },
   {
-    key: "background",
-    label: "Background",
-    icon: "edit-3",
+    key: "crop",
+    label: "Crop",
+    icon: "crop",
     category: "transform",
   },
 ];
@@ -174,8 +174,8 @@ export function CompactToolbar({
     if (tool.key === "flip") {
       return state.flipHorizontal || state.flipVertical;
     }
-    if (tool.key === "background") {
-      return state.selectedBackgroundColor !== "#FFFFFF";
+    if (tool.key === "crop") {
+      return false;
     }
     return false;
   };
@@ -287,12 +287,14 @@ export function CompactToolbar({
         </Animated.View>
       )}
 
-      {selectedTool === "background" && (
-        <Animated.View entering={FadeIn.duration(150)} exiting={FadeOut.duration(100)} style={styles.backgroundContent}>
-          <BackgroundColorPicker
-            selectedColor={state.selectedBackgroundColor}
-            onColorSelect={(color) => onUpdateAdjustment("selectedBackgroundColor", color)}
-          />
+      {selectedTool === "crop" && (
+        <Animated.View entering={FadeIn.duration(150)} exiting={FadeOut.duration(100)} style={styles.transformContent}>
+          <View style={styles.cropHint}>
+            <Feather name="info" size={14} color={Colors.editing.textSecondary} />
+            <ThemedText style={styles.cropHintText}>
+              Crop feature coming soon
+            </ThemedText>
+          </View>
         </Animated.View>
       )}
     </Animated.View>
@@ -466,5 +468,18 @@ const styles = StyleSheet.create({
   backgroundContent: {
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
+  },
+  cropHint: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    backgroundColor: Colors.editing.backgroundSecondary,
+    borderRadius: BorderRadius.md,
+  },
+  cropHintText: {
+    fontSize: 13,
+    color: Colors.editing.textSecondary,
   },
 });

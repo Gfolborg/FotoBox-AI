@@ -54,7 +54,7 @@ type ToolKey =
   | "warmth"
   | "rotate"
   | "flip"
-  | "background";
+  | "crop";
 
 export default function EditImageScreen() {
   const insets = useSafeAreaInsets();
