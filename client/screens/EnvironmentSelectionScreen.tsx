@@ -149,10 +149,11 @@ export default function EnvironmentSelectionScreen() {
   const [selectedImages, setSelectedImages] = useState<string[]>(initialImages);
   const [customScene, setCustomScene] = useState("");
   const [productKeywords, setProductKeywords] = useState("");
-  const [selectedScene, setSelectedScene] = useState<string>("studio");
+  const [selectedScene, setSelectedScene] = useState<string>("");
   const [selectedShadowControl, setSelectedShadowControl] =
     useState<string>("natural");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showSceneError, setShowSceneError] = useState(false);
   const { history: promptHistory, addToHistory } = usePromptHistory();
 
   const isBatchMode = selectedImages.length > 1;
@@ -200,15 +201,26 @@ export default function EnvironmentSelectionScreen() {
   };
 
   const handleSelectSceneCard = (sceneId: string) => {
-    const scene = SCENES.find((s) => s.id === sceneId);
-    if (scene) {
-      setCustomScene(scene.description);
+    setShowSceneError(false);
+    if (selectedScene === sceneId) {
+      setSelectedScene("");
+      setCustomScene("");
+    } else {
+      const scene = SCENES.find((s) => s.id === sceneId);
+      if (scene) {
+        setCustomScene(scene.description);
+      }
+      setSelectedScene(sceneId);
     }
-    setSelectedScene(sceneId);
   };
 
   const handleGenerate = async () => {
-    if (selectedImages.length === 0 || (!customScene.trim() && !selectedScene)) return;
+    if (selectedImages.length === 0) return;
+    if (!customScene.trim() && !selectedScene) {
+      setShowSceneError(true);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      return;
+    }
 
     const environmentText = customScene.trim() || selectedScene;
     if (customScene.trim()) {
@@ -439,7 +451,10 @@ export default function EnvironmentSelectionScreen() {
               placeholder="e.g., On a marble countertop next to a plant"
               placeholderTextColor={Colors.editing.textTertiary}
               value={customScene}
-              onChangeText={setCustomScene}
+              onChangeText={(text) => {
+                setCustomScene(text);
+                if (text.trim()) setShowSceneError(false);
+              }}
               multiline={false}
               returnKeyType="done"
             />
@@ -461,6 +476,7 @@ export default function EnvironmentSelectionScreen() {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       setCustomScene(item.prompt);
                       setSelectedScene("");
+                      setShowSceneError(false);
                     }}
                   >
                     <Feather name="clock" size={12} color={Colors.editing.textSecondary} />
@@ -579,6 +595,14 @@ export default function EnvironmentSelectionScreen() {
       >
         <BlurView intensity={60} tint="light" style={styles.bottomBlur} />
         <View style={styles.bottomContent}>
+          {showSceneError && (
+            <View style={styles.errorMessage}>
+              <Feather name="alert-circle" size={14} color={Colors.editing.error} />
+              <ThemedText style={styles.errorText}>
+                Please describe your scene or choose a preset
+              </ThemedText>
+            </View>
+          )}
           <GradientButton
             title={
               isProcessing 
@@ -588,7 +612,7 @@ export default function EnvironmentSelectionScreen() {
                   : "Generate Lifestyle Scene"
             }
             onPress={handleGenerate}
-            disabled={selectedImages.length === 0 || isProcessing || (!customScene && !selectedScene)}
+            disabled={selectedImages.length === 0 || isProcessing}
             loading={isProcessing}
             icon="zap"
             fullWidth
@@ -941,6 +965,22 @@ const styles = StyleSheet.create({
   bottomContent: {
     position: "relative",
     zIndex: 1,
+  },
+  errorMessage: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.xs,
+    marginBottom: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    backgroundColor: "rgba(239, 68, 68, 0.1)",
+    borderRadius: BorderRadius.md,
+  },
+  errorText: {
+    color: Colors.editing.error,
+    fontSize: 13,
+    fontWeight: "500",
   },
   processingOverlay: {
     ...StyleSheet.absoluteFillObject,
