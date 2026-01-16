@@ -2,15 +2,16 @@ import React, { useState } from "react";
 import { View, StyleSheet, ScrollView, Pressable } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
+import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "./ThemedText";
 import { CircularDial } from "./CircularDial";
 import { BackgroundColorPicker } from "./BackgroundColorPicker";
-import { Button } from "./Button";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import type { ImageEditingState } from "@/hooks/useImageEditing";
 
-type ToolType = "adjustment" | "transform" | "crop" | "amazon";
+type TabType = "adjust" | "fineTune" | "transform";
+
 type ToolKey =
   | "brightness"
   | "contrast"
@@ -22,14 +23,13 @@ type ToolKey =
   | "rotate"
   | "flip"
   | "crop"
-  | "amazonMain";
+  | "background";
 
 interface ToolConfig {
   key: ToolKey;
   label: string;
   icon: keyof typeof Feather.glyphMap;
-  type: ToolType;
-  // For adjustment tools
+  tab: TabType;
   min?: number;
   max?: number;
   step?: number;
@@ -37,32 +37,29 @@ interface ToolConfig {
   format?: (val: number) => string;
 }
 
+const TABS: { key: TabType; label: string; icon: keyof typeof Feather.glyphMap }[] = [
+  { key: "adjust", label: "Adjust", icon: "sliders" },
+  { key: "fineTune", label: "Fine Tune", icon: "settings" },
+  { key: "transform", label: "Transform", icon: "move" },
+];
+
 const TOOLS: ToolConfig[] = [
-  // Generate product image tool
-  {
-    key: "amazonMain",
-    label: "Generate",
-    icon: "award",
-    type: "amazon",
-  },
-  // Adjustment tools
   {
     key: "brightness",
     label: "Brightness",
     icon: "sun",
-    type: "adjustment",
+    tab: "adjust",
     min: -1,
     max: 1,
     step: 0.05,
     defaultValue: 0,
-    format: (v) =>
-      v > 0 ? `+${(v * 100).toFixed(0)}%` : `${(v * 100).toFixed(0)}%`,
+    format: (v) => v > 0 ? `+${(v * 100).toFixed(0)}%` : `${(v * 100).toFixed(0)}%`,
   },
   {
     key: "contrast",
     label: "Contrast",
     icon: "circle",
-    type: "adjustment",
+    tab: "adjust",
     min: 0.5,
     max: 2,
     step: 0.05,
@@ -73,7 +70,7 @@ const TOOLS: ToolConfig[] = [
     key: "saturation",
     label: "Saturation",
     icon: "droplet",
-    type: "adjustment",
+    tab: "adjust",
     min: 0,
     max: 2,
     step: 0.05,
@@ -84,7 +81,7 @@ const TOOLS: ToolConfig[] = [
     key: "exposure",
     label: "Exposure",
     icon: "aperture",
-    type: "adjustment",
+    tab: "adjust",
     min: -2,
     max: 2,
     step: 0.1,
@@ -95,57 +92,58 @@ const TOOLS: ToolConfig[] = [
     key: "highlights",
     label: "Highlights",
     icon: "trending-up",
-    type: "adjustment",
+    tab: "fineTune",
     min: -1,
     max: 1,
     step: 0.05,
     defaultValue: 0,
-    format: (v) =>
-      v > 0 ? `+${(v * 100).toFixed(0)}` : `${(v * 100).toFixed(0)}`,
+    format: (v) => v > 0 ? `+${(v * 100).toFixed(0)}` : `${(v * 100).toFixed(0)}`,
   },
   {
     key: "shadows",
     label: "Shadows",
     icon: "trending-down",
-    type: "adjustment",
+    tab: "fineTune",
     min: -1,
     max: 1,
     step: 0.05,
     defaultValue: 0,
-    format: (v) =>
-      v > 0 ? `+${(v * 100).toFixed(0)}` : `${(v * 100).toFixed(0)}`,
+    format: (v) => v > 0 ? `+${(v * 100).toFixed(0)}` : `${(v * 100).toFixed(0)}`,
   },
   {
     key: "warmth",
     label: "Warmth",
     icon: "thermometer",
-    type: "adjustment",
+    tab: "fineTune",
     min: -1,
     max: 1,
     step: 0.05,
     defaultValue: 0,
-    format: (v) =>
-      v > 0 ? `+${(v * 100).toFixed(0)}` : `${(v * 100).toFixed(0)}`,
+    format: (v) => v > 0 ? `+${(v * 100).toFixed(0)}` : `${(v * 100).toFixed(0)}`,
   },
-  // Transform tools
   {
     key: "rotate",
     label: "Rotate",
     icon: "rotate-cw",
-    type: "transform",
+    tab: "transform",
   },
   {
     key: "flip",
     label: "Flip",
     icon: "repeat",
-    type: "transform",
+    tab: "transform",
   },
-  // Crop tool
   {
     key: "crop",
     label: "Crop",
     icon: "crop",
-    type: "crop",
+    tab: "transform",
+  },
+  {
+    key: "background",
+    label: "Background",
+    icon: "edit-3",
+    tab: "transform",
   },
 ];
 
@@ -159,8 +157,6 @@ interface DialToolbarProps {
   onRotateCCW: () => void;
   onToggleFlipHorizontal: () => void;
   onToggleFlipVertical: () => void;
-  onGenerate: () => void;
-  isProcessing: boolean;
 }
 
 export function DialToolbar({
@@ -170,37 +166,41 @@ export function DialToolbar({
   onRotateCCW,
   onToggleFlipHorizontal,
   onToggleFlipVertical,
-  onGenerate,
-  isProcessing,
 }: DialToolbarProps) {
-  const [selectedTool, setSelectedTool] = useState<ToolKey | null>(
-    "amazonMain",
-  );
+  const [activeTab, setActiveTab] = useState<TabType>("adjust");
+  const [selectedTool, setSelectedTool] = useState<ToolKey | null>("brightness");
+
+  const handleTabChange = (tab: TabType) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setActiveTab(tab);
+    const firstToolInTab = TOOLS.find((t) => t.tab === tab);
+    setSelectedTool(firstToolInTab?.key || null);
+    
+    if (tab === "transform" && firstToolInTab?.key === "crop") {
+      onUpdateAdjustment("activeTab", "crop");
+    } else {
+      onUpdateAdjustment("activeTab", tab === "adjust" || tab === "fineTune" ? "adjust" : "transform");
+    }
+  };
 
   const handleToolSelect = (tool: ToolConfig) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (selectedTool === tool.key) {
       setSelectedTool(null);
-      onUpdateAdjustment("activeTab", "adjust"); // fallback to default
     } else {
       setSelectedTool(tool.key);
-      if (tool.type === "crop") {
+      if (tool.key === "crop") {
         onUpdateAdjustment("activeTab", "crop");
-      } else if (tool.type === "amazon") {
-        onUpdateAdjustment("activeTab", "amazonMain");
-      } else if (tool.type === "adjustment") {
-        onUpdateAdjustment("activeTab", "adjust");
-      } else if (tool.type === "transform") {
-        onUpdateAdjustment("activeTab", "transform");
+      } else {
+        onUpdateAdjustment("activeTab", tool.tab === "transform" ? "transform" : "adjust");
       }
     }
   };
 
   const getToolModified = (tool: ToolConfig): boolean => {
-    if (tool.type === "adjustment") {
+    if (tool.min !== undefined) {
       const value = state[tool.key as keyof ImageEditingState] as number;
-      return (
-        Math.abs(value - (tool.defaultValue || 0)) > (tool.step || 0.01) / 2
-      );
+      return Math.abs(value - (tool.defaultValue || 0)) > (tool.step || 0.01) / 2;
     }
     if (tool.key === "rotate") {
       return state.rotation !== 0;
@@ -211,21 +211,53 @@ export function DialToolbar({
     if (tool.key === "crop") {
       return state.crop !== null || state.aspectRatio !== null;
     }
+    if (tool.key === "background") {
+      return state.selectedBackgroundColor !== "#FFFFFF";
+    }
     return false;
   };
 
+  const getTabHasModifications = (tab: TabType): boolean => {
+    return TOOLS.filter((t) => t.tab === tab).some(getToolModified);
+  };
+
+  const tabTools = TOOLS.filter((t) => t.tab === activeTab);
   const currentTool = TOOLS.find((t) => t.key === selectedTool);
 
   return (
     <View style={styles.container}>
-      {/* Tool Chips - Single Row */}
+      <View style={styles.tabsContainer}>
+        {TABS.map((tab) => {
+          const isActive = activeTab === tab.key;
+          const hasModifications = getTabHasModifications(tab.key);
+          
+          return (
+            <Pressable
+              key={tab.key}
+              style={[styles.tab, isActive && styles.tabActive]}
+              onPress={() => handleTabChange(tab.key)}
+            >
+              <Feather
+                name={tab.icon}
+                size={16}
+                color={isActive ? Colors.editing.primary : Colors.editing.textSecondary}
+              />
+              <ThemedText style={[styles.tabText, isActive && styles.tabTextActive]}>
+                {tab.label}
+              </ThemedText>
+              {hasModifications && !isActive && <View style={styles.tabModifiedDot} />}
+            </Pressable>
+          );
+        })}
+      </View>
+
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.toolsScroll}
         style={styles.toolsScrollContainer}
       >
-        {TOOLS.map((tool) => {
+        {tabTools.map((tool) => {
           const isActive = selectedTool === tool.key;
           const isModified = getToolModified(tool);
 
@@ -242,8 +274,7 @@ export function DialToolbar({
         })}
       </ScrollView>
 
-      {/* Tool Controls */}
-      {currentTool && currentTool.type === "adjustment" && (
+      {currentTool && currentTool.min !== undefined && (
         <Animated.View
           entering={FadeIn.duration(200)}
           exiting={FadeOut.duration(150)}
@@ -257,37 +288,13 @@ export function DialToolbar({
             label={currentTool.label}
             formatValue={currentTool.format}
             onValueChange={(val) =>
-              onUpdateAdjustment(currentTool.key as any, val)
+              onUpdateAdjustment(currentTool.key as keyof ImageEditingState, val as never)
             }
           />
         </Animated.View>
       )}
 
-      {currentTool?.type === "amazon" && (
-        <Animated.View
-          entering={FadeIn.duration(200)}
-          exiting={FadeOut.duration(150)}
-          style={styles.amazonContent}
-        >
-          <BackgroundColorPicker
-            selectedColor={state.selectedBackgroundColor}
-            onColorSelect={(color) =>
-              onUpdateAdjustment("selectedBackgroundColor", color)
-            }
-          />
-          <View style={styles.generateButtonContainer}>
-            <Button
-              onPress={onGenerate}
-              disabled={isProcessing}
-              variant="primary"
-            >
-              {isProcessing ? "Processing..." : "Generate Product Image"}
-            </Button>
-          </View>
-        </Animated.View>
-      )}
-
-      {currentTool?.key === "rotate" && (
+      {selectedTool === "rotate" && (
         <Animated.View
           entering={FadeIn.duration(200)}
           exiting={FadeOut.duration(150)}
@@ -296,7 +303,7 @@ export function DialToolbar({
           <View style={styles.transformButtons}>
             <TransformButton
               icon="rotate-ccw"
-              label="Left"
+              label="Left 90°"
               onPress={onRotateCCW}
             />
             {state.rotation !== 0 && (
@@ -308,14 +315,14 @@ export function DialToolbar({
             )}
             <TransformButton
               icon="rotate-cw"
-              label="Right"
+              label="Right 90°"
               onPress={onRotateCW}
             />
           </View>
         </Animated.View>
       )}
 
-      {currentTool?.key === "flip" && (
+      {selectedTool === "flip" && (
         <Animated.View
           entering={FadeIn.duration(200)}
           exiting={FadeOut.duration(150)}
@@ -338,7 +345,7 @@ export function DialToolbar({
         </Animated.View>
       )}
 
-      {currentTool?.key === "crop" && (
+      {selectedTool === "crop" && (
         <Animated.View
           entering={FadeIn.duration(200)}
           exiting={FadeOut.duration(150)}
@@ -363,23 +370,17 @@ export function DialToolbar({
             <AspectButton
               label="1:1"
               active={state.aspectRatio === "square"}
-              onPress={() =>
-                handleAspectRatio("square", state, onUpdateAdjustment)
-              }
+              onPress={() => handleAspectRatio("square", state, onUpdateAdjustment)}
             />
             <AspectButton
               label="4:3"
               active={state.aspectRatio === "4:3"}
-              onPress={() =>
-                handleAspectRatio("4:3", state, onUpdateAdjustment)
-              }
+              onPress={() => handleAspectRatio("4:3", state, onUpdateAdjustment)}
             />
             <AspectButton
               label="16:9"
               active={state.aspectRatio === "16:9"}
-              onPress={() =>
-                handleAspectRatio("16:9", state, onUpdateAdjustment)
-              }
+              onPress={() => handleAspectRatio("16:9", state, onUpdateAdjustment)}
             />
           </View>
 
@@ -391,17 +392,31 @@ export function DialToolbar({
                 onUpdateAdjustment("aspectRatio", null);
               }}
             >
-              <Feather name="x" size={14} color={Colors.light.error} />
+              <Feather name="x" size={14} color={Colors.editing.error} />
               <ThemedText style={styles.resetCropText}>Reset Crop</ThemedText>
             </Pressable>
           )}
+        </Animated.View>
+      )}
+
+      {selectedTool === "background" && (
+        <Animated.View
+          entering={FadeIn.duration(200)}
+          exiting={FadeOut.duration(150)}
+          style={styles.backgroundContent}
+        >
+          <BackgroundColorPicker
+            selectedColor={state.selectedBackgroundColor}
+            onColorSelect={(color) =>
+              onUpdateAdjustment("selectedBackgroundColor", color)
+            }
+          />
         </Animated.View>
       )}
     </View>
   );
 }
 
-// Helper function for aspect ratio
 function handleAspectRatio(
   ratio: "square" | "4:3" | "16:9",
   state: ImageEditingState,
@@ -448,7 +463,6 @@ function handleAspectRatio(
   });
 }
 
-// Sub-components
 function ToolChip({
   label,
   icon,
@@ -471,7 +485,7 @@ function ToolChip({
         <Feather
           name={icon}
           size={14}
-          color={active ? Colors.light.white : Colors.light.text}
+          color={active ? Colors.editing.buttonText : Colors.editing.textSecondary}
         />
         <ThemedText style={[styles.chipText, active && styles.chipTextActive]}>
           {label}
@@ -501,7 +515,7 @@ function TransformButton({
       <Feather
         name={icon}
         size={18}
-        color={active ? Colors.light.white : Colors.light.primary}
+        color={active ? Colors.editing.buttonText : Colors.editing.primary}
       />
       <ThemedText
         style={[
@@ -540,11 +554,44 @@ function AspectButton({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.light.backgroundRoot,
+    backgroundColor: "rgba(20, 20, 22, 0.95)",
     borderTopWidth: 1,
-    borderTopColor: Colors.light.border,
+    borderTopColor: "rgba(255, 255, 255, 0.08)",
     paddingTop: Spacing.xs,
     paddingBottom: Spacing.xs,
+  },
+  tabsContainer: {
+    flexDirection: "row",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    gap: Spacing.xs,
+  },
+  tab: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+  },
+  tabActive: {
+    backgroundColor: "rgba(255, 107, 107, 0.15)",
+  },
+  tabText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: Colors.editing.textSecondary,
+  },
+  tabTextActive: {
+    color: Colors.editing.primary,
+  },
+  tabModifiedDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.editing.primary,
   },
   toolsScrollContainer: {
     flexGrow: 0,
@@ -552,38 +599,38 @@ const styles = StyleSheet.create({
   toolsScroll: {
     paddingHorizontal: Spacing.md,
     gap: Spacing.xs,
-    paddingVertical: 2,
+    paddingVertical: Spacing.xs,
   },
   chip: {
-    paddingVertical: 6,
-    paddingHorizontal: Spacing.sm,
+    paddingVertical: 8,
+    paddingHorizontal: Spacing.md,
     borderRadius: BorderRadius.full,
-    backgroundColor: Colors.light.backgroundDefault,
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
     borderWidth: 1,
-    borderColor: Colors.light.border,
+    borderColor: "rgba(255, 255, 255, 0.1)",
   },
   chipActive: {
-    backgroundColor: Colors.light.primary,
-    borderColor: Colors.light.primary,
+    backgroundColor: Colors.editing.primary,
+    borderColor: Colors.editing.primary,
   },
   chipContent: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 6,
   },
   chipText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "600",
-    color: Colors.light.text,
+    color: Colors.editing.textSecondary,
   },
   chipTextActive: {
-    color: Colors.light.white,
+    color: Colors.editing.buttonText,
   },
   modifiedDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: Colors.light.primary,
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: Colors.editing.primary,
     marginLeft: 2,
   },
   transformContent: {
@@ -600,33 +647,34 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 4,
+    gap: 6,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.md,
-    borderWidth: 2,
-    borderColor: Colors.light.primary,
+    borderWidth: 1.5,
+    borderColor: Colors.editing.primary,
+    backgroundColor: "transparent",
   },
   transformBtnActive: {
-    backgroundColor: Colors.light.primary,
+    backgroundColor: Colors.editing.primary,
   },
   transformBtnText: {
     fontSize: 13,
     fontWeight: "600",
-    color: Colors.light.primary,
+    color: Colors.editing.primary,
   },
   transformBtnTextActive: {
-    color: Colors.light.white,
+    color: Colors.editing.buttonText,
   },
   rotationBadge: {
     paddingHorizontal: Spacing.sm,
     paddingVertical: 4,
-    backgroundColor: Colors.light.primary + "15",
+    backgroundColor: "rgba(255, 107, 107, 0.2)",
     borderRadius: BorderRadius.full,
   },
   rotationText: {
     fontSize: 12,
     fontWeight: "700",
-    color: Colors.light.primary,
+    color: Colors.editing.primary,
   },
   cropContent: {
     paddingHorizontal: Spacing.md,
@@ -642,21 +690,21 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.md,
     borderWidth: 1.5,
-    borderColor: Colors.light.border,
+    borderColor: "rgba(255, 255, 255, 0.15)",
     alignItems: "center",
-    backgroundColor: Colors.light.backgroundDefault,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
   },
   aspectBtnActive: {
-    borderColor: Colors.light.primary,
-    backgroundColor: Colors.light.primary,
+    borderColor: Colors.editing.primary,
+    backgroundColor: Colors.editing.primary,
   },
   aspectBtnText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "600",
-    color: Colors.light.text,
+    color: Colors.editing.textSecondary,
   },
   aspectBtnTextActive: {
-    color: Colors.light.white,
+    color: Colors.editing.buttonText,
   },
   resetCrop: {
     flexDirection: "row",
@@ -668,14 +716,10 @@ const styles = StyleSheet.create({
   resetCropText: {
     fontSize: 12,
     fontWeight: "600",
-    color: Colors.light.error,
+    color: Colors.editing.error,
   },
-  amazonContent: {
+  backgroundContent: {
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
-  },
-  generateButtonContainer: {
-    marginTop: Spacing.md,
-    paddingHorizontal: Spacing.md,
   },
 });
