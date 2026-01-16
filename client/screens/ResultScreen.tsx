@@ -119,7 +119,7 @@ export default function ResultScreen() {
 
       const apiUrl = getApiUrl();
       const bgColorParam = encodeURIComponent(backgroundColor);
-      const endpoint = `${apiUrl}api/amazon-main?backgroundColor=${bgColorParam}`;
+      const endpoint = `${apiUrl}api/main-image?backgroundColor=${bgColorParam}`;
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 300000);
