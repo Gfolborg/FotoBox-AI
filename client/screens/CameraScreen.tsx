@@ -95,7 +95,7 @@ export default function CameraScreen() {
       });
 
       if (photo?.uri) {
-        navigation.navigate("EditImage", { imageUri: photo.uri });
+        navigation.navigate("PhotoAction", { imageUri: photo.uri });
       }
     } catch (error) {
       console.error("Failed to capture photo:", error);
@@ -113,7 +113,7 @@ export default function CameraScreen() {
     });
 
     if (!result.canceled) {
-      navigation.navigate("EditImage", { imageUri: result.assets[0].uri });
+      navigation.navigate("PhotoAction", { imageUri: result.assets[0].uri });
     }
   };
 

@@ -16,6 +16,7 @@ import { StatusBar } from "expo-status-bar";
 import { BlurView } from "expo-blur";
 import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
 
 import { ThemedText } from "@/components/ThemedText";
 import { GradientButton } from "@/components/GradientButton";
@@ -52,6 +53,28 @@ export default function BatchPreviewScreen() {
   const handleRemoveImage = (uri: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedImages((prev) => prev.filter((img) => img !== uri));
+  };
+
+  const handleAddMore = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      quality: 1,
+      selectionLimit: 20 - selectedImages.length,
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      const newUris = result.assets.map((asset) => asset.uri);
+      setSelectedImages((prev) => [...prev, ...newUris].slice(0, 20));
+    }
+  };
+
+  const getEstimatedTime = () => {
+    const seconds = selectedImages.length * 8;
+    if (seconds < 60) return `~${seconds}s`;
+    const minutes = Math.ceil(seconds / 60);
+    return `~${minutes} min`;
   };
 
   const handleSelectPreset = (preset: EditingPreset | null) => {
@@ -114,15 +137,10 @@ export default function BatchPreviewScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Image Grid */}
-        <FlatList
-          data={selectedImages}
-          numColumns={2}
-          keyExtractor={(item) => item}
-          scrollEnabled={false}
-          contentContainerStyle={styles.grid}
-          columnWrapperStyle={styles.gridRow}
-          renderItem={({ item, index }) => (
+        <View style={styles.gridContainer}>
+          {selectedImages.map((item, index) => (
             <Animated.View
+              key={item}
               entering={FadeInDown.delay(index * 60).duration(400)}
               style={styles.imageCard}
             >
@@ -138,8 +156,24 @@ export default function BatchPreviewScreen() {
                 <ThemedText style={styles.indexText}>{index + 1}</ThemedText>
               </View>
             </Animated.View>
+          ))}
+          
+          {selectedImages.length < 20 && (
+            <Animated.View
+              entering={FadeInDown.delay(selectedImages.length * 60).duration(400)}
+            >
+              <Pressable style={styles.addMoreCard} onPress={handleAddMore}>
+                <View style={styles.addMoreContent}>
+                  <Feather name="plus" size={28} color={Colors.editing.primary} />
+                  <ThemedText style={styles.addMoreText}>Add More</ThemedText>
+                  <ThemedText style={styles.addMoreLimit}>
+                    {20 - selectedImages.length} remaining
+                  </ThemedText>
+                </View>
+              </Pressable>
+            </Animated.View>
           )}
-        />
+        </View>
 
         {/* Preset Selector */}
         {presets.length > 0 && (
@@ -242,6 +276,11 @@ export default function BatchPreviewScreen() {
                   {selectedBackgroundColor === "#FFFFFF" ? "White" : selectedBackgroundColor}
                 </ThemedText>
               </View>
+              <View style={styles.summaryDot} />
+              <View style={styles.summaryItem}>
+                <Feather name="clock" size={14} color={Colors.editing.textSecondary} />
+                <ThemedText style={styles.summaryText}>{getEstimatedTime()}</ThemedText>
+              </View>
             </View>
 
             <GradientButton
@@ -306,10 +345,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingBottom: 200,
   },
-  grid: {
-    gap: Spacing.md,
-  },
-  gridRow: {
+  gridContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: Spacing.md,
   },
   imageCard: {
@@ -354,6 +392,30 @@ const styles = StyleSheet.create({
     color: Colors.editing.text,
     fontSize: 11,
     fontWeight: "600",
+  },
+  addMoreCard: {
+    width: IMAGE_SIZE,
+    height: IMAGE_SIZE,
+    borderRadius: BorderRadius.lg,
+    backgroundColor: Colors.editing.backgroundSecondary,
+    borderWidth: 2,
+    borderColor: Colors.editing.border,
+    borderStyle: "dashed",
+  },
+  addMoreContent: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.xs,
+  },
+  addMoreText: {
+    color: Colors.editing.primary,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  addMoreLimit: {
+    color: Colors.editing.textTertiary,
+    fontSize: 11,
   },
   section: {
     marginTop: Spacing.xl,

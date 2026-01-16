@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
 import CameraScreen from "@/screens/CameraScreen";
+import PhotoActionScreen from "@/screens/PhotoActionScreen";
 import EditImageScreen from "@/screens/EditImageScreen";
 import ResultScreen from "@/screens/ResultScreen";
 import BatchPreviewScreen from "@/screens/BatchPreviewScreen";
@@ -19,6 +20,7 @@ import OnboardingScreen from "@/screens/OnboardingScreen";
 export type RootStackParamList = {
   Home: undefined;
   Camera: undefined;
+  PhotoAction: { imageUri: string };
   EditImage: { imageUri: string; originalUri?: string; presetId?: string };
   Result: { resultUri: string; originalUri: string; backgroundColor?: string };
 
@@ -92,6 +94,11 @@ export default function RootStackNavigator() {
       <Stack.Screen
         name="Camera"
         component={CameraScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="PhotoAction"
+        component={PhotoActionScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen
