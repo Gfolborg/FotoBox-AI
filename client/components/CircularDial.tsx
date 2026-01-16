@@ -9,7 +9,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { ThemedText } from "./ThemedText";
-import { Colors, Spacing } from "@/constants/theme";
+import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const DIAL_WIDTH = SCREEN_WIDTH - 60; // Reduced from 80
@@ -87,10 +87,14 @@ export function CircularDial({
     <View style={styles.container}>
       {/* Label and Value */}
       <View style={styles.header}>
-        <ThemedText style={styles.label}>{label}</ThemedText>
-        <ThemedText style={[styles.value, isDefault && styles.valueDefault]}>
-          {displayValue}
-        </ThemedText>
+        <View style={styles.labelContainer}>
+          <ThemedText style={styles.label}>{label}</ThemedText>
+        </View>
+        <View style={[styles.valueContainer, !isDefault && styles.valueContainerActive]}>
+          <ThemedText style={[styles.value, isDefault && styles.valueDefault]}>
+            {displayValue}
+          </ThemedText>
+        </View>
       </View>
 
       {/* Dial */}
@@ -153,17 +157,37 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     marginBottom: Spacing.sm,
   },
+  labelContainer: {
+    backgroundColor: Colors.editing.backgroundSecondary,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.editing.border,
+  },
   label: {
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "700",
     color: Colors.editing.text,
+  },
+  valueContainer: {
+    backgroundColor: Colors.editing.backgroundSecondary,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.editing.border,
+    minWidth: 80,
+    alignItems: "center",
+  },
+  valueContainerActive: {
+    backgroundColor: Colors.editing.primarySubtle,
+    borderColor: Colors.editing.primary,
   },
   value: {
     fontSize: 16,
     fontWeight: "700",
     color: Colors.editing.primary,
-    minWidth: 70,
-    textAlign: "right",
   },
   valueDefault: {
     color: Colors.editing.textSecondary,

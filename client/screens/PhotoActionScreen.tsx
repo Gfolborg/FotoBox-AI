@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, Pressable, Image, Dimensions } from "react-native";
+import { View, StyleSheet, Pressable, Image, Dimensions, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -16,7 +16,7 @@ import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const IMAGE_PREVIEW_SIZE = Math.min(SCREEN_WIDTH - Spacing.xl * 2, 280);
+const IMAGE_PREVIEW_SIZE = Math.min(SCREEN_WIDTH - Spacing.xl * 2, 220);
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "PhotoAction">;
 type RouteProps = RouteProp<RootStackParamList, "PhotoAction">;
@@ -66,15 +66,15 @@ export default function PhotoActionScreen() {
   }, [navigation]);
 
   const handleEditPhoto = () => {
-    navigation.replace("EditImage", { imageUri, originalUri: imageUri });
+    navigation.navigate("EditImage", { imageUri, originalUri: imageUri });
   };
 
   const handleRemoveBackground = () => {
-    navigation.replace("BatchProcessing", { imageUris: [imageUri] });
+    navigation.navigate("BackgroundColorSelection", { imageUri });
   };
 
   const handleCreateLifestyle = () => {
-    navigation.replace("EnvironmentSelection", { imageUri });
+    navigation.navigate("EnvironmentSelection", { imageUri });
   };
 
   return (
@@ -105,7 +105,11 @@ export default function PhotoActionScreen() {
         </View>
       </Animated.View>
 
-      <View style={styles.content}>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + Spacing.xl }]}
+        showsVerticalScrollIndicator={false}
+      >
         <Animated.View
           entering={FadeIn.delay(100).duration(400)}
           style={styles.imagePreviewContainer}
@@ -146,23 +150,23 @@ export default function PhotoActionScreen() {
             delay={500}
           />
         </View>
-      </View>
 
-      <Animated.View
-        entering={FadeInUp.delay(600).duration(400)}
-        style={[styles.footer, { paddingBottom: insets.bottom + Spacing.lg }]}
-      >
-        <Pressable
-          style={styles.retakeButton}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            navigation.goBack();
-          }}
+        <Animated.View
+          entering={FadeInUp.delay(600).duration(400)}
+          style={styles.retakeContainer}
         >
-          <Feather name="camera" size={18} color={Colors.editing.textSecondary} />
-          <ThemedText style={styles.retakeText}>Retake Photo</ThemedText>
-        </Pressable>
-      </Animated.View>
+          <Pressable
+            style={styles.retakeButton}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              navigation.goBack();
+            }}
+          >
+            <Feather name="camera" size={18} color={Colors.editing.textSecondary} />
+            <ThemedText style={styles.retakeText}>Retake Photo</ThemedText>
+          </Pressable>
+        </Animated.View>
+      </ScrollView>
     </View>
   );
 }
@@ -194,11 +198,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
   },
-  content: {
+  scrollView: {
     flex: 1,
+  },
+  content: {
     paddingTop: 100,
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing["2xl"],
   },
   imagePreviewContainer: {
     alignSelf: "center",
@@ -264,17 +269,20 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
   },
-  footer: {
+  retakeContainer: {
     alignItems: "center",
-    paddingTop: Spacing.md,
-    backgroundColor: Colors.editing.backgroundRoot,
+    paddingTop: Spacing.xl,
   },
   retakeButton: {
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.sm,
     paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
+    paddingVertical: Spacing.md,
+    backgroundColor: Colors.editing.backgroundSecondary,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    borderColor: Colors.editing.border,
   },
   retakeText: {
     color: Colors.editing.textSecondary,

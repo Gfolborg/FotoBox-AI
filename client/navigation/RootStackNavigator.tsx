@@ -16,6 +16,7 @@ import LifestyleResultScreen from "@/screens/LifestyleResultScreen";
 import BatchLifestyleProcessingScreen from "@/screens/BatchLifestyleProcessingScreen";
 import BatchLifestyleResultScreen from "@/screens/BatchLifestyleResultScreen";
 import OnboardingScreen from "@/screens/OnboardingScreen";
+import BackgroundColorSelectionScreen from "@/screens/BackgroundColorSelectionScreen";
 
 
 
@@ -23,6 +24,7 @@ export type RootStackParamList = {
   Home: undefined;
   Camera: undefined;
   PhotoAction: { imageUri: string };
+  BackgroundColorSelection: { imageUri: string };
   EditImage: { imageUri: string; originalUri?: string; presetId?: string };
   Result: { resultUri: string; originalUri: string; backgroundColor?: string };
 
@@ -111,6 +113,11 @@ export default function RootStackNavigator() {
       <Stack.Screen
         name="PhotoAction"
         component={PhotoActionScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="BackgroundColorSelection"
+        component={BackgroundColorSelectionScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen
