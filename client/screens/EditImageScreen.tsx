@@ -278,7 +278,7 @@ export default function EditImageScreen() {
               flipVertical: state.flipVertical,
             }}
             showOriginal={state.showBeforeAfter}
-            showCropOverlay={false}
+            showCropOverlay={selectedTool === "crop"}
             crop={state.crop}
             onCropChange={(crop) => updateAdjustment("crop", crop)}
           />

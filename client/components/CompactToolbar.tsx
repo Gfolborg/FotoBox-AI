@@ -289,10 +289,32 @@ export function CompactToolbar({
 
       {selectedTool === "crop" && (
         <Animated.View entering={FadeIn.duration(150)} exiting={FadeOut.duration(100)} style={styles.transformContent}>
-          <View style={styles.cropHint}>
-            <Feather name="info" size={14} color={Colors.editing.textSecondary} />
+          <View style={styles.cropControls}>
+            <ThemedText style={styles.cropLabel}>Aspect Ratio</ThemedText>
+            <View style={styles.aspectRatioButtons}>
+              <AspectRatioButton
+                label="Free"
+                active={state.aspectRatio === "free" || state.aspectRatio === null}
+                onPress={() => onUpdateAdjustment("aspectRatio", "free")}
+              />
+              <AspectRatioButton
+                label="1:1"
+                active={state.aspectRatio === "square"}
+                onPress={() => onUpdateAdjustment("aspectRatio", "square")}
+              />
+              <AspectRatioButton
+                label="4:3"
+                active={state.aspectRatio === "4:3"}
+                onPress={() => onUpdateAdjustment("aspectRatio", "4:3")}
+              />
+              <AspectRatioButton
+                label="16:9"
+                active={state.aspectRatio === "16:9"}
+                onPress={() => onUpdateAdjustment("aspectRatio", "16:9")}
+              />
+            </View>
             <ThemedText style={styles.cropHintText}>
-              Crop feature coming soon
+              Drag corners to adjust crop area
             </ThemedText>
           </View>
         </Animated.View>
@@ -350,6 +372,30 @@ function TransformButton({
         color={active ? Colors.editing.buttonText : Colors.editing.primary}
       />
       <ThemedText style={[styles.transformBtnText, active && styles.transformBtnTextActive]}>
+        {label}
+      </ThemedText>
+    </Pressable>
+  );
+}
+
+function AspectRatioButton({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        onPress();
+      }}
+      style={[styles.aspectBtn, active && styles.aspectBtnActive]}
+    >
+      <ThemedText style={[styles.aspectBtnText, active && styles.aspectBtnTextActive]}>
         {label}
       </ThemedText>
     </Pressable>
@@ -481,5 +527,37 @@ const styles = StyleSheet.create({
   cropHintText: {
     fontSize: 13,
     color: Colors.editing.textSecondary,
+  },
+  cropControls: {
+    gap: Spacing.sm,
+  },
+  cropLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: Colors.editing.textSecondary,
+  },
+  aspectRatioButtons: {
+    flexDirection: "row",
+    gap: Spacing.xs,
+  },
+  aspectBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.full,
+    backgroundColor: "rgba(0, 0, 0, 0.05)",
+    borderWidth: 1,
+    borderColor: "rgba(0, 0, 0, 0.08)",
+  },
+  aspectBtnActive: {
+    backgroundColor: Colors.editing.primary,
+    borderColor: Colors.editing.primary,
+  },
+  aspectBtnText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: Colors.editing.textSecondary,
+  },
+  aspectBtnTextActive: {
+    color: Colors.editing.buttonText,
   },
 });
