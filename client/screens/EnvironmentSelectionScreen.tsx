@@ -35,6 +35,7 @@ import { GlassCard } from "@/components/GlassCard";
 import { GlassPill } from "@/components/GlassPill";
 import { GradientButton } from "@/components/GradientButton";
 import { ProgressRing } from "@/components/ProgressRing";
+import { ScrollIndicator } from "@/components/ScrollIndicator";
 import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getApiUrl } from "@/lib/query-client";
@@ -441,29 +442,32 @@ export default function EnvironmentSelectionScreen() {
           {promptHistory.length > 0 && (
             <View style={styles.historyContainer}>
               <ThemedText style={styles.historyLabel}>Recent</ThemedText>
-              <ScrollView 
-                horizontal 
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.historyScroll}
-              >
-                {promptHistory.slice(0, 5).map((item) => (
-                  <Pressable
-                    key={item.id}
-                    style={styles.historyChip}
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setCustomScene(item.prompt);
-                      setSelectedScene("");
-                      setShowSceneError(false);
-                    }}
-                  >
-                    <Feather name="clock" size={12} color={Colors.editing.textSecondary} />
-                    <ThemedText style={styles.historyChipText} numberOfLines={1}>
-                      {item.prompt.length > 30 ? item.prompt.slice(0, 30) + "..." : item.prompt}
-                    </ThemedText>
-                  </Pressable>
-                ))}
-              </ScrollView>
+              <View style={styles.historyScrollWrapper}>
+                <ScrollView 
+                  horizontal 
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.historyScroll}
+                >
+                  {promptHistory.slice(0, 5).map((item) => (
+                    <Pressable
+                      key={item.id}
+                      style={styles.historyChip}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setCustomScene(item.prompt);
+                        setSelectedScene("");
+                        setShowSceneError(false);
+                      }}
+                    >
+                      <Feather name="clock" size={12} color={Colors.editing.textSecondary} />
+                      <ThemedText style={styles.historyChipText} numberOfLines={1}>
+                        {item.prompt.length > 30 ? item.prompt.slice(0, 30) + "..." : item.prompt}
+                      </ThemedText>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+                {promptHistory.length > 2 && <ScrollIndicator direction="right" delay={1500} />}
+              </View>
             </View>
           )}
         </Animated.View>
@@ -562,6 +566,7 @@ export default function EnvironmentSelectionScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.scenesGrid}
             />
+            <ScrollIndicator direction="right" delay={1000} />
           </View>
         </Animated.View>
       </ScrollView>
@@ -816,6 +821,9 @@ const styles = StyleSheet.create({
   },
   historyContainer: {
     marginTop: Spacing.md,
+  },
+  historyScrollWrapper: {
+    position: "relative",
   },
   historyLabel: {
     fontSize: 12,
