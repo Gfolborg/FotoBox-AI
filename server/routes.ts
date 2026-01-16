@@ -211,7 +211,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const bgRgb = hexToRGB(backgroundColor);
 
-        let resizeOptions = {
+        let resizeOptions: {
+            width: number;
+            height: number;
+            fit: "contain" | "cover" | "fill" | "inside" | "outside";
+            background: { r: number; g: number; b: number };
+        } = {
             width: 2000,
             height: 2000,
             fit: "contain",
