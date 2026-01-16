@@ -48,22 +48,23 @@ assets/images/      # App icons and splash screens
 
 ## User Preferences
 - Android-first design focus
-- Dark immersive theme for editing screens (Colors.editing palette)
-- Primary color: Coral (#FF6B6B) with gradient buttons
-- Glassmorphism effects with blur overlays and glass cards
+- Light brand theme throughout the app (consistent coral/orange brand colors)
+- Primary color: Coral (#F97316) with gradient buttons
+- Glassmorphism effects with light blur overlays and glass cards
 - No tabs needed - simple stack navigation
 - Minimal UI with focus on the product image
 - Haptic feedback on all interactive elements
 
 ## Design System
-- **Primary Color**: Coral (#FF6B6B) - used in gradient buttons and accents
+- **Primary Color**: Coral (#F97316) - used in gradient buttons and accents
 - **Secondary Color**: Sky Blue (#0EA5E9) - complementary accent color
-- **Dark Theme**: Deep charcoal (#0D0D0F) background for editing screens
-- **Glass Effects**: Semi-transparent overlays with backdrop blur
+- **Light Theme**: Warm white (#FAFAF9) background throughout the app
+- **Glass Effects**: Light semi-transparent overlays with backdrop blur
 - **Components**: GlassCard, GradientButton, ProgressRing, SuccessAnimation, IconButton, GlassPill
 - **Animations**: React Native Reanimated for smooth transitions and feedback
 
 ## Recent Changes
+- **Unified Light Theme (January 2026)**: Removed dark editing theme, entire app now uses consistent brand colors with warm white backgrounds and coral accents
 - Initial MVP build (January 2026)
 - Implemented camera capture with expo-camera
 - Added Gemini 2.5 Flash Image integration for background removal
