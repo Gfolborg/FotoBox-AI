@@ -1,7 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { View, StyleSheet, ScrollView, Pressable } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
+import Animated, { 
+  FadeIn, 
+  FadeOut, 
+  FadeInRight,
+  FadeOutLeft,
+  Layout,
+} from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "./ThemedText";
@@ -251,28 +257,34 @@ export function DialToolbar({
         })}
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.toolsScroll}
-        style={styles.toolsScrollContainer}
+      <Animated.View 
+        key={activeTab}
+        entering={FadeInRight.duration(200)}
+        exiting={FadeOutLeft.duration(150)}
       >
-        {tabTools.map((tool) => {
-          const isActive = selectedTool === tool.key;
-          const isModified = getToolModified(tool);
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.toolsScroll}
+          style={styles.toolsScrollContainer}
+        >
+          {tabTools.map((tool) => {
+            const isActive = selectedTool === tool.key;
+            const isModified = getToolModified(tool);
 
-          return (
-            <ToolChip
-              key={tool.key}
-              label={tool.label}
-              icon={tool.icon}
-              active={isActive}
-              modified={isModified}
-              onPress={() => handleToolSelect(tool)}
-            />
-          );
-        })}
-      </ScrollView>
+            return (
+              <ToolChip
+                key={tool.key}
+                label={tool.label}
+                icon={tool.icon}
+                active={isActive}
+                modified={isModified}
+                onPress={() => handleToolSelect(tool)}
+              />
+            );
+          })}
+        </ScrollView>
+      </Animated.View>
 
       {currentTool && currentTool.min !== undefined && (
         <Animated.View

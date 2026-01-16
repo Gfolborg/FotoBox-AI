@@ -10,7 +10,7 @@ import { Feather } from "@expo/vector-icons";
 
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
-import { BorderRadius, Spacing } from "@/constants/theme";
+import { BorderRadius, Colors, Spacing } from "@/constants/theme";
 
 // Background color presets with labels
 export const BACKGROUND_COLORS = [
@@ -179,5 +179,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginTop: 4,
     textAlign: "center",
+    color: Colors.editing.textSecondary,
   },
 });
