@@ -139,7 +139,7 @@ export const SkiaEditableImage = forwardRef<
       height: IMAGE_SIZE,
     });
     const image = useImage(originalUri);
-    const canvasRef = useRef(null);
+    const canvasRef = useRef<any>(null);
 
     useImperativeHandle(ref, () => ({
       snapshot: async () => {
@@ -147,17 +147,16 @@ export const SkiaEditableImage = forwardRef<
           throw new Error("Canvas is not ready or image not loaded.");
         }
 
-        // Define the snapshot area based on the crop prop
+        const cropArea = crop || { x: 0, y: 0, width: 1, height: 1 };
         const cropRect = rect(
-          crop.x * image.width(),
-          crop.y * image.height(),
-          crop.width * image.width(),
-          crop.height * image.height(),
+          cropArea.x * image.width(),
+          cropArea.y * image.height(),
+          cropArea.width * image.width(),
+          cropArea.height * image.height(),
         );
 
-        // Take a snapshot of the defined rectangle
         const skiaImage = canvasRef.current.makeImageSnapshot(cropRect);
-        const base64 = skiaImage.encodeToBase64(Skia.ImageFormat.JPEG, 95);
+        const base64 = skiaImage.encodeToBase64("jpeg", 95);
         return `data:image/jpeg;base64,${base64}`;
       },
     }));

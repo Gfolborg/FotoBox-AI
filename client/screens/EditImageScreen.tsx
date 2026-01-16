@@ -1,16 +1,21 @@
 import React, { useState, useEffect, useRef } from "react";
-import {
-  View,
-  StyleSheet,
-  Pressable,
-} from "react-native";
+import { View, StyleSheet, Pressable, Dimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import { BlurView } from "expo-blur";
-import Animated, { FadeIn, FadeInUp } from "react-native-reanimated";
+import { GestureHandlerRootView, Gesture, GestureDetector } from "react-native-gesture-handler";
+import Animated, {
+  FadeIn,
+  FadeInUp,
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  runOnJS,
+} from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/ThemedText";
@@ -19,12 +24,12 @@ import { GradientButton } from "@/components/GradientButton";
 import { IconButton } from "@/components/IconButton";
 import { GlassPill } from "@/components/GlassPill";
 import { ProgressRing } from "@/components/ProgressRing";
+import { CompactToolbar, ADJUSTMENT_TOOLS, ToolConfig } from "@/components/CompactToolbar";
+import { SavePresetModal } from "@/components/SavePresetModal";
 import {
   SkiaEditableImage,
   SkiaEditableImageRef,
 } from "@/components/SkiaEditableImage";
-import { DialToolbar } from "@/components/DialToolbar";
-import { SavePresetModal } from "@/components/SavePresetModal";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getApiUrl } from "@/lib/query-client";
@@ -33,11 +38,23 @@ import { usePresets } from "@/hooks/usePresets";
 import { getPresetById } from "@/lib/preset-storage";
 import { useNotification } from "@/context/NotificationContext";
 
-type NavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
-  "EditImage"
->;
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+const DRAG_SENSITIVITY = 0.004;
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList, "EditImage">;
 type EditImageRouteProp = RouteProp<RootStackParamList, "EditImage">;
+
+type ToolKey =
+  | "brightness"
+  | "contrast"
+  | "saturation"
+  | "exposure"
+  | "highlights"
+  | "shadows"
+  | "warmth"
+  | "rotate"
+  | "flip"
+  | "background";
 
 export default function EditImageScreen() {
   const insets = useSafeAreaInsets();
@@ -49,7 +66,8 @@ export default function EditImageScreen() {
   const imageRef = useRef<SkiaEditableImageRef>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSavePresetModal, setShowSavePresetModal] = useState(false);
-  const [selectedPlatform, setSelectedPlatform] = useState<string>("amazon");
+  const [selectedTool, setSelectedTool] = useState<ToolKey | null>("brightness");
+  const [isToolbarHidden, setIsToolbarHidden] = useState(false);
 
   const {
     state,
@@ -64,6 +82,12 @@ export default function EditImageScreen() {
   } = useImageEditing();
 
   const { saveCurrentAsPreset, applyPresetToState, isSaving } = usePresets();
+
+  const isDragging = useSharedValue(false);
+  const dragStartValue = useSharedValue(0);
+  const indicatorOpacity = useSharedValue(0);
+  const indicatorScale = useSharedValue(0.8);
+  const currentDisplayValue = useSharedValue("");
 
   useEffect(() => {
     if (presetId) {
@@ -103,7 +127,7 @@ export default function EditImageScreen() {
 
       const apiUrl = getApiUrl();
       const bgColorParam = encodeURIComponent(state.selectedBackgroundColor);
-      const endpoint = `${apiUrl}api/main-image?platform=${selectedPlatform}&backgroundColor=${bgColorParam}`;
+      const endpoint = `${apiUrl}api/main-image?backgroundColor=${bgColorParam}`;
 
       const response = await fetch(endpoint, { method: "POST", body: formData });
 
@@ -132,46 +156,83 @@ export default function EditImageScreen() {
     }
   };
 
-  const handleDone = async () => {
-    if (!imageRef.current) {
-      showNotification("An unexpected error occurred. Please try again.", "error");
-      return;
-    }
+  const getActiveToolConfig = (): ToolConfig | null => {
+    if (!selectedTool) return null;
+    const tool = ADJUSTMENT_TOOLS.find((t) => t.key === selectedTool);
+    return tool && tool.min !== undefined ? tool : null;
+  };
 
-    setIsProcessing(true);
+  const activeToolConfig = getActiveToolConfig();
+  const currentValue = activeToolConfig
+    ? (state[activeToolConfig.key as keyof typeof state] as number)
+    : 0;
+
+  const triggerHaptic = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    try {
-      const base64data = await imageRef.current.snapshot();
-      navigation.replace("Result", {
-        resultUri: base64data,
-        originalUri: route.params.originalUri || imageUri,
-      });
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to save image";
-      showNotification(errorMessage, "error");
-    } finally {
-      setIsProcessing(false);
+  };
+
+  const handleDragStart = () => {
+    setIsToolbarHidden(true);
+  };
+
+  const handleDragEnd = () => {
+    setIsToolbarHidden(false);
+  };
+
+  const updateValue = (newValue: number) => {
+    if (activeToolConfig) {
+      updateAdjustment(activeToolConfig.key as keyof typeof state, newValue as never);
     }
   };
 
-  const showCropOverlay = state.activeTab === "crop";
+  const panGesture = Gesture.Pan()
+    .enabled(activeToolConfig !== null)
+    .onStart(() => {
+      isDragging.value = true;
+      dragStartValue.value = currentValue;
+      indicatorOpacity.value = withSpring(1);
+      indicatorScale.value = withSpring(1);
+      runOnJS(handleDragStart)();
+      runOnJS(triggerHaptic)();
+    })
+    .onUpdate((event) => {
+      if (!activeToolConfig) return;
+
+      const delta = event.translationX * DRAG_SENSITIVITY;
+      const range = activeToolConfig.max! - activeToolConfig.min!;
+      const newValue = Math.max(
+        activeToolConfig.min!,
+        Math.min(activeToolConfig.max!, dragStartValue.value + delta * range)
+      );
+
+      const steppedValue =
+        Math.round(newValue / activeToolConfig.step!) * activeToolConfig.step!;
+
+      runOnJS(updateValue)(steppedValue);
+    })
+    .onEnd(() => {
+      isDragging.value = false;
+      indicatorOpacity.value = withTiming(0, { duration: 300 });
+      indicatorScale.value = withTiming(0.8, { duration: 300 });
+      runOnJS(handleDragEnd)();
+    });
+
+  const indicatorStyle = useAnimatedStyle(() => ({
+    opacity: indicatorOpacity.value,
+    transform: [{ scale: indicatorScale.value }],
+  }));
 
   return (
-    <View style={styles.container}>
+    <GestureHandlerRootView style={styles.container}>
       <StatusBar style="light" />
 
-      {/* Custom Header */}
       <Animated.View
         entering={FadeIn.duration(300)}
         style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}
       >
         <BlurView intensity={40} tint="dark" style={styles.headerBlur} />
         <View style={styles.headerContent}>
-          <Pressable
-            style={styles.headerButton}
-            onPress={() => navigation.goBack()}
-          >
+          <Pressable style={styles.headerButton} onPress={() => navigation.goBack()}>
             <ThemedText style={styles.headerButtonText}>Cancel</ThemedText>
           </Pressable>
 
@@ -199,104 +260,82 @@ export default function EditImageScreen() {
         </View>
       </Animated.View>
 
-      {/* Image Preview */}
-      <Animated.View
-        entering={FadeIn.duration(400)}
-        style={styles.imageContainer}
-      >
-        <SkiaEditableImage
-          ref={imageRef}
-          originalUri={imageUri}
-          adjustments={{
-            brightness: state.brightness,
-            contrast: state.contrast,
-            saturation: state.saturation,
-            exposure: state.exposure,
-            highlights: state.highlights,
-            shadows: state.shadows,
-            warmth: state.warmth,
-            rotation: state.rotation,
-            flipHorizontal: state.flipHorizontal,
-            flipVertical: state.flipVertical,
-          }}
-          showOriginal={state.showBeforeAfter}
-          showCropOverlay={showCropOverlay}
-          crop={state.crop}
-          onCropChange={(crop) => updateAdjustment("crop", crop)}
-        />
+      <GestureDetector gesture={panGesture}>
+        <Animated.View entering={FadeIn.duration(400)} style={styles.imageContainer}>
+          <SkiaEditableImage
+            ref={imageRef}
+            originalUri={imageUri}
+            adjustments={{
+              brightness: state.brightness,
+              contrast: state.contrast,
+              saturation: state.saturation,
+              exposure: state.exposure,
+              highlights: state.highlights,
+              shadows: state.shadows,
+              warmth: state.warmth,
+              rotation: state.rotation,
+              flipHorizontal: state.flipHorizontal,
+              flipVertical: state.flipVertical,
+            }}
+            showOriginal={state.showBeforeAfter}
+            showCropOverlay={false}
+            crop={state.crop}
+            onCropChange={(crop) => updateAdjustment("crop", crop)}
+          />
 
-        {/* Processing Overlay */}
-        {isProcessing && (
-          <View style={styles.processingOverlay}>
-            <BlurView intensity={60} tint="dark" style={styles.processingBlur} />
-            <View style={styles.processingContent}>
-              <ProgressRing
-                progress={0.7}
-                size={72}
-                strokeWidth={5}
-                color={Colors.editing.primary}
-                backgroundColor="rgba(255, 255, 255, 0.1)"
-              >
-                <Feather name="cpu" size={24} color={Colors.editing.primary} />
-              </ProgressRing>
-              <ThemedText style={styles.processingText}>
-                Processing...
+          <Animated.View style={[styles.valueIndicator, indicatorStyle]} pointerEvents="none">
+            <View style={styles.indicatorContent}>
+              <ThemedText style={styles.indicatorLabel}>
+                {activeToolConfig?.label || ""}
               </ThemedText>
-              <ThemedText style={styles.processingHint}>
-                This may take a moment
+              <ThemedText style={styles.indicatorValue}>
+                {activeToolConfig?.format ? activeToolConfig.format(currentValue) : ""}
               </ThemedText>
             </View>
-          </View>
-        )}
-      </Animated.View>
+            <View style={styles.dragHint}>
+              <ThemedText style={styles.dragHintText}>← Drag to adjust →</ThemedText>
+            </View>
+          </Animated.View>
 
-      {/* Dial Toolbar */}
-      <DialToolbar
+          {isProcessing && (
+            <View style={styles.processingOverlay}>
+              <BlurView intensity={60} tint="dark" style={styles.processingBlur} />
+              <View style={styles.processingContent}>
+                <ProgressRing
+                  progress={0.7}
+                  size={72}
+                  strokeWidth={5}
+                  color={Colors.editing.primary}
+                  backgroundColor="rgba(255, 255, 255, 0.1)"
+                >
+                  <Feather name="cpu" size={24} color={Colors.editing.primary} />
+                </ProgressRing>
+                <ThemedText style={styles.processingText}>Processing...</ThemedText>
+                <ThemedText style={styles.processingHint}>This may take a moment</ThemedText>
+              </View>
+            </View>
+          )}
+        </Animated.View>
+      </GestureDetector>
+
+      <CompactToolbar
         state={state}
+        selectedTool={selectedTool}
+        onSelectTool={setSelectedTool}
         onUpdateAdjustment={updateAdjustment}
         onRotateCW={rotateCW}
         onRotateCCW={rotateCCW}
         onToggleFlipHorizontal={toggleFlipHorizontal}
         onToggleFlipVertical={toggleFlipVertical}
+        isHidden={isToolbarHidden}
       />
 
-      {/* Bottom Action Bar */}
       <Animated.View
         entering={FadeInUp.delay(200).duration(400)}
         style={[styles.bottomActionBar, { paddingBottom: insets.bottom + Spacing.md }]}
       >
         <BlurView intensity={40} tint="dark" style={styles.buttonBlur} />
         <View style={styles.actionBarContent}>
-          {/* Platform Selection Row */}
-          <View style={styles.platformRow}>
-            <ThemedText style={styles.platformLabel}>Platform</ThemedText>
-            <View style={styles.platformChips}>
-              {["amazon", "shopify", "etsy"].map((platform) => (
-                <Pressable
-                  key={platform}
-                  style={[
-                    styles.platformChip,
-                    selectedPlatform === platform && styles.platformChipActive,
-                  ]}
-                  onPress={() => {
-                    setSelectedPlatform(platform);
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  }}
-                >
-                  <ThemedText
-                    style={[
-                      styles.platformChipText,
-                      selectedPlatform === platform && styles.platformChipTextActive,
-                    ]}
-                  >
-                    {platform.charAt(0).toUpperCase() + platform.slice(1)}
-                  </ThemedText>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-
-          {/* Action Buttons Row */}
           <View style={styles.buttonRow}>
             <Button
               onPress={resetAll}
@@ -319,7 +358,6 @@ export default function EditImageScreen() {
         </View>
       </Animated.View>
 
-      {/* Save Preset Modal */}
       <SavePresetModal
         visible={showSavePresetModal}
         onClose={() => setShowSavePresetModal(false)}
@@ -342,7 +380,7 @@ export default function EditImageScreen() {
         }}
         isSaving={isSaving}
       />
-    </View>
+    </GestureHandlerRootView>
   );
 }
 
@@ -395,7 +433,51 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     flex: 1,
-    marginTop: 90,
+    marginTop: 80,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  valueIndicator: {
+    position: "absolute",
+    top: 20,
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    zIndex: 100,
+  },
+  indicatorContent: {
+    backgroundColor: "rgba(0, 0, 0, 0.85)",
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.xl,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.15)",
+  },
+  indicatorLabel: {
+    color: Colors.editing.textSecondary,
+    fontSize: 12,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  indicatorValue: {
+    color: Colors.editing.text,
+    fontSize: 28,
+    fontWeight: "700",
+  },
+  dragHint: {
+    marginTop: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 4,
+    backgroundColor: "rgba(255, 107, 107, 0.2)",
+    borderRadius: BorderRadius.full,
+  },
+  dragHintText: {
+    color: Colors.editing.primary,
+    fontSize: 11,
+    fontWeight: "500",
   },
   processingOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -433,42 +515,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.08)",
     borderRadius: BorderRadius.xl,
-    gap: Spacing.md,
-  },
-  platformRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  platformLabel: {
-    color: Colors.editing.textSecondary,
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  platformChips: {
-    flexDirection: "row",
-    gap: Spacing.xs,
-  },
-  platformChip: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 8,
-    borderRadius: BorderRadius.full,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
-  },
-  platformChipActive: {
-    backgroundColor: Colors.editing.primary,
-    borderColor: Colors.editing.primary,
-  },
-  platformChipText: {
-    color: Colors.editing.textSecondary,
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  platformChipTextActive: {
-    color: Colors.editing.buttonText,
-    fontWeight: "600",
   },
   buttonRow: {
     flexDirection: "row",
