@@ -714,9 +714,9 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255, 255, 255, 0.2)",
   },
   changeImageText: {
-    color: Colors.editing.text,
+    color: "#ffffff",
     fontSize: 13,
-    fontWeight: "500",
+    fontWeight: "600",
   },
   placeholderContainer: {
     alignItems: "center",
