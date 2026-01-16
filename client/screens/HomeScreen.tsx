@@ -1,16 +1,17 @@
-import React, { useState, useEffect } from "react";
-import { StyleSheet, View, ScrollView } from "react-native";
+import React from "react";
+import { StyleSheet, View, ScrollView, Image } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeInDown, FadeIn } from "react-native-reanimated";
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemedText } from "@/components/ThemedText";
 import { WorkflowCard } from "@/components/WorkflowCard";
 
 import { GradientBackground } from "@/components/GradientBackground";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { Colors, Spacing } from "@/constants/theme";
+
+const logoImage = require("../../assets/images/fotobox-logo.png");
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -34,11 +35,14 @@ export default function HomeScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Animated Header */}
+        {/* Animated Header with Logo */}
         <Animated.View entering={FadeIn.duration(600)} style={styles.header}>
-          <ThemedText type="h1" style={styles.title}>
-            FotoBox AI
-          </ThemedText>
+          <View style={styles.logoRow}>
+            <Image source={logoImage} style={styles.logo} resizeMode="contain" />
+            <ThemedText type="h1" style={styles.title}>
+              FotoBox AI
+            </ThemedText>
+          </View>
           <ThemedText style={styles.subtitle}>
             What do you want to accomplish today?
           </ThemedText>
@@ -68,7 +72,7 @@ export default function HomeScreen() {
                 icon="image"
                 title="Create Lifestyle Scene"
                 description="Place products in AI-generated environments"
-                onPress={() => navigation.navigate("EnvironmentSelection", {})}
+                onPress={() => navigation.navigate("EnvironmentSelection")}
                 badge="AI"
               />
             </Animated.View>
@@ -126,9 +130,18 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: Spacing.xl,
   },
+  logoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: Spacing.xs,
+  },
+  logo: {
+    width: 48,
+    height: 48,
+    marginRight: Spacing.sm,
+  },
   title: {
     color: Colors.light.primary,
-    marginBottom: Spacing.xs,
   },
   subtitle: {
     color: Colors.light.textSecondary,

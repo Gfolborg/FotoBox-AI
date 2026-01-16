@@ -25,16 +25,19 @@ export type RootStackParamList = {
   // Batch flow
   BatchPreview: { imageUris: string[] };
   BatchProcessing: { imageUris: string[]; backgroundColor?: string };
-      BatchResult: {
-          results: {
-            originalUri: string;
-            resultUri: string | null;
-            error?: string;
-            status: "pending" | "processing" | "completed" | "failed";
-          }[];
-        };
-    
-    
+  BatchResult: {
+    results: {
+      originalUri: string;
+      resultUri: string | null;
+      error?: string;
+      status: "pending" | "processing" | "completed" | "failed";
+    }[];
+  };
+
+  // Preset and Lifestyle flows
+  PresetSelection: undefined;
+  EnvironmentSelection: { imageUri?: string };
+  LifestyleResult: { resultUri: string; originalUri: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
