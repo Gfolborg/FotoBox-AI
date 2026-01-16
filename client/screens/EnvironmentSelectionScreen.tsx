@@ -341,7 +341,7 @@ export default function EnvironmentSelectionScreen() {
                       entering={FadeInDown.delay(300).duration(400)}
                       style={styles.section}
                     >
-                      <ThemedText type="h5" style={styles.sectionTitle}>
+                      <ThemedText type="h4" style={styles.sectionTitle}>
                         Product Keywords (Optional)
                       </ThemedText>
                       <ThemedText style={styles.sectionSubtitle}>
@@ -363,7 +363,7 @@ export default function EnvironmentSelectionScreen() {
                       entering={FadeInDown.delay(350).duration(400)}
                       style={styles.section}
                     >
-                      <ThemedText type="h5" style={styles.sectionTitle}>
+                      <ThemedText type="h4" style={styles.sectionTitle}>
                         Shadow Control
                       </ThemedText>
                       <ThemedText style={styles.sectionSubtitle}>
@@ -562,6 +562,32 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
     borderWidth: 1,
     borderColor: Colors.light.border,
+  },
+  shadowControlGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.sm,
+  },
+  shadowOptionChip: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.light.backgroundSecondary,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  shadowOptionChipSelected: {
+    borderColor: Colors.light.primary,
+    backgroundColor: Colors.light.primary,
+  },
+  shadowOptionChipText: {
+    fontSize: 13,
+    color: Colors.light.textSecondary,
+    textTransform: "capitalize",
+  },
+  shadowOptionChipTextSelected: {
+    color: Colors.light.buttonText,
+    fontWeight: "600",
   },
   flatListContainer: {
     position: 'relative',

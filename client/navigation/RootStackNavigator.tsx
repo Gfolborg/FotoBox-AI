@@ -37,7 +37,7 @@ export type RootStackParamList = {
   // Preset and Lifestyle flows
   PresetSelection: undefined;
   EnvironmentSelection: { imageUri?: string };
-  LifestyleResult: { resultUri: string; originalUri: string };
+  LifestyleResult: { resultUri: string; originalUri: string; environment: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
