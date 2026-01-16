@@ -1002,7 +1002,7 @@ const styles = StyleSheet.create({
   },
   modelCardWithImagePreview: {
     width: "48%",
-    height: 120,
+    aspectRatio: 1,
     borderRadius: BorderRadius.lg,
     overflow: "hidden",
     borderWidth: 3,
