@@ -84,7 +84,6 @@ function SceneCard({
   index: number;
 }) {
   const scale = useSharedValue(1);
-  const gradientColors = SCENE_GRADIENTS[scene.id] || ["#3D3D4A", "#25252D"];
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -104,25 +103,9 @@ function SceneCard({
         animatedStyle,
       ]}
     >
-      <LinearGradient
-        colors={gradientColors as [string, string]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.sceneGradient}
-      />
-      <View style={styles.sceneCardContent}>
-        <View
-          style={[
-            styles.sceneIconContainer,
-            selected && styles.sceneIconContainerSelected,
-          ]}
-        >
-          <Feather
-            name={scene.icon as any}
-            size={20}
-            color={selected ? Colors.editing.primary : "rgba(255,255,255,0.9)"}
-          />
-        </View>
+      <Image source={scene.image} style={styles.sceneImage} />
+      <View style={styles.sceneOverlay} />
+      <View style={styles.sceneLabelContainer}>
         <ThemedText
           style={[styles.sceneLabel, selected && styles.sceneLabelSelected]}
           numberOfLines={2}
@@ -132,7 +115,7 @@ function SceneCard({
       </View>
       {selected && (
         <View style={styles.selectedCheck}>
-          <Feather name="check" size={10} color={Colors.editing.text} />
+          <Feather name="check" size={12} color="#fff" />
         </View>
       )}
     </AnimatedPressable>
@@ -909,6 +892,21 @@ const styles = StyleSheet.create({
     borderColor: Colors.editing.primary,
     borderWidth: 2,
   },
+  sceneImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: "100%",
+    height: "100%",
+  },
+  sceneOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.35)",
+  },
+  sceneLabelContainer: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: Spacing.xs,
+  },
   sceneGradient: {
     ...StyleSheet.absoluteFillObject,
   },
@@ -931,14 +929,17 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.editing.primary,
   },
   sceneLabel: {
-    fontSize: 11,
-    fontWeight: "600",
+    fontSize: 12,
+    fontWeight: "700",
     textAlign: "center",
-    color: Colors.editing.text,
-    lineHeight: 14,
+    color: "#ffffff",
+    lineHeight: 15,
+    textShadowColor: "rgba(0, 0, 0, 0.8)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   sceneLabelSelected: {
-    color: Colors.editing.text,
+    color: "#ffffff",
   },
   selectedCheck: {
     position: "absolute",
