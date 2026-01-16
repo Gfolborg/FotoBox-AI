@@ -881,8 +881,8 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   sceneCard: {
-    width: 100,
-    height: 100,
+    width: 150,
+    height: 110,
     borderRadius: BorderRadius.lg,
     overflow: "hidden",
     borderWidth: 1,
