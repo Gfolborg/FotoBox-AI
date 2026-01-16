@@ -250,41 +250,6 @@ export default function EditImageScreen() {
         )}
       </Animated.View>
 
-      {/* Platform Selection */}
-      <Animated.View
-        entering={FadeInUp.delay(200).duration(400)}
-        style={styles.platformSection}
-      >
-        <BlurView intensity={30} tint="dark" style={styles.platformBlur} />
-        <View style={styles.platformContent}>
-          <ThemedText style={styles.platformLabel}>Platform</ThemedText>
-          <View style={styles.platformChips}>
-            {["amazon", "shopify", "etsy"].map((platform) => (
-              <Pressable
-                key={platform}
-                style={[
-                  styles.platformChip,
-                  selectedPlatform === platform && styles.platformChipActive,
-                ]}
-                onPress={() => {
-                  setSelectedPlatform(platform);
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }}
-              >
-                <ThemedText
-                  style={[
-                    styles.platformChipText,
-                    selectedPlatform === platform && styles.platformChipTextActive,
-                  ]}
-                >
-                  {platform.charAt(0).toUpperCase() + platform.slice(1)}
-                </ThemedText>
-              </Pressable>
-            ))}
-          </View>
-        </View>
-      </Animated.View>
-
       {/* Dial Toolbar */}
       <DialToolbar
         state={state}
@@ -293,34 +258,64 @@ export default function EditImageScreen() {
         onRotateCCW={rotateCCW}
         onToggleFlipHorizontal={toggleFlipHorizontal}
         onToggleFlipVertical={toggleFlipVertical}
-        onGenerate={handleGenerateMainImage}
-        isProcessing={isProcessing}
       />
 
-      {/* Action Buttons */}
+      {/* Bottom Action Bar */}
       <Animated.View
-        entering={FadeInUp.delay(300).duration(400)}
-        style={[styles.buttonContainer, { paddingBottom: insets.bottom + Spacing.md }]}
+        entering={FadeInUp.delay(200).duration(400)}
+        style={[styles.bottomActionBar, { paddingBottom: insets.bottom + Spacing.md }]}
       >
         <BlurView intensity={40} tint="dark" style={styles.buttonBlur} />
-        <View style={styles.buttonContent}>
-          <Button
-            onPress={resetAll}
-            variant="outline"
-            disabled={isProcessing || !hasChanges()}
-            style={styles.resetButton}
-          >
-            Reset
-          </Button>
+        <View style={styles.actionBarContent}>
+          {/* Platform Selection Row */}
+          <View style={styles.platformRow}>
+            <ThemedText style={styles.platformLabel}>Platform</ThemedText>
+            <View style={styles.platformChips}>
+              {["amazon", "shopify", "etsy"].map((platform) => (
+                <Pressable
+                  key={platform}
+                  style={[
+                    styles.platformChip,
+                    selectedPlatform === platform && styles.platformChipActive,
+                  ]}
+                  onPress={() => {
+                    setSelectedPlatform(platform);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }}
+                >
+                  <ThemedText
+                    style={[
+                      styles.platformChipText,
+                      selectedPlatform === platform && styles.platformChipTextActive,
+                    ]}
+                  >
+                    {platform.charAt(0).toUpperCase() + platform.slice(1)}
+                  </ThemedText>
+                </Pressable>
+              ))}
+            </View>
+          </View>
 
-          <GradientButton
-            title={isProcessing ? "Saving..." : "Done"}
-            onPress={handleDone}
-            disabled={isProcessing}
-            loading={isProcessing}
-            icon="check"
-            style={styles.doneButton}
-          />
+          {/* Action Buttons Row */}
+          <View style={styles.buttonRow}>
+            <Button
+              onPress={resetAll}
+              variant="outline"
+              disabled={isProcessing || !hasChanges()}
+              style={styles.resetButton}
+            >
+              Reset
+            </Button>
+
+            <GradientButton
+              title={isProcessing ? "Processing..." : "Generate"}
+              onPress={handleGenerateMainImage}
+              disabled={isProcessing}
+              loading={isProcessing}
+              icon="zap"
+              style={styles.generateButton}
+            />
+          </View>
         </View>
       </Animated.View>
 
@@ -424,24 +419,26 @@ const styles = StyleSheet.create({
     color: Colors.editing.textSecondary,
     fontSize: 14,
   },
-  platformSection: {
+  bottomActionBar: {
     marginHorizontal: Spacing.md,
-    marginBottom: Spacing.sm,
     borderRadius: BorderRadius.xl,
     overflow: "hidden",
   },
-  platformBlur: {
+  buttonBlur: {
     ...StyleSheet.absoluteFillObject,
   },
-  platformContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+  actionBarContent: {
     padding: Spacing.md,
-    backgroundColor: "rgba(26, 26, 26, 0.7)",
+    backgroundColor: "rgba(26, 26, 26, 0.85)",
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.08)",
     borderRadius: BorderRadius.xl,
+    gap: Spacing.md,
+  },
+  platformRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   platformLabel: {
     color: Colors.editing.textSecondary,
@@ -454,7 +451,7 @@ const styles = StyleSheet.create({
   },
   platformChip: {
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+    paddingVertical: 8,
     borderRadius: BorderRadius.full,
     backgroundColor: "rgba(255, 255, 255, 0.08)",
     borderWidth: 1,
@@ -466,34 +463,21 @@ const styles = StyleSheet.create({
   },
   platformChipText: {
     color: Colors.editing.textSecondary,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "500",
   },
   platformChipTextActive: {
     color: Colors.editing.buttonText,
     fontWeight: "600",
   },
-  buttonContainer: {
-    marginHorizontal: Spacing.md,
-    borderRadius: BorderRadius.xl,
-    overflow: "hidden",
-  },
-  buttonBlur: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  buttonContent: {
+  buttonRow: {
     flexDirection: "row",
     gap: Spacing.md,
-    padding: Spacing.md,
-    backgroundColor: "rgba(26, 26, 26, 0.7)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
-    borderRadius: BorderRadius.xl,
   },
   resetButton: {
     flex: 1,
   },
-  doneButton: {
+  generateButton: {
     flex: 2,
   },
 });
