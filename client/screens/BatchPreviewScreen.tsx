@@ -102,14 +102,14 @@ export default function BatchPreviewScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
 
       {/* Header */}
       <Animated.View
         entering={FadeIn.duration(300)}
         style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}
       >
-        <BlurView intensity={40} tint="dark" style={styles.headerBlur} />
+        <BlurView intensity={40} tint="light" style={styles.headerBlur} />
         <View style={styles.headerContent}>
           <IconButton
             icon="chevron-left"
@@ -254,8 +254,8 @@ export default function BatchPreviewScreen() {
         entering={FadeInUp.delay(400).duration(400)}
         style={[styles.bottomBar, { paddingBottom: insets.bottom + Spacing.md }]}
       >
-        <BlurView intensity={40} tint="dark" style={styles.bottomBlur} />
-        <GlassCard theme="dark" padding="md" borderRadius="xl">
+        <BlurView intensity={40} tint="light" style={styles.bottomBlur} />
+        <GlassCard theme="light" padding="md" borderRadius="xl">
           <View style={styles.bottomContent}>
             <View style={styles.summaryRow}>
               <View style={styles.summaryItem}>

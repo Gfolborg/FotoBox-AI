@@ -127,14 +127,14 @@ export default function LifestyleResultScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
 
       {/* Header */}
       <Animated.View
         entering={FadeInDown.duration(400)}
         style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}
       >
-        <BlurView intensity={40} tint="dark" style={styles.headerBlur} />
+        <BlurView intensity={40} tint="light" style={styles.headerBlur} />
         <View style={styles.headerContent}>
           <Pressable
             style={styles.headerButton}
@@ -223,8 +223,8 @@ export default function LifestyleResultScreen() {
         entering={FadeInUp.delay(400).duration(400)}
         style={[styles.bottomBar, { paddingBottom: insets.bottom + Spacing.md }]}
       >
-        <BlurView intensity={40} tint="dark" style={styles.bottomBlur} />
-        <GlassCard theme="dark" padding="lg" borderRadius="xl">
+        <BlurView intensity={40} tint="light" style={styles.bottomBlur} />
+        <GlassCard theme="light" padding="lg" borderRadius="xl">
           <View style={styles.actionButtons}>
             {/* Primary Save Button */}
             {isSaved ? (

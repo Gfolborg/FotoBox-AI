@@ -163,11 +163,11 @@ export default function BatchProcessingScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
 
       {/* Header */}
       <Animated.View entering={FadeIn.duration(400)} style={styles.header}>
-        <BlurView intensity={40} tint="dark" style={styles.headerBlur} />
+        <BlurView intensity={40} tint="light" style={styles.headerBlur} />
         <View style={styles.headerContent}>
           <GlassPill>
             <Feather name="cpu" size={16} color={Colors.editing.primary} />
@@ -214,7 +214,7 @@ export default function BatchProcessingScreen() {
             key={result.originalUri}
             entering={FadeInUp.delay(200 + index * 60).duration(400)}
           >
-            <GlassCard theme="dark" padding="md" borderRadius="lg" style={styles.imageCard}>
+            <GlassCard theme="light" padding="md" borderRadius="lg" style={styles.imageCard}>
               <View style={styles.imageRow}>
                 <Image
                   source={{ uri: result.originalUri }}

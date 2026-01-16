@@ -87,7 +87,7 @@ export function IconButton({
       {variant === "glass" && (
         <BlurView
           intensity={30}
-          tint="dark"
+          tint="light"
           style={[styles.blur, { borderRadius: size / 2 }]}
         />
       )}

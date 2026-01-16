@@ -322,14 +322,14 @@ export default function EnvironmentSelectionScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
 
       {/* Header */}
       <Animated.View
         entering={FadeIn.duration(300)}
         style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}
       >
-        <BlurView intensity={40} tint="dark" style={styles.headerBlur} />
+        <BlurView intensity={40} tint="light" style={styles.headerBlur} />
         <View style={styles.headerContent}>
           <Pressable
             style={styles.backButton}
@@ -397,7 +397,7 @@ export default function EnvironmentSelectionScreen() {
                   </View>
                 </View>
               ) : (
-                <GlassCard theme="dark" padding="xl" borderRadius="xl">
+                <GlassCard theme="light" padding="xl" borderRadius="xl">
                   <View style={styles.placeholderContainer}>
                     <Feather
                       name="image"
@@ -577,7 +577,7 @@ export default function EnvironmentSelectionScreen() {
         entering={FadeInUp.delay(500).duration(400)}
         style={[styles.bottomBar, { paddingBottom: insets.bottom + Spacing.md }]}
       >
-        <BlurView intensity={60} tint="dark" style={styles.bottomBlur} />
+        <BlurView intensity={60} tint="light" style={styles.bottomBlur} />
         <View style={styles.bottomContent}>
           <GradientButton
             title={
@@ -602,7 +602,7 @@ export default function EnvironmentSelectionScreen() {
           entering={FadeIn.duration(200)}
           style={styles.processingOverlay}
         >
-          <GlassCard theme="dark" padding="xl" borderRadius="2xl">
+          <GlassCard theme="light" padding="xl" borderRadius="2xl">
             <View style={styles.processingContent}>
               <ProgressRing
                 progress={0.7}

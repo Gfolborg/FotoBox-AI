@@ -79,13 +79,13 @@ export default function PhotoActionScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
 
       <Animated.View
         entering={FadeIn.duration(300)}
         style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}
       >
-        <BlurView intensity={40} tint="dark" style={styles.headerBlur} />
+        <BlurView intensity={40} tint="light" style={styles.headerBlur} />
         <View style={styles.headerContent}>
           <IconButton
             icon="chevron-left"

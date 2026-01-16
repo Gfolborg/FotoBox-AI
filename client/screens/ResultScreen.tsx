@@ -181,14 +181,14 @@ export default function ResultScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
 
       {/* Header */}
       <Animated.View
         entering={FadeInDown.duration(400)}
         style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}
       >
-        <BlurView intensity={40} tint="dark" style={styles.headerBlur} />
+        <BlurView intensity={40} tint="light" style={styles.headerBlur} />
         <View style={styles.headerContent}>
           <Pressable
             style={styles.headerButton}
@@ -287,7 +287,7 @@ export default function ResultScreen() {
           entering={FadeInUp.delay(400).duration(400)}
           style={styles.actionsContainer}
         >
-          <GlassCard theme="dark" padding="lg" borderRadius="xl">
+          <GlassCard theme="light" padding="lg" borderRadius="xl">
             <View style={styles.actionButtons}>
               {/* Primary Save Button */}
               {saved ? (

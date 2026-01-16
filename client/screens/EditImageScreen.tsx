@@ -224,13 +224,13 @@ export default function EditImageScreen() {
 
   return (
     <GestureHandlerRootView style={styles.container}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
 
       <Animated.View
         entering={FadeIn.duration(300)}
         style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}
       >
-        <BlurView intensity={40} tint="dark" style={styles.headerBlur} />
+        <BlurView intensity={40} tint="light" style={styles.headerBlur} />
         <View style={styles.headerContent}>
           <Pressable style={styles.headerButton} onPress={() => navigation.goBack()}>
             <ThemedText style={styles.headerButtonText}>Cancel</ThemedText>
@@ -299,7 +299,7 @@ export default function EditImageScreen() {
 
           {isProcessing && (
             <View style={styles.processingOverlay}>
-              <BlurView intensity={60} tint="dark" style={styles.processingBlur} />
+              <BlurView intensity={60} tint="light" style={styles.processingBlur} />
               <View style={styles.processingContent}>
                 <ProgressRing
                   progress={0.7}
@@ -334,7 +334,7 @@ export default function EditImageScreen() {
         entering={FadeInUp.delay(200).duration(400)}
         style={[styles.bottomActionBar, { paddingBottom: insets.bottom + Spacing.md }]}
       >
-        <BlurView intensity={40} tint="dark" style={styles.buttonBlur} />
+        <BlurView intensity={40} tint="light" style={styles.buttonBlur} />
         <View style={styles.actionBarContent}>
           <View style={styles.buttonRow}>
             <Button

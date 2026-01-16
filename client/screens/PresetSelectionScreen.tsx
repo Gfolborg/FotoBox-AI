@@ -131,7 +131,7 @@ export default function PresetSelectionScreen() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
         <ProgressRing
           progress={0.7}
           size={72}
@@ -148,14 +148,14 @@ export default function PresetSelectionScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
 
       {/* Header */}
       <Animated.View
         entering={FadeIn.duration(300)}
         style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}
       >
-        <BlurView intensity={40} tint="dark" style={styles.headerBlur} />
+        <BlurView intensity={40} tint="light" style={styles.headerBlur} />
         <View style={styles.headerContent}>
           <Pressable
             style={styles.backButton}
@@ -206,8 +206,8 @@ export default function PresetSelectionScreen() {
               entering={FadeInUp.duration(300)}
               style={[styles.bottomAction, { paddingBottom: insets.bottom + Spacing.md }]}
             >
-              <BlurView intensity={40} tint="dark" style={styles.bottomBlur} />
-              <GlassCard theme="dark" padding="md" borderRadius="xl">
+              <BlurView intensity={40} tint="light" style={styles.bottomBlur} />
+              <GlassCard theme="light" padding="md" borderRadius="xl">
                 <View style={styles.bottomContent}>
                   <View style={styles.selectedInfo}>
                     <Feather name="check-circle" size={18} color={Colors.editing.primary} />

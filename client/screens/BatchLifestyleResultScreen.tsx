@@ -133,14 +133,14 @@ export default function BatchLifestyleResultScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
 
       {/* Header */}
       <Animated.View
         entering={FadeIn.duration(300)}
         style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}
       >
-        <BlurView intensity={40} tint="dark" style={styles.headerBlur} />
+        <BlurView intensity={40} tint="light" style={styles.headerBlur} />
         <View style={styles.headerContent}>
           <View style={{ width: 44 }} />
           <View style={styles.headerCenter}>
@@ -175,8 +175,8 @@ export default function BatchLifestyleResultScreen() {
         entering={FadeInUp.delay(400).duration(400)}
         style={[styles.bottomBar, { paddingBottom: insets.bottom + Spacing.md }]}
       >
-        <BlurView intensity={60} tint="dark" style={styles.bottomBlur} />
-        <GlassCard theme="dark" padding="md" borderRadius="xl">
+        <BlurView intensity={60} tint="light" style={styles.bottomBlur} />
+        <GlassCard theme="light" padding="md" borderRadius="xl">
           <View style={styles.bottomContent}>
             {failedResults.length > 0 && (
               <View style={styles.warningRow}>
@@ -214,7 +214,7 @@ export default function BatchLifestyleResultScreen() {
           entering={FadeIn.duration(200)}
           style={styles.successOverlay}
         >
-          <GlassCard theme="dark" padding="xl" borderRadius="2xl">
+          <GlassCard theme="light" padding="xl" borderRadius="2xl">
             <SuccessAnimation />
             <ThemedText style={styles.successTitle}>
               {savedCount} Images Saved!

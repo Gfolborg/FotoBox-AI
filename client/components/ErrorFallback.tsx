@@ -84,7 +84,7 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
 
         {/* Error Message Card */}
         <Animated.View entering={FadeInUp.delay(300).duration(500)} style={styles.cardContainer}>
-          <GlassCard theme="dark" padding="lg" borderRadius="xl">
+          <GlassCard theme="light" padding="lg" borderRadius="xl">
             <View style={styles.cardContent}>
               <ThemedText type="h3" style={styles.title}>
                 Oops! Something went wrong
@@ -116,7 +116,7 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
           onRequestClose={() => setIsModalVisible(false)}
         >
           <View style={styles.modalOverlay}>
-            <BlurView intensity={40} tint="dark" style={styles.modalBlur} />
+            <BlurView intensity={40} tint="light" style={styles.modalBlur} />
             <View style={styles.modalContainer}>
               <View style={styles.modalHeader}>
                 <ThemedText type="h3" style={styles.modalTitle}>

@@ -18,7 +18,7 @@ export function GlassPill({
 }: GlassPillProps) {
   return (
     <View style={[styles.container, style]}>
-      <BlurView intensity={intensity} tint="dark" style={styles.blur} />
+      <BlurView intensity={intensity} tint="light" style={styles.blur} />
       <View
         style={[
           styles.content,
@@ -36,13 +36,13 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius["3xl"],
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.12)",
+    borderColor: "rgba(0, 0, 0, 0.08)",
   },
   blur: {
     ...StyleSheet.absoluteFillObject,
   },
   content: {
-    backgroundColor: "rgba(0, 0, 0, 0.35)",
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
     paddingVertical: Spacing.sm,
     paddingHorizontal: Spacing.md,
   },

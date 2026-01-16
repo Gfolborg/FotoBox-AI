@@ -17,7 +17,7 @@ export function GlassCard({
   children,
   style,
   variant = "default",
-  theme = "dark",
+  theme = "light",
   intensity = 40,
   padding = "lg",
   borderRadius = "xl",

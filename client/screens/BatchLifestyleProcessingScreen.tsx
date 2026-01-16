@@ -150,7 +150,7 @@ export default function BatchLifestyleProcessingScreen() {
         { paddingTop: insets.top, paddingBottom: insets.bottom },
       ]}
     >
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
 
       <View style={styles.content}>
         <Animated.View entering={FadeIn.duration(400)} style={styles.header}>
@@ -181,7 +181,7 @@ export default function BatchLifestyleProcessingScreen() {
           entering={FadeInUp.delay(400).duration(400)}
           style={styles.currentContainer}
         >
-          <GlassCard theme="dark" padding="lg" borderRadius="xl">
+          <GlassCard theme="light" padding="lg" borderRadius="xl">
             <View style={styles.currentContent}>
               <View style={styles.imagePreview}>
                 <Image
