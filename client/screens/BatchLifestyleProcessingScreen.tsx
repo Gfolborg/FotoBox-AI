@@ -42,6 +42,7 @@ export default function BatchLifestyleProcessingScreen() {
   );
   const [currentIndex, setCurrentIndex] = useState(0);
   const processingRef = useRef(false);
+  const resultsRef = useRef<ProcessingResult[]>([]);
 
   useEffect(() => {
     if (!processingRef.current) {
@@ -51,35 +52,34 @@ export default function BatchLifestyleProcessingScreen() {
   }, []);
 
   const processImages = async () => {
+    resultsRef.current = imageUris.map((uri) => ({
+      originalUri: uri,
+      resultUri: null,
+      status: "pending" as const,
+    }));
+
     for (let i = 0; i < imageUris.length; i++) {
       setCurrentIndex(i);
-      setResults((prev) =>
-        prev.map((r, idx) =>
-          idx === i ? { ...r, status: "processing" } : r
-        )
-      );
+      resultsRef.current[i] = { ...resultsRef.current[i], status: "processing" };
+      setResults([...resultsRef.current]);
 
       try {
         const resultUri = await processImage(imageUris[i]);
-        setResults((prev) =>
-          prev.map((r, idx) =>
-            idx === i ? { ...r, resultUri, status: "completed" } : r
-          )
-        );
+        resultsRef.current[i] = { ...resultsRef.current[i], resultUri, status: "completed" };
+        setResults([...resultsRef.current]);
       } catch (error) {
-        setResults((prev) =>
-          prev.map((r, idx) =>
-            idx === i
-              ? { ...r, status: "failed", error: error instanceof Error ? error.message : "Unknown error" }
-              : r
-          )
-        );
+        resultsRef.current[i] = {
+          ...resultsRef.current[i],
+          status: "failed",
+          error: error instanceof Error ? error.message : "Unknown error",
+        };
+        setResults([...resultsRef.current]);
       }
     }
 
     setTimeout(() => {
       navigation.replace("BatchLifestyleResult", {
-        results: results.map((r, idx) => ({
+        results: resultsRef.current.map((r) => ({
           ...r,
           resultUri: r.status === "completed" ? r.resultUri : null,
         })),
