@@ -4,24 +4,28 @@ import {
   StyleSheet,
   ScrollView,
   Image,
-  ActivityIndicator,
 } from "react-native";
 import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
+import { StatusBar } from "expo-status-bar";
+import { BlurView } from "expo-blur";
 import Animated, {
   FadeIn,
   FadeInDown,
+  FadeInUp,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
   withTiming,
   Easing,
 } from "react-native-reanimated";
-import pLimit from 'p-limit'; // Import p-limit
+import pLimit from "p-limit";
 
-import { GradientBackground } from "@/components/GradientBackground";
 import { ThemedText } from "@/components/ThemedText";
+import { GlassPill } from "@/components/GlassPill";
+import { GlassCard } from "@/components/GlassCard";
+import { ProgressRing } from "@/components/ProgressRing";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getApiUrl } from "@/lib/query-client";
@@ -49,17 +53,21 @@ export default function BatchProcessingScreen() {
       originalUri: uri,
       resultUri: null,
       status: "pending" as const,
-    })),
+    }))
   );
+
+  React.useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    });
+  }, [navigation]);
 
   useEffect(() => {
     processImages();
-    // Run once on mount - processImages uses current closure values
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const processImages = async () => {
-    const limit = pLimit(5); // Limit to 5 concurrent operations
+    const limit = pLimit(5);
 
     const processingPromises = imageUris.map((uri, i) =>
       limit(() => processImage(uri, i))
@@ -67,7 +75,6 @@ export default function BatchProcessingScreen() {
 
     await Promise.all(processingPromises);
 
-    // Use callback to get the most up-to-date results
     setResults((finalResults) => {
       navigation.replace("BatchResult", { results: finalResults });
       return finalResults;
@@ -77,8 +84,8 @@ export default function BatchProcessingScreen() {
   const processImage = async (imageUri: string, index: number) => {
     setResults((prev) =>
       prev.map((r, idx) =>
-        idx === index ? { ...r, status: "processing" as const } : r,
-      ),
+        idx === index ? { ...r, status: "processing" as const } : r
+      )
     );
 
     try {
@@ -92,14 +99,6 @@ export default function BatchProcessingScreen() {
       const apiUrl = getApiUrl();
       const bgColorParam = encodeURIComponent(backgroundColor);
       const endpoint = `${apiUrl}api/amazon-main?backgroundColor=${bgColorParam}`;
-      console.log(
-        `[BatchProcessing] Image ${index + 1} - Background Color:`,
-        backgroundColor,
-      );
-      console.log(
-        `[BatchProcessing] Image ${index + 1} - API Endpoint:`,
-        endpoint,
-      );
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 300000);
@@ -127,8 +126,8 @@ export default function BatchProcessingScreen() {
 
       setResults((prev) =>
         prev.map((r, idx) =>
-          idx === index ? { ...r, resultUri, status: "completed" as const } : r,
-        ),
+          idx === index ? { ...r, resultUri, status: "completed" as const } : r
+        )
       );
     } catch (error) {
       const errorMessage =
@@ -137,13 +136,9 @@ export default function BatchProcessingScreen() {
       setResults((prev) =>
         prev.map((r, idx) =>
           idx === index
-            ? {
-                ...r,
-                status: "failed" as const,
-                error: errorMessage,
-              }
-            : r,
-        ),
+            ? { ...r, status: "failed" as const, error: errorMessage }
+            : r
+        )
       );
     }
   };
@@ -151,184 +146,227 @@ export default function BatchProcessingScreen() {
   const completedCount = results.filter((r) => r.status === "completed").length;
   const failedCount = results.filter((r) => r.status === "failed").length;
   const processedCount = completedCount + failedCount;
-  const progressPercentage = (processedCount / imageUris.length) * 100;
+  const progress = processedCount / imageUris.length;
 
-  // Animated progress bar glow
-  const progressGlow = useSharedValue(0);
+  const pulseOpacity = useSharedValue(0.4);
   useEffect(() => {
-    progressGlow.value = withRepeat(
+    pulseOpacity.value = withRepeat(
       withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
       -1,
-      true,
+      true
     );
-  }, [progressGlow]);
+  }, [pulseOpacity]);
 
-  const progressGlowStyle = useAnimatedStyle(() => ({
-    opacity: 0.4 + progressGlow.value * 0.4,
+  const pulseStyle = useAnimatedStyle(() => ({
+    opacity: pulseOpacity.value,
   }));
 
   return (
-    <GradientBackground variant="warm">
+    <View style={styles.container}>
+      <StatusBar style="light" />
+
+      {/* Header */}
       <Animated.View entering={FadeIn.duration(400)} style={styles.header}>
-        <ThemedText type="h3">Processing Images</ThemedText>
-        <ThemedText type="body" style={styles.progress}>
-          {processedCount} / {imageUris.length} complete
-        </ThemedText>
+        <BlurView intensity={40} tint="dark" style={styles.headerBlur} />
+        <View style={styles.headerContent}>
+          <GlassPill>
+            <Feather name="cpu" size={16} color={Colors.editing.primary} />
+            <ThemedText style={styles.headerTitle}>Processing</ThemedText>
+          </GlassPill>
+        </View>
       </Animated.View>
 
-      <View style={styles.progressBarContainer}>
-        <Animated.View
-          style={[
-            styles.progressBar,
-            { width: `${progressPercentage}%` },
-            progressGlowStyle,
-          ]}
-        />
-      </View>
+      {/* Progress Ring Section */}
+      <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.progressSection}>
+        <ProgressRing
+          progress={progress}
+          size={140}
+          strokeWidth={8}
+          color={Colors.editing.primary}
+          backgroundColor="rgba(255, 255, 255, 0.1)"
+        >
+          <View style={styles.progressContent}>
+            <ThemedText style={styles.progressNumber}>
+              {Math.round(progress * 100)}%
+            </ThemedText>
+            <ThemedText style={styles.progressLabel}>
+              {processedCount} / {imageUris.length}
+            </ThemedText>
+          </View>
+        </ProgressRing>
 
+        <Animated.View style={[styles.processingHint, pulseStyle]}>
+          <Feather name="zap" size={14} color={Colors.editing.primary} />
+          <ThemedText style={styles.hintText}>
+            AI is removing backgrounds...
+          </ThemedText>
+        </Animated.View>
+      </Animated.View>
+
+      {/* Image List */}
       <ScrollView
-        style={styles.imageList}
-        contentContainerStyle={styles.listContent}
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
         {results.map((result, index) => (
           <Animated.View
             key={result.originalUri}
-            entering={FadeInDown.delay(index * 100).duration(400)}
-            style={styles.imageRow}
+            entering={FadeInUp.delay(200 + index * 60).duration(400)}
           >
-            <Image
-              source={{ uri: result.originalUri }}
-              style={styles.thumbnail}
-            />
-            <View style={styles.statusContainer}>
-              {result.status === "pending" && (
-                <ThemedText type="small" style={styles.statusText}>
-                  Waiting...
-                </ThemedText>
-              )}
-              {result.status === "processing" && (
-                <View style={styles.processingRow}>
-                  <ActivityIndicator
-                    size="small"
-                    color={Colors.light.primary}
-                  />
-                  <ThemedText type="small" style={styles.statusText}>
-                    Processing...
-                  </ThemedText>
-                </View>
-              )}
-              {result.status === "completed" && (
-                <Feather
-                  name="check-circle"
-                  size={20}
-                  color={Colors.light.success}
+            <GlassCard theme="dark" padding="md" borderRadius="lg" style={styles.imageCard}>
+              <View style={styles.imageRow}>
+                <Image
+                  source={{ uri: result.originalUri }}
+                  style={styles.thumbnail}
                 />
-              )}
-              {result.status === "failed" && (
-                <View style={styles.errorContainer}>
-                  <Feather
-                    name="x-circle"
-                    size={20}
-                    color={Colors.light.error}
-                  />
-                  <ThemedText type="small" style={styles.errorText}>
-                    {result.error}
+                <View style={styles.statusContainer}>
+                  <ThemedText style={styles.imageName} numberOfLines={1}>
+                    Image {index + 1}
                   </ThemedText>
+                  {result.status === "pending" && (
+                    <View style={styles.statusRow}>
+                      <View style={styles.pendingDot} />
+                      <ThemedText style={styles.statusText}>Waiting...</ThemedText>
+                    </View>
+                  )}
+                  {result.status === "processing" && (
+                    <View style={styles.statusRow}>
+                      <Animated.View style={pulseStyle}>
+                        <Feather name="loader" size={14} color={Colors.editing.primary} />
+                      </Animated.View>
+                      <ThemedText style={[styles.statusText, styles.processingText]}>
+                        Processing...
+                      </ThemedText>
+                    </View>
+                  )}
+                  {result.status === "completed" && (
+                    <View style={styles.statusRow}>
+                      <Feather name="check-circle" size={16} color={Colors.editing.success} />
+                      <ThemedText style={[styles.statusText, styles.successText]}>
+                        Complete
+                      </ThemedText>
+                    </View>
+                  )}
+                  {result.status === "failed" && (
+                    <View style={styles.statusRow}>
+                      <Feather name="x-circle" size={16} color={Colors.editing.error} />
+                      <ThemedText style={[styles.statusText, styles.errorText]} numberOfLines={1}>
+                        {result.error || "Failed"}
+                      </ThemedText>
+                    </View>
+                  )}
                 </View>
-              )}
-            </View>
+              </View>
+            </GlassCard>
           </Animated.View>
         ))}
       </ScrollView>
-
-      <Animated.View entering={FadeIn.delay(300).duration(400)} style={styles.note}>
-        <ThemedText type="small" style={styles.noteText}>
-          AI is removing backgrounds and creating listing-ready images...
-        </ThemedText>
-      </Animated.View>
-    </GradientBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: Colors.editing.backgroundRoot,
   },
   header: {
-    paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.lg,
+    paddingTop: 60,
     paddingBottom: Spacing.md,
     alignItems: "center",
   },
-  progress: {
-    marginTop: Spacing.xs,
-    color: Colors.light.textSecondary,
+  headerBlur: {
+    ...StyleSheet.absoluteFillObject,
   },
-  progressBarContainer: {
-    height: 4,
-    backgroundColor: Colors.light.border,
-    marginHorizontal: Spacing.xl,
-    marginBottom: Spacing.lg,
-    borderRadius: BorderRadius.full,
-    overflow: "hidden",
+  headerContent: {
+    alignItems: "center",
   },
-  progressBar: {
-    height: "100%",
-    backgroundColor: Colors.light.primary,
-    borderRadius: BorderRadius.full,
+  headerTitle: {
+    color: Colors.editing.text,
+    fontSize: 15,
+    fontWeight: "600",
   },
-  imageList: {
+  progressSection: {
+    alignItems: "center",
+    paddingVertical: Spacing.xl,
+    gap: Spacing.lg,
+  },
+  progressContent: {
+    alignItems: "center",
+  },
+  progressNumber: {
+    color: Colors.editing.text,
+    fontSize: 28,
+    fontWeight: "700",
+  },
+  progressLabel: {
+    color: Colors.editing.textSecondary,
+    fontSize: 13,
+  },
+  processingHint: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+  },
+  hintText: {
+    color: Colors.editing.textSecondary,
+    fontSize: 14,
+  },
+  scrollView: {
     flex: 1,
   },
-  listContent: {
-    paddingHorizontal: Spacing.xl,
+  scrollContent: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.xl,
+    gap: Spacing.sm,
+  },
+  imageCard: {
+    marginBottom: 0,
   },
   imageRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: Spacing.md,
-    padding: Spacing.md,
-    backgroundColor: Colors.light.backgroundDefault,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: Colors.light.border,
+    gap: Spacing.md,
   },
   thumbnail: {
-    width: 60,
-    height: 60,
-    borderRadius: BorderRadius.sm,
-    backgroundColor: Colors.light.border,
+    width: 56,
+    height: 56,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.editing.backgroundSecondary,
   },
   statusContainer: {
     flex: 1,
-    marginLeft: Spacing.md,
-    justifyContent: "center",
+    gap: Spacing.xs,
+  },
+  imageName: {
+    color: Colors.editing.text,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  statusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+  },
+  pendingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.editing.textTertiary,
   },
   statusText: {
-    color: Colors.light.textSecondary,
+    color: Colors.editing.textSecondary,
+    fontSize: 13,
   },
-  processingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
+  processingText: {
+    color: Colors.editing.primary,
   },
-  errorContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
+  successText: {
+    color: Colors.editing.success,
   },
   errorText: {
-    color: Colors.light.error,
+    color: Colors.editing.error,
     flex: 1,
-  },
-  note: {
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: Colors.light.border,
-  },
-  noteText: {
-    textAlign: "center",
-    color: Colors.light.textSecondary,
   },
 });

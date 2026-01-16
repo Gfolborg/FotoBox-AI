@@ -1,9 +1,20 @@
 import React, { useRef, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Dimensions, Pressable, Image } from 'react-native';
+import { View, StyleSheet, FlatList, Dimensions, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withTiming,
+  FadeIn,
+  FadeInUp,
+} from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
-import { Colors, Spacing, BorderRadius, Typography } from '@/constants/theme';
+import * as Haptics from 'expo-haptics';
+import { GradientButton } from '@/components/GradientButton';
+import { GlassCard } from '@/components/GlassCard';
+import { ThemedText } from '@/components/ThemedText';
+import { Colors, Spacing, BorderRadius, Gradients } from '@/constants/theme';
 
 const logoImage = require("../../assets/images/fotobox-logo.png");
 
@@ -15,36 +26,63 @@ const onboardingSlides = [
     icon: 'logo',
     title: '',
     description: 'Create professional product images with one tap. Our AI removes backgrounds and creates perfect listings.',
+    gradient: ['#FFF7ED', '#FAFAF9'] as [string, string],
   },
   {
     id: '2',
     icon: 'image',
     title: 'AI-Powered Scenes',
     description: 'Place your products in beautiful, AI-generated lifestyle environments to attract more customers.',
+    gradient: ['#F0F9FF', '#F5F5F4'] as [string, string],
   },
   {
     id: '3',
     icon: 'layers',
     title: 'Batch Edit Like a Pro',
     description: 'Save time by processing multiple images at once. Edit and enhance your entire product line in minutes.',
+    gradient: ['#ECFDF5', '#F5F5F4'] as [string, string],
   },
 ];
 
 interface OnboardingSlideProps {
   item: typeof onboardingSlides[0];
+  index: number;
 }
 
-const OnboardingSlide = ({ item }: OnboardingSlideProps) => (
+const OnboardingSlide = ({ item, index }: OnboardingSlideProps) => (
   <View style={styles.slide}>
-    {item.icon === 'logo' ? (
-      <Image source={logoImage} style={styles.fullLogo} resizeMode="contain" />
-    ) : (
-      <View style={styles.iconContainer}>
-        <Feather name={item.icon as any} size={64} color={Colors.light.primary} />
-      </View>
-    )}
-    {item.title ? <Text style={styles.slideTitle}>{item.title}</Text> : null}
-    <Text style={styles.slideDescription}>{item.description}</Text>
+    <LinearGradient
+      colors={item.gradient}
+      style={styles.slideGradient}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+    />
+    
+    <Animated.View 
+      entering={FadeIn.delay(index * 100).duration(600)}
+      style={styles.slideContent}
+    >
+      {item.icon === 'logo' ? (
+        <Image source={logoImage} style={styles.fullLogo} resizeMode="contain" />
+      ) : (
+        <View style={styles.iconContainer}>
+          <LinearGradient
+            colors={Gradients.primary as [string, string]}
+            style={styles.iconGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <Feather name={item.icon as any} size={48} color={Colors.light.buttonText} />
+          </LinearGradient>
+        </View>
+      )}
+      
+      {item.title ? (
+        <ThemedText type="h2" style={styles.slideTitle}>{item.title}</ThemedText>
+      ) : null}
+      
+      <ThemedText style={styles.slideDescription}>{item.description}</ThemedText>
+    </Animated.View>
   </View>
 );
 
@@ -58,6 +96,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
   const [activeIndex, setActiveIndex] = useState(0);
 
   const handleNext = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (activeIndex < onboardingSlides.length - 1) {
       flatListRef.current?.scrollToIndex({ index: activeIndex + 1 });
     } else {
@@ -65,12 +104,17 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     }
   };
 
+  const handleSkip = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onComplete();
+  };
+
   return (
     <View style={styles.container}>
       <FlatList
         ref={flatListRef}
         data={onboardingSlides}
-        renderItem={({ item }) => <OnboardingSlide item={item} />}
+        renderItem={({ item, index }) => <OnboardingSlide item={item} index={index} />}
         keyExtractor={(item) => item.id}
         horizontal
         pagingEnabled
@@ -82,30 +126,64 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
         scrollEventThrottle={16}
       />
 
-      <View style={[styles.footer, { paddingBottom: insets.bottom + Spacing.md }]}>
-        <View style={styles.pagination}>
-          {onboardingSlides.map((_, index) => (
-            <PaginationDot key={index} active={index === activeIndex} />
-          ))}
-        </View>
+      <Animated.View 
+        entering={FadeInUp.delay(400).duration(500)}
+        style={[styles.footer, { paddingBottom: insets.bottom + Spacing.lg }]}
+      >
+        <GlassCard theme="light" variant="subtle" padding="lg" borderRadius="2xl">
+          <View style={styles.footerContent}>
+            {/* Pagination */}
+            <View style={styles.pagination}>
+              {onboardingSlides.map((_, index) => (
+                <PaginationDot key={index} active={index === activeIndex} />
+              ))}
+            </View>
 
-        <Pressable onPress={handleNext} style={styles.nextButton}>
-          <Text style={styles.nextButtonText}>
-            {activeIndex === onboardingSlides.length - 1 ? 'Get Started' : 'Next'}
-          </Text>
-        </Pressable>
-      </View>
+            {/* Buttons */}
+            <View style={styles.buttonsRow}>
+              {activeIndex < onboardingSlides.length - 1 && (
+                <GradientButton
+                  title="Skip"
+                  onPress={handleSkip}
+                  variant="ghost"
+                  size="sm"
+                  style={styles.skipButton}
+                />
+              )}
+              
+              <GradientButton
+                title={activeIndex === onboardingSlides.length - 1 ? 'Get Started' : 'Next'}
+                onPress={handleNext}
+                icon={activeIndex === onboardingSlides.length - 1 ? 'arrow-right' : undefined}
+                iconPosition="right"
+                style={styles.nextButton}
+              />
+            </View>
+          </View>
+        </GlassCard>
+      </Animated.View>
     </View>
   );
 }
 
 const PaginationDot = ({ active }: { active: boolean }) => {
-  const width = useSharedValue(active ? 20 : 8);
-  const style = useAnimatedStyle(() => ({
-    width: withTiming(active ? 20 : 8),
+  const animatedStyle = useAnimatedStyle(() => ({
+    width: withTiming(active ? 24 : 8, { duration: 200 }),
+    opacity: withTiming(active ? 1 : 0.4, { duration: 200 }),
   }));
 
-  return <Animated.View style={[styles.dot, style]} />;
+  return (
+    <Animated.View style={[styles.dot, animatedStyle]}>
+      {active && (
+        <LinearGradient
+          colors={Gradients.primary as [string, string]}
+          style={styles.dotGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+        />
+      )}
+    </Animated.View>
+  );
 };
 
 const styles = StyleSheet.create({
@@ -115,6 +193,13 @@ const styles = StyleSheet.create({
   },
   slide: {
     width: SCREEN_WIDTH,
+    flex: 1,
+  },
+  slideGradient: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  slideContent: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: Spacing.xl,
@@ -122,15 +207,20 @@ const styles = StyleSheet.create({
   iconContainer: {
     width: 120,
     height: 120,
-    borderRadius: BorderRadius.full,
-    backgroundColor: Colors.light.backgroundDefault,
+    borderRadius: 60,
+    overflow: 'hidden',
+    marginBottom: Spacing.xl,
+    shadowColor: Colors.light.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  iconGradient: {
+    width: '100%',
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: Spacing.xl,
-  },
-  logoImage: {
-    width: 80,
-    height: 80,
   },
   fullLogo: {
     width: 280,
@@ -138,42 +228,50 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
   slideTitle: {
-    ...Typography.h3,
     color: Colors.light.text,
     textAlign: 'center',
     marginBottom: Spacing.md,
   },
   slideDescription: {
-    ...Typography.body,
     color: Colors.light.textSecondary,
     textAlign: 'center',
-    maxWidth: '80%',
+    fontSize: 16,
+    lineHeight: 24,
+    maxWidth: '85%',
   },
   footer: {
-    paddingHorizontal: Spacing.xl,
+    position: 'absolute',
+    bottom: 0,
+    left: Spacing.lg,
+    right: Spacing.lg,
+  },
+  footerContent: {
+    gap: Spacing.lg,
   },
   pagination: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: Spacing.lg,
+    gap: Spacing.sm,
   },
   dot: {
     height: 8,
     borderRadius: 4,
     backgroundColor: Colors.light.primary,
-    marginHorizontal: Spacing.xs,
+    overflow: 'hidden',
+  },
+  dotGradient: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  buttonsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  skipButton: {
+    flex: 1,
   },
   nextButton: {
-    height: Spacing.buttonHeight,
-    backgroundColor: Colors.light.primary,
-    borderRadius: BorderRadius.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  nextButtonText: {
-    ...Typography.body,
-    fontWeight: '600',
-    color: Colors.light.buttonText,
+    flex: 2,
   },
 });

@@ -12,13 +12,18 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
-import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
+import { StatusBar } from "expo-status-bar";
+import { BlurView } from "expo-blur";
+import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
+import * as Haptics from "expo-haptics";
 
-import { GradientBackground } from "@/components/GradientBackground";
 import { ThemedText } from "@/components/ThemedText";
-import { Button } from "@/components/Button";
+import { GradientButton } from "@/components/GradientButton";
+import { GlassCard } from "@/components/GlassCard";
+import { GlassPill } from "@/components/GlassPill";
+import { IconButton } from "@/components/IconButton";
 import { BackgroundColorPicker } from "@/components/BackgroundColorPicker";
-import { Colors, Spacing, BorderRadius } from "@/constants/theme";
+import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { usePresets } from "@/hooks/usePresets";
 import { EditingPreset } from "@/types/preset";
@@ -29,9 +34,8 @@ type NavigationProp = NativeStackNavigationProp<
 >;
 type RouteProps = RouteProp<RootStackParamList, "BatchPreview">;
 
-const AI_COST_PER_IMAGE = 0.01; // Example: $0.01 per AI-processed image
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const IMAGE_SIZE = (SCREEN_WIDTH - Spacing.xl * 3) / 2;
+const IMAGE_SIZE = (SCREEN_WIDTH - Spacing.lg * 3) / 2;
 
 export default function BatchPreviewScreen() {
   const insets = useSafeAreaInsets();
@@ -40,21 +44,18 @@ export default function BatchPreviewScreen() {
   const { imageUris } = route.params;
 
   const [selectedImages, setSelectedImages] = useState<string[]>(imageUris);
-  const [selectedBackgroundColor, setSelectedBackgroundColor] =
-    useState("#FFFFFF");
-  const [selectedPreset, setSelectedPreset] = useState<EditingPreset | null>(
-    null,
-  );
+  const [selectedBackgroundColor, setSelectedBackgroundColor] = useState("#FFFFFF");
+  const [selectedPreset, setSelectedPreset] = useState<EditingPreset | null>(null);
 
   const { presets } = usePresets();
 
-  const estimatedCost = selectedImages.length * AI_COST_PER_IMAGE;
-
   const handleRemoveImage = (uri: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedImages((prev) => prev.filter((img) => img !== uri));
   };
 
   const handleSelectPreset = (preset: EditingPreset | null) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedPreset(preset);
     if (preset) {
       setSelectedBackgroundColor(preset.backgroundColor);
@@ -63,49 +64,89 @@ export default function BatchPreviewScreen() {
 
   const handleGenerate = () => {
     if (selectedImages.length === 0) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     navigation.navigate("BatchProcessing", {
       imageUris: selectedImages,
       backgroundColor: selectedBackgroundColor,
     });
   };
 
-  return (
-    <GradientBackground variant="subtle">
-      <View style={[styles.content, { paddingTop: Spacing.md }]}>
-        <Animated.View entering={FadeIn.duration(400)} style={styles.header}>
-          <ThemedText type="h4">
-            {selectedImages.length}{" "}
-            {selectedImages.length === 1 ? "Image" : "Images"} Selected
-          </ThemedText>
-          <ThemedText type="small" style={styles.subtitle}>
-            Tap X to remove images • Max 10 images
-          </ThemedText>
-        </Animated.View>
+  React.useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    });
+  }, [navigation]);
 
+  return (
+    <View style={styles.container}>
+      <StatusBar style="light" />
+
+      {/* Header */}
+      <Animated.View
+        entering={FadeIn.duration(300)}
+        style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}
+      >
+        <BlurView intensity={40} tint="dark" style={styles.headerBlur} />
+        <View style={styles.headerContent}>
+          <IconButton
+            icon="chevron-left"
+            onPress={() => navigation.goBack()}
+            size={44}
+            iconSize={24}
+            variant="ghost"
+            color={Colors.editing.text}
+          />
+
+          <GlassPill>
+            <Feather name="layers" size={16} color={Colors.editing.text} />
+            <ThemedText style={styles.headerTitle}>Batch Edit</ThemedText>
+          </GlassPill>
+
+          <View style={styles.countBadge}>
+            <ThemedText style={styles.countText}>{selectedImages.length}</ThemedText>
+          </View>
+        </View>
+      </Animated.View>
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Image Grid */}
         <FlatList
           data={selectedImages}
           numColumns={2}
           keyExtractor={(item) => item}
+          scrollEnabled={false}
           contentContainerStyle={styles.grid}
+          columnWrapperStyle={styles.gridRow}
           renderItem={({ item, index }) => (
             <Animated.View
-              entering={FadeInDown.delay(index * 80).duration(400)}
+              entering={FadeInDown.delay(index * 60).duration(400)}
               style={styles.imageCard}
             >
               <Image source={{ uri: item }} style={styles.image} />
+              <View style={styles.imageOverlay} />
               <Pressable
                 style={styles.removeButton}
                 onPress={() => handleRemoveImage(item)}
               >
-                <Feather name="x" size={16} color={Colors.light.white} />
+                <Feather name="x" size={14} color={Colors.editing.text} />
               </Pressable>
+              <View style={styles.indexBadge}>
+                <ThemedText style={styles.indexText}>{index + 1}</ThemedText>
+              </View>
             </Animated.View>
           )}
         />
 
         {/* Preset Selector */}
         {presets.length > 0 && (
-          <View style={styles.presetSection}>
+          <Animated.View
+            entering={FadeInUp.delay(200).duration(400)}
+            style={styles.section}
+          >
             <ThemedText style={styles.sectionLabel}>Apply Preset</ThemedText>
             <ScrollView
               horizontal
@@ -133,8 +174,7 @@ export default function BatchPreviewScreen() {
                   key={preset.id}
                   style={[
                     styles.presetChip,
-                    selectedPreset?.id === preset.id &&
-                      styles.presetChipSelected,
+                    selectedPreset?.id === preset.id && styles.presetChipSelected,
                   ]}
                   onPress={() => handleSelectPreset(preset)}
                 >
@@ -147,8 +187,7 @@ export default function BatchPreviewScreen() {
                   <ThemedText
                     style={[
                       styles.presetChipText,
-                      selectedPreset?.id === preset.id &&
-                        styles.presetChipTextSelected,
+                      selectedPreset?.id === preset.id && styles.presetChipTextSelected,
                     ]}
                     numberOfLines={1}
                   >
@@ -157,10 +196,15 @@ export default function BatchPreviewScreen() {
                 </Pressable>
               ))}
             </ScrollView>
-          </View>
+          </Animated.View>
         )}
 
-        <View style={styles.colorPickerContainer}>
+        {/* Background Color */}
+        <Animated.View
+          entering={FadeInUp.delay(300).duration(400)}
+          style={styles.section}
+        >
+          <ThemedText style={styles.sectionLabel}>Background Color</ThemedText>
           <BackgroundColorPicker
             selectedColor={selectedBackgroundColor}
             onColorSelect={(color) => {
@@ -168,100 +212,156 @@ export default function BatchPreviewScreen() {
               setSelectedPreset(null);
             }}
           />
-        </View>
-      </View>
+        </Animated.View>
+      </ScrollView>
 
-      <View
-        style={[
-          styles.buttonContainer,
-          { paddingBottom: insets.bottom + Spacing.md },
-        ]}
+      {/* Bottom Action Bar */}
+      <Animated.View
+        entering={FadeInUp.delay(400).duration(400)}
+        style={[styles.bottomBar, { paddingBottom: insets.bottom + Spacing.md }]}
       >
-        <ThemedText style={styles.costEstimateText}>
-          Estimated Cost: ${estimatedCost.toFixed(2)}
-        </ThemedText>
-        <Button onPress={handleGenerate} disabled={selectedImages.length === 0}>
-          <ThemedText style={styles.buttonText}>
-            Generate {selectedImages.length} Product{" "}
-            {selectedImages.length === 1 ? "Image" : "Images"}
-          </ThemedText>
-        </Button>
-      </View>
-    </GradientBackground>
+        <BlurView intensity={40} tint="dark" style={styles.bottomBlur} />
+        <GlassCard theme="dark" padding="md" borderRadius="xl">
+          <View style={styles.bottomContent}>
+            <View style={styles.summaryRow}>
+              <View style={styles.summaryItem}>
+                <Feather name="image" size={16} color={Colors.editing.textSecondary} />
+                <ThemedText style={styles.summaryText}>
+                  {selectedImages.length} {selectedImages.length === 1 ? "image" : "images"}
+                </ThemedText>
+              </View>
+              <View style={styles.summaryDot} />
+              <View style={styles.summaryItem}>
+                <View
+                  style={[
+                    styles.colorDot,
+                    { backgroundColor: selectedBackgroundColor },
+                  ]}
+                />
+                <ThemedText style={styles.summaryText}>
+                  {selectedBackgroundColor === "#FFFFFF" ? "White" : selectedBackgroundColor}
+                </ThemedText>
+              </View>
+            </View>
+
+            <GradientButton
+              title={`Generate ${selectedImages.length} ${selectedImages.length === 1 ? "Image" : "Images"}`}
+              onPress={handleGenerate}
+              disabled={selectedImages.length === 0}
+              icon="zap"
+              fullWidth
+            />
+          </View>
+        </GlassCard>
+      </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  content: {
-    flex: 1,
+    backgroundColor: Colors.editing.backgroundRoot,
   },
   header: {
-    paddingHorizontal: Spacing.xl,
-    marginBottom: Spacing.lg,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
   },
-  subtitle: {
-    marginTop: Spacing.xs,
-    color: Colors.light.textSecondary,
+  headerBlur: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  headerContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  headerTitle: {
+    color: Colors.editing.text,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  countBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.editing.primary,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  countText: {
+    color: Colors.editing.buttonText,
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  scrollView: {
+    flex: 1,
+    marginTop: 100,
+  },
+  scrollContent: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: 200,
   },
   grid: {
-    paddingHorizontal: Spacing.xl,
+    gap: Spacing.md,
   },
-  colorPickerContainer: {
-    marginTop: Spacing.md,
-    marginBottom: Spacing.md,
+  gridRow: {
+    gap: Spacing.md,
   },
   imageCard: {
     width: IMAGE_SIZE,
     height: IMAGE_SIZE,
-    marginRight: Spacing.md,
-    marginBottom: Spacing.md,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.lg,
     overflow: "hidden",
-    backgroundColor: Colors.light.border,
+    backgroundColor: Colors.editing.backgroundSecondary,
   },
   image: {
     width: "100%",
     height: "100%",
     resizeMode: "cover",
   },
+  imageOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.1)",
+  },
   removeButton: {
     position: "absolute",
     top: Spacing.xs,
     right: Spacing.xs,
-    width: 24,
-    height: 24,
-    borderRadius: BorderRadius.full,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: "rgba(0, 0, 0, 0.6)",
     justifyContent: "center",
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
   },
-  buttonContainer: {
-    paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: Colors.light.border,
+  indexBadge: {
+    position: "absolute",
+    bottom: Spacing.xs,
+    left: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
   },
-  costEstimateText: {
-    textAlign: "center",
-    color: Colors.light.textSecondary,
-    marginBottom: Spacing.sm,
-    fontSize: 14,
-  },
-  buttonText: {
-    color: Colors.light.white,
+  indexText: {
+    color: Colors.editing.text,
+    fontSize: 11,
     fontWeight: "600",
   },
-  presetSection: {
-    marginTop: Spacing.md,
-    paddingHorizontal: Spacing.xl,
+  section: {
+    marginTop: Spacing.xl,
   },
   sectionLabel: {
     fontSize: 12,
     fontWeight: "600",
-    color: Colors.light.textSecondary,
+    color: Colors.editing.textSecondary,
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: Spacing.sm,
@@ -276,28 +376,69 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.full,
-    backgroundColor: Colors.light.backgroundSecondary,
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
     borderWidth: 1,
-    borderColor: Colors.light.border,
+    borderColor: "rgba(255, 255, 255, 0.1)",
   },
   presetChipSelected: {
-    borderColor: Colors.light.primary,
-    backgroundColor: Colors.light.backgroundTertiary,
+    borderColor: Colors.editing.primary,
+    backgroundColor: Colors.editing.primarySubtle,
   },
   presetChipColor: {
     width: 16,
     height: 16,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: Colors.light.border,
+    borderColor: "rgba(255, 255, 255, 0.2)",
   },
   presetChipText: {
     fontSize: 13,
-    color: Colors.light.textSecondary,
+    color: Colors.editing.textSecondary,
     maxWidth: 100,
   },
   presetChipTextSelected: {
-    color: Colors.light.primary,
+    color: Colors.editing.primary,
     fontWeight: "600",
+  },
+  bottomBar: {
+    position: "absolute",
+    bottom: 0,
+    left: Spacing.md,
+    right: Spacing.md,
+  },
+  bottomBlur: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: BorderRadius.xl,
+  },
+  bottomContent: {
+    gap: Spacing.md,
+  },
+  summaryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.sm,
+  },
+  summaryItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+  },
+  summaryText: {
+    color: Colors.editing.textSecondary,
+    fontSize: 13,
+  },
+  summaryDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.editing.textTertiary,
+  },
+  colorDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
   },
 });
