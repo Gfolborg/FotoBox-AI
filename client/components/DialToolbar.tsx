@@ -566,9 +566,9 @@ function AspectButton({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "rgba(20, 20, 22, 0.95)",
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderTopWidth: 1,
-    borderTopColor: "rgba(255, 255, 255, 0.08)",
+    borderTopColor: "rgba(0, 0, 0, 0.08)",
     paddingTop: Spacing.xs,
     paddingBottom: Spacing.xs,
   },
@@ -586,10 +586,10 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.md,
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    backgroundColor: "rgba(0, 0, 0, 0.03)",
   },
   tabActive: {
-    backgroundColor: "rgba(255, 107, 107, 0.15)",
+    backgroundColor: Colors.editing.primarySubtle,
   },
   tabText: {
     fontSize: 13,
@@ -617,9 +617,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: Spacing.md,
     borderRadius: BorderRadius.full,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    backgroundColor: "rgba(0, 0, 0, 0.05)",
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: "rgba(0, 0, 0, 0.08)",
   },
   chipActive: {
     backgroundColor: Colors.editing.primary,
@@ -680,7 +680,7 @@ const styles = StyleSheet.create({
   rotationBadge: {
     paddingHorizontal: Spacing.sm,
     paddingVertical: 4,
-    backgroundColor: "rgba(255, 107, 107, 0.2)",
+    backgroundColor: Colors.editing.primarySubtle,
     borderRadius: BorderRadius.full,
   },
   rotationText: {
@@ -702,9 +702,9 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.md,
     borderWidth: 1.5,
-    borderColor: "rgba(255, 255, 255, 0.15)",
+    borderColor: "rgba(0, 0, 0, 0.1)",
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    backgroundColor: "rgba(0, 0, 0, 0.03)",
   },
   aspectBtnActive: {
     borderColor: Colors.editing.primary,

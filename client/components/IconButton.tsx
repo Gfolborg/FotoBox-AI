@@ -31,7 +31,7 @@ export function IconButton({
   onPress,
   size = 48,
   iconSize = 24,
-  color = Colors.light.buttonText,
+  color = Colors.light.text,
   variant = "glass",
   disabled = false,
   style,
@@ -108,9 +108,9 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
   },
   glass: {
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.15)",
+    borderColor: "rgba(0, 0, 0, 0.08)",
   },
   solid: {
     backgroundColor: Colors.light.primary,
@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   default: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    backgroundColor: "rgba(0, 0, 0, 0.05)",
   },
   disabled: {
     opacity: 0.4,

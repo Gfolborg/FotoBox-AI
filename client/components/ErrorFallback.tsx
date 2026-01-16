@@ -53,7 +53,7 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={[Colors.editing.backgroundRoot, "#1A1A1A"]}
+        colors={[Colors.editing.backgroundRoot, "#F5F5F4"]}
         style={styles.gradient}
       />
 
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
     width: "100%",
     borderRadius: BorderRadius.md,
     padding: Spacing.lg,
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    backgroundColor: "rgba(0, 0, 0, 0.05)",
     borderWidth: 1,
     borderColor: Colors.editing.border,
   },

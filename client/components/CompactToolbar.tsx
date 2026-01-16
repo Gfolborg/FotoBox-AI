@@ -356,9 +356,9 @@ function TransformButton({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "rgba(20, 20, 22, 0.95)",
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderTopWidth: 1,
-    borderTopColor: "rgba(255, 255, 255, 0.08)",
+    borderTopColor: "rgba(0, 0, 0, 0.08)",
     paddingTop: Spacing.sm,
     paddingBottom: Spacing.sm,
   },
@@ -392,9 +392,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: Spacing.md,
     borderRadius: BorderRadius.full,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    backgroundColor: "rgba(0, 0, 0, 0.05)",
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: "rgba(0, 0, 0, 0.08)",
   },
   chipActive: {
     backgroundColor: Colors.editing.primary,
@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
   rotationBadge: {
     paddingHorizontal: Spacing.sm,
     paddingVertical: 4,
-    backgroundColor: "rgba(255, 107, 107, 0.2)",
+    backgroundColor: Colors.editing.primarySubtle,
     borderRadius: BorderRadius.full,
   },
   rotationText: {

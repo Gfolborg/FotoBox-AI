@@ -144,13 +144,13 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   indicatorContent: {
-    backgroundColor: "rgba(0, 0, 0, 0.85)",
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.xl,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.15)",
+    borderColor: "rgba(0, 0, 0, 0.1)",
   },
   indicatorLabel: {
     color: Colors.editing.textSecondary,
@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
     paddingHorizontal: Spacing.md,
     paddingVertical: 4,
-    backgroundColor: "rgba(255, 107, 107, 0.2)",
+    backgroundColor: Colors.editing.primarySubtle,
     borderRadius: BorderRadius.full,
   },
   dragHintText: {
