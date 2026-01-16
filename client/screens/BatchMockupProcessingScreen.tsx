@@ -5,7 +5,6 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
-import { File } from "expo-file-system";
 import { Feather } from "@expo/vector-icons";
 
 import { ThemedText } from "@/components/ThemedText";
@@ -82,8 +81,11 @@ export default function BatchMockupProcessingScreen() {
 
       try {
         const formData = new FormData();
-        const file = new File(imageUris[i]);
-        formData.append("file", file);
+        formData.append("file", {
+          uri: imageUris[i],
+          name: `product_${i}.jpg`,
+          type: "image/jpeg",
+        } as unknown as Blob);
         formData.append("prompt", prompt);
         formData.append("mockupType", mockupItem.id);
         formData.append("sceneVibe", sceneVibe.id);

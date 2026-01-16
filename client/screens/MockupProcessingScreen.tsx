@@ -5,7 +5,6 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
-import { File } from "expo-file-system";
 
 import { ThemedText } from "@/components/ThemedText";
 import { GlassCard } from "@/components/GlassCard";
@@ -50,8 +49,11 @@ export default function MockupProcessingScreen() {
       setStatus("Uploading image...");
       
       const formData = new FormData();
-      const file = new File(imageUri);
-      formData.append("file", file);
+      formData.append("file", {
+        uri: imageUri,
+        name: "product.jpg",
+        type: "image/jpeg",
+      } as unknown as Blob);
       
       const prompt = getMockupPrompt(
         mockupItem,
