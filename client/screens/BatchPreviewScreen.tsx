@@ -61,12 +61,12 @@ export default function BatchPreviewScreen() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsMultipleSelection: true,
       quality: 1,
-      selectionLimit: 20 - selectedImages.length,
+      selectionLimit: 10 - selectedImages.length,
     });
 
     if (!result.canceled && result.assets.length > 0) {
       const newUris = result.assets.map((asset) => asset.uri);
-      setSelectedImages((prev) => [...prev, ...newUris].slice(0, 20));
+      setSelectedImages((prev) => [...prev, ...newUris].slice(0, 10));
     }
   };
 

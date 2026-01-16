@@ -152,7 +152,7 @@ export default function LifestyleResultScreen() {
         </View>
       </Animated.View>
 
-      <View style={styles.content}>
+      <View style={[styles.content, { paddingBottom: 220 }]}>
         {/* Image Display */}
         {showComparison ? (
           <Animated.View

@@ -31,7 +31,7 @@ export default function HomeScreen() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsMultipleSelection: true,
       quality: 1,
-      selectionLimit: 20,
+      selectionLimit: 10,
     });
 
     if (!result.canceled && result.assets.length > 0) {
