@@ -145,9 +145,8 @@ export default function EnvironmentSelectionScreen() {
   const route = useRoute<RouteProps>();
   const flatListRef = React.useRef<FlatList>(null);
 
-  const [imageUri, setImageUri] = useState<string | null>(
-    route.params?.imageUri || null,
-  );
+  const initialImages = route.params?.imageUris || (route.params?.imageUri ? [route.params.imageUri] : []);
+  const [selectedImages, setSelectedImages] = useState<string[]>(initialImages);
   const [customScene, setCustomScene] = useState("");
   const [productKeywords, setProductKeywords] = useState("");
   const [selectedScene, setSelectedScene] = useState<string>("studio");
@@ -155,6 +154,9 @@ export default function EnvironmentSelectionScreen() {
     useState<string>("natural");
   const [isProcessing, setIsProcessing] = useState(false);
   const { history: promptHistory, addToHistory } = usePromptHistory();
+
+  const isBatchMode = selectedImages.length > 1;
+  const imageUri = selectedImages[0] || null;
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
@@ -164,22 +166,36 @@ export default function EnvironmentSelectionScreen() {
 
   
   useEffect(() => {
-    if (!imageUri) {
-      handlePickImage();
+    if (selectedImages.length === 0) {
+      handlePickImages();
     }
   }, []);
+
+  const handlePickImages = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      selectionLimit: 20,
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      setSelectedImages(result.assets.map((a) => a.uri));
+    } else if (selectedImages.length === 0) {
+      navigation.goBack();
+    }
+  };
 
   const handlePickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: false,
+      allowsMultipleSelection: true,
+      selectionLimit: 20 - selectedImages.length,
       quality: 1,
     });
 
-    if (!result.canceled && result.assets[0]) {
-      setImageUri(result.assets[0].uri);
-    } else if (!imageUri) {
-      navigation.goBack();
+    if (!result.canceled && result.assets.length > 0) {
+      setSelectedImages((prev) => [...prev, ...result.assets.map((a) => a.uri)].slice(0, 20));
     }
   };
 
@@ -192,14 +208,26 @@ export default function EnvironmentSelectionScreen() {
   };
 
   const handleGenerate = async () => {
-    if (!imageUri || (!customScene.trim() && !selectedScene)) return;
+    if (selectedImages.length === 0 || (!customScene.trim() && !selectedScene)) return;
 
+    const environmentText = customScene.trim() || selectedScene;
     if (customScene.trim()) {
       addToHistory(customScene.trim());
     }
 
-    setIsProcessing(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    if (isBatchMode) {
+      navigation.replace("BatchLifestyleProcessing", {
+        imageUris: selectedImages,
+        environment: environmentText,
+        productDescription: productKeywords.trim() || undefined,
+        shadowControl: selectedShadowControl !== "natural" ? selectedShadowControl : undefined,
+      });
+      return;
+    }
+
+    setIsProcessing(true);
 
     try {
       const formData = new FormData();
@@ -337,34 +365,58 @@ export default function EnvironmentSelectionScreen() {
           entering={FadeInDown.delay(100).duration(400)}
           style={styles.imageSection}
         >
-          <Pressable onPress={handlePickImage} style={styles.imageWrapper}>
-            {imageUri ? (
-              <View style={styles.imageContainer}>
-                <Image source={{ uri: imageUri }} style={styles.previewImage} />
-                <View style={styles.changeImageBadge}>
-                  <Feather
-                    name="camera"
-                    size={14}
-                    color={Colors.editing.text}
-                  />
-                  <ThemedText style={styles.changeImageText}>Change</ThemedText>
+          {isBatchMode ? (
+            <View style={styles.batchImageGrid}>
+              {selectedImages.slice(0, 4).map((uri, idx) => (
+                <View key={uri} style={styles.batchImageItem}>
+                  <Image source={{ uri }} style={styles.batchImage} />
+                  {idx === 3 && selectedImages.length > 4 && (
+                    <View style={styles.moreOverlay}>
+                      <ThemedText style={styles.moreText}>+{selectedImages.length - 4}</ThemedText>
+                    </View>
+                  )}
                 </View>
-              </View>
-            ) : (
-              <GlassCard theme="dark" padding="xl" borderRadius="xl">
-                <View style={styles.placeholderContainer}>
-                  <Feather
-                    name="image"
-                    size={48}
-                    color={Colors.editing.textTertiary}
-                  />
-                  <ThemedText style={styles.placeholderText}>
-                    Select a product image
-                  </ThemedText>
+              ))}
+              <Pressable style={styles.addMoreBatchButton} onPress={handlePickImage}>
+                <Feather name="plus" size={24} color={Colors.editing.primary} />
+                <ThemedText style={styles.addMoreBatchText}>Add</ThemedText>
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable onPress={handlePickImage} style={styles.imageWrapper}>
+              {imageUri ? (
+                <View style={styles.imageContainer}>
+                  <Image source={{ uri: imageUri }} style={styles.previewImage} />
+                  <View style={styles.changeImageBadge}>
+                    <Feather
+                      name="camera"
+                      size={14}
+                      color={Colors.editing.text}
+                    />
+                    <ThemedText style={styles.changeImageText}>Change</ThemedText>
+                  </View>
                 </View>
-              </GlassCard>
-            )}
-          </Pressable>
+              ) : (
+                <GlassCard theme="dark" padding="xl" borderRadius="xl">
+                  <View style={styles.placeholderContainer}>
+                    <Feather
+                      name="image"
+                      size={48}
+                      color={Colors.editing.textTertiary}
+                    />
+                    <ThemedText style={styles.placeholderText}>
+                      Select a product image
+                    </ThemedText>
+                  </View>
+                </GlassCard>
+              )}
+            </Pressable>
+          )}
+          {isBatchMode && (
+            <ThemedText style={styles.batchCountText}>
+              {selectedImages.length} images selected
+            </ThemedText>
+          )}
         </Animated.View>
 
         {/* Scene Description Input */}
@@ -528,9 +580,15 @@ export default function EnvironmentSelectionScreen() {
         <BlurView intensity={60} tint="dark" style={styles.bottomBlur} />
         <View style={styles.bottomContent}>
           <GradientButton
-            title={isProcessing ? "Generating..." : "Generate Lifestyle Scene"}
+            title={
+              isProcessing 
+                ? "Generating..." 
+                : isBatchMode 
+                  ? `Generate ${selectedImages.length} Scenes` 
+                  : "Generate Lifestyle Scene"
+            }
             onPress={handleGenerate}
-            disabled={!imageUri || isProcessing || (!customScene && !selectedScene)}
+            disabled={selectedImages.length === 0 || isProcessing || (!customScene && !selectedScene)}
             loading={isProcessing}
             icon="zap"
             fullWidth
@@ -662,6 +720,59 @@ const styles = StyleSheet.create({
   placeholderText: {
     color: Colors.editing.textTertiary,
     fontSize: 15,
+  },
+  batchImageGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.sm,
+    justifyContent: "center",
+    maxWidth: IMAGE_SIZE + 20,
+  },
+  batchImageItem: {
+    width: (IMAGE_SIZE - Spacing.sm * 2) / 2,
+    height: (IMAGE_SIZE - Spacing.sm * 2) / 2,
+    borderRadius: BorderRadius.lg,
+    overflow: "hidden",
+    backgroundColor: Colors.editing.backgroundSecondary,
+  },
+  batchImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
+  moreOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  moreText: {
+    color: Colors.editing.text,
+    fontSize: 20,
+    fontWeight: "700",
+  },
+  addMoreBatchButton: {
+    width: (IMAGE_SIZE - Spacing.sm * 2) / 2,
+    height: (IMAGE_SIZE - Spacing.sm * 2) / 2,
+    borderRadius: BorderRadius.lg,
+    backgroundColor: Colors.editing.backgroundSecondary,
+    borderWidth: 2,
+    borderColor: Colors.editing.border,
+    borderStyle: "dashed",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: Spacing.xs,
+  },
+  addMoreBatchText: {
+    color: Colors.editing.primary,
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  batchCountText: {
+    color: Colors.editing.textSecondary,
+    fontSize: 13,
+    marginTop: Spacing.md,
+    textAlign: "center",
   },
   section: {
     marginBottom: Spacing.xl,

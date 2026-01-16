@@ -13,6 +13,8 @@ import HomeScreen from "@/screens/HomeScreen";
 import PresetSelectionScreen from "@/screens/PresetSelectionScreen";
 import EnvironmentSelectionScreen from "@/screens/EnvironmentSelectionScreen";
 import LifestyleResultScreen from "@/screens/LifestyleResultScreen";
+import BatchLifestyleProcessingScreen from "@/screens/BatchLifestyleProcessingScreen";
+import BatchLifestyleResultScreen from "@/screens/BatchLifestyleResultScreen";
 import OnboardingScreen from "@/screens/OnboardingScreen";
 
 
@@ -38,8 +40,18 @@ export type RootStackParamList = {
 
   // Preset and Lifestyle flows
   PresetSelection: undefined;
-  EnvironmentSelection: { imageUri?: string };
+  EnvironmentSelection: { imageUri?: string; imageUris?: string[] };
   LifestyleResult: { resultUri: string; originalUri: string; environment: string };
+  BatchLifestyleProcessing: { imageUris: string[]; environment: string; productDescription?: string; shadowControl?: string };
+  BatchLifestyleResult: { 
+    results: { 
+      originalUri: string; 
+      resultUri: string | null; 
+      error?: string;
+      status: "pending" | "processing" | "completed" | "failed";
+    }[];
+    environment: string;
+  };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -141,7 +153,16 @@ export default function RootStackNavigator() {
                  component={LifestyleResultScreen}
                  options={{ headerTitle: "Lifestyle Scene", headerBackVisible: false }}
                />
-                        
-                        
-                      </Stack.Navigator>  );
+      <Stack.Screen
+        name="BatchLifestyleProcessing"
+        component={BatchLifestyleProcessingScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="BatchLifestyleResult"
+        component={BatchLifestyleResultScreen}
+        options={{ headerShown: false }}
+      />
+    </Stack.Navigator>
+  );
 }
