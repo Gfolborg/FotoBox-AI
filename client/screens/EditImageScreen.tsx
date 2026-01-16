@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     flex: 1,
-    marginTop: 100,
+    marginTop: 90,
   },
   processingOverlay: {
     ...StyleSheet.absoluteFillObject,

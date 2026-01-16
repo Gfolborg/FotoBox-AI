@@ -143,68 +143,68 @@ export function CircularDial({
 const styles = StyleSheet.create({
   container: {
     alignItems: "center",
-    paddingVertical: Spacing.sm, // Reduced from md
+    paddingVertical: Spacing.sm,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     width: "100%",
-    paddingHorizontal: Spacing.lg, // Reduced from xl
-    marginBottom: Spacing.sm, // Reduced from md
+    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.sm,
   },
   label: {
-    fontSize: 14, // Reduced from 16
+    fontSize: 14,
     fontWeight: "600",
-    color: Colors.light.text,
+    color: Colors.editing.text,
   },
   value: {
-    fontSize: 16, // Reduced from 18
+    fontSize: 16,
     fontWeight: "700",
-    color: Colors.light.primary,
-    minWidth: 70, // Reduced from 80
+    color: Colors.editing.primary,
+    minWidth: 70,
     textAlign: "right",
   },
   valueDefault: {
-    color: Colors.light.textSecondary,
+    color: Colors.editing.textSecondary,
   },
   dialContainer: {
     width: DIAL_WIDTH,
-    height: 45, // Reduced from 60
+    height: 45,
     overflow: "hidden",
     justifyContent: "center",
     alignItems: "center",
   },
   centerIndicator: {
     position: "absolute",
-    width: 2, // Reduced from 3
-    height: 30, // Reduced from 40
-    backgroundColor: Colors.light.primary,
+    width: 2,
+    height: 30,
+    backgroundColor: Colors.editing.primary,
     borderRadius: 2,
     zIndex: 10,
   },
   ticksContainer: {
     flexDirection: "row",
     alignItems: "center",
-    height: 45, // Reduced from 60
+    height: 45,
     paddingHorizontal: DIAL_WIDTH / 2,
   },
   tick: {
     width: 1,
-    height: 12, // Reduced from 16
-    backgroundColor: Colors.light.textSecondary,
+    height: 12,
+    backgroundColor: Colors.editing.textSecondary,
     marginHorizontal: (TICK_SPACING - 1) / 2,
     opacity: 0.4,
   },
   tickMajor: {
-    height: 18, // Reduced from 24
+    height: 18,
     width: 2,
     opacity: 0.7,
   },
   tickCenter: {
-    height: 24, // Reduced from 32
+    height: 24,
     width: 2,
-    backgroundColor: Colors.light.text,
+    backgroundColor: Colors.editing.text,
     opacity: 1,
   },
   gradientOverlay: {
@@ -216,23 +216,23 @@ const styles = StyleSheet.create({
   },
   gradientLeft: {
     left: 0,
-    backgroundColor: Colors.light.backgroundRoot,
-    opacity: 0.9,
+    backgroundColor: Colors.editing.backgroundRoot,
+    opacity: 0.95,
   },
   gradientRight: {
     right: 0,
-    backgroundColor: Colors.light.backgroundRoot,
-    opacity: 0.9,
+    backgroundColor: Colors.editing.backgroundRoot,
+    opacity: 0.95,
   },
   rangeLabels: {
     flexDirection: "row",
     justifyContent: "space-between",
     width: DIAL_WIDTH,
-    paddingHorizontal: Spacing.xs, // Reduced from sm
-    marginTop: 2, // Reduced from xs
+    paddingHorizontal: Spacing.xs,
+    marginTop: 2,
   },
   rangeLabel: {
-    fontSize: 10, // Reduced from 11
-    color: Colors.light.textSecondary,
+    fontSize: 10,
+    color: Colors.editing.textSecondary,
   },
 });
