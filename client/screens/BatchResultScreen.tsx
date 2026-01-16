@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   StyleSheet,
@@ -10,7 +10,7 @@ import {
   Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
+import { useRoute, useNavigation, RouteProp, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
@@ -25,9 +25,11 @@ import { GlassCard } from "@/components/GlassCard";
 import { GlassPill } from "@/components/GlassPill";
 import { IconButton } from "@/components/IconButton";
 import { SuccessAnimation } from "@/components/SuccessAnimation";
+import { ApplyToAllModal } from "@/components/ApplyToAllModal";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { saveToFotoBoxAlbum } from "@/lib/save-to-album";
+import { useBatchEdit } from "@/context/BatchEditContext";
 
 type NavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -47,15 +49,36 @@ export default function BatchResultScreen() {
   const [savedUris, setSavedUris] = useState<Set<string>>(new Set());
   const [savingUris, setSavingUris] = useState<Set<string>>(new Set());
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showApplyAllModal, setShowApplyAllModal] = useState(false);
+  const [editedImages, setEditedImages] = useState<Set<string>>(new Set());
+  const [lastEditedUri, setLastEditedUri] = useState<string | null>(null);
+
+  const {
+    hasShownApplyAllPopup,
+    setHasShownApplyAllPopup,
+    savedEditSettings,
+    setSavedEditSettings,
+  } = useBatchEdit();
 
   const successfulResults = results.filter((r) => r.resultUri !== null);
   const failedCount = results.filter((r) => r.resultUri === null).length;
+  const uneditedCount = successfulResults.length - editedImages.size;
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: false,
     });
   }, [navigation]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (lastEditedUri && !hasShownApplyAllPopup && uneditedCount > 0) {
+        setEditedImages(prev => new Set([...prev, lastEditedUri]));
+        setShowApplyAllModal(true);
+        setHasShownApplyAllPopup(true);
+      }
+    }, [lastEditedUri, hasShownApplyAllPopup, uneditedCount])
+  );
 
   const handleSaveImage = async (resultUri: string, originalUri: string) => {
     setSavingUris((prev) => new Set([...prev, originalUri]));
@@ -103,6 +126,7 @@ export default function BatchResultScreen() {
         encoding: FileSystem.EncodingType.Base64,
       });
 
+      setLastEditedUri(originalUri);
       navigation.navigate("EditImage", {
         imageUri: fileUri,
         originalUri: originalUri,
@@ -113,6 +137,18 @@ export default function BatchResultScreen() {
         Alert.alert("Error", "Could not prepare image for editing.");
       }
     }
+  };
+
+  const handleApplyToAll = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    successfulResults.forEach((item) => {
+      if (!editedImages.has(item.originalUri)) {
+        setEditedImages(prev => new Set([...prev, item.originalUri]));
+      }
+    });
+  };
+
+  const handleSkipApplyAll = () => {
   };
 
   const allSaved = savedUris.size === successfulResults.length;
@@ -269,6 +305,15 @@ export default function BatchResultScreen() {
           <SuccessAnimation onComplete={() => setShowSuccess(false)} size={140} />
         </View>
       )}
+
+      {/* Apply to All Modal */}
+      <ApplyToAllModal
+        visible={showApplyAllModal}
+        remainingCount={uneditedCount}
+        onApplyToAll={handleApplyToAll}
+        onSkip={handleSkipApplyAll}
+        onClose={() => setShowApplyAllModal(false)}
+      />
     </View>
   );
 }

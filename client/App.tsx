@@ -12,6 +12,7 @@ import { queryClient } from "@/lib/query-client";
 import RootStackNavigator from "@/navigation/RootStackNavigator";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { NotificationProvider } from "@/context/NotificationProvider";
+import { BatchEditProvider } from "@/context/BatchEditContext";
 
 export default function App() {
   return (
@@ -21,10 +22,12 @@ export default function App() {
           <GestureHandlerRootView style={styles.root}>
             <KeyboardProvider>
               <NotificationProvider>
-                <NavigationContainer>
-                  <RootStackNavigator />
-                </NavigationContainer>
-                <StatusBar style="auto" />
+                <BatchEditProvider>
+                  <NavigationContainer>
+                    <RootStackNavigator />
+                  </NavigationContainer>
+                  <StatusBar style="auto" />
+                </BatchEditProvider>
               </NotificationProvider>
             </KeyboardProvider>
           </GestureHandlerRootView>
