@@ -117,25 +117,7 @@ export default function CameraScreen() {
     }
   };
 
-  const handlePickBatchImages = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: false,
-      quality: 1,
-      allowsMultipleSelection: true,
-      selectionLimit: 10,
-    });
-
-    if (!result.canceled) {
-      if (result.assets.length > 1) {
-        const imageUris = result.assets.map((asset) => asset.uri);
-        navigation.navigate("BatchPreview", { imageUris });
-      } else if (result.assets[0]) {
-        navigation.navigate("EditImage", { imageUri: result.assets[0].uri });
-      }
-    }
-  };
-
+  
   if (!permission) {
     return (
       <View style={[styles.container, styles.centered]}>
@@ -229,8 +211,8 @@ export default function CameraScreen() {
             iconSize={26}
           />
 
-          <GlassPill>
-            <Feather name="camera" size={16} color={Colors.editing.text} />
+          <GlassPill variant="dark">
+            <Feather name="camera" size={16} color="#FFFFFF" />
             <ThemedText style={styles.headerTitle}>Product Shot</ThemedText>
           </GlassPill>
 
@@ -284,16 +266,18 @@ export default function CameraScreen() {
             </Animated.View>
           </Pressable>
 
-          {/* Batch button */}
+          {/* Flash toggle placeholder for balance */}
           <View style={styles.sideButton}>
             <IconButton
-              icon="layers"
-              onPress={handlePickBatchImages}
+              icon="zap"
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }}
               size={52}
               iconSize={24}
               variant="glass"
             />
-            <ThemedText style={styles.sideButtonLabel}>Batch</ThemedText>
+            <ThemedText style={styles.sideButtonLabel}>Flash</ThemedText>
           </View>
         </Animated.View>
       </CameraView>
@@ -426,7 +410,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
   },
   headerTitle: {
-    color: Colors.editing.text,
+    color: "#FFFFFF",
     fontSize: 15,
     fontWeight: "600",
   },
@@ -450,9 +434,12 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   sideButtonLabel: {
-    color: Colors.editing.text,
+    color: "#FFFFFF",
     fontSize: 12,
     fontWeight: "500",
+    textShadowColor: "rgba(0, 0, 0, 0.5)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   captureButtonOuter: {
     width: 80,

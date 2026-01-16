@@ -70,7 +70,7 @@ export default function PhotoActionScreen() {
   };
 
   const handleRemoveBackground = () => {
-    navigation.replace("EditImage", { imageUri, originalUri: imageUri });
+    navigation.replace("BatchProcessing", { imageUris: [imageUri] });
   };
 
   const handleCreateLifestyle = () => {
@@ -198,6 +198,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 100,
     paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing["2xl"],
   },
   imagePreviewContainer: {
     alignSelf: "center",
@@ -266,6 +267,7 @@ const styles = StyleSheet.create({
   footer: {
     alignItems: "center",
     paddingTop: Spacing.md,
+    backgroundColor: Colors.editing.backgroundRoot,
   },
   retakeButton: {
     flexDirection: "row",
