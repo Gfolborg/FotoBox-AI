@@ -7,7 +7,6 @@
     "orientation": "portrait",
     "icon": "./attached_assets/ChatGPT_Image_Jan_16,_2026,_10_42_33_AM_1768533252216.png",
     "scheme": "fotoboxai",
-    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
@@ -19,7 +18,6 @@
         "foregroundImage": "./attached_assets/ChatGPT_Image_Jan_16,_2026,_10_42_33_AM_1768533252216.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
       "package": "com.fotoboxai.app",
       "permissions": [
         "CAMERA",
@@ -72,11 +70,6 @@
     ],
     "experiments": {
       "reactCompiler": true
-    },
-    "extra": {
-      "eas": {
-        "projectId": "059667d5-931c-4d3f-8f88-a0661206b06a"
-      }
     }
   }
 }
