@@ -55,6 +55,14 @@ export interface CameraOption {
   image: any;
 }
 
+export interface ModelOption {
+  id: string;
+  label: string;
+  description: string;
+  icon: string;
+  image: any;
+}
+
 export const MOCKUP_CATEGORIES: MockupCategory[] = [
   {
     id: "apparel",
@@ -315,12 +323,51 @@ export const CAMERA_OPTIONS: CameraOption[] = [
   },
 ];
 
+export const MODEL_OPTIONS: ModelOption[] = [
+  {
+    id: "none",
+    label: "No Model",
+    description: "Product only, no people",
+    icon: "package",
+    image: closeupCameraImage,
+  },
+  {
+    id: "female",
+    label: "Female Model",
+    description: "Woman wearing or using the product",
+    icon: "user",
+    image: closeupCameraImage,
+  },
+  {
+    id: "male",
+    label: "Male Model",
+    description: "Man wearing or using the product",
+    icon: "user",
+    image: closeupCameraImage,
+  },
+  {
+    id: "diverse",
+    label: "Diverse Group",
+    description: "Group of diverse people",
+    icon: "users",
+    image: closeupCameraImage,
+  },
+  {
+    id: "hands",
+    label: "Hands Only",
+    description: "Just hands holding or using product",
+    icon: "hand",
+    image: handheldCameraImage,
+  },
+];
+
 export function getMockupPrompt(
   mockupItem: MockupItem,
   sceneVibe: SceneVibe,
   cameraOption: CameraOption,
   mockupColor?: string,
-  customDescription?: string
+  customDescription?: string,
+  modelOption?: ModelOption
 ): string {
   const isCustomProduct = mockupItem.id === "custom";
   const productName = mockupItem.label.toLowerCase();
@@ -343,11 +390,23 @@ export function getMockupPrompt(
     handheld: "Shot showing someone holding or actively using the product.",
   };
 
+  const modelDescriptions: Record<string, string> = {
+    none: "",
+    female: "Feature an attractive adult woman wearing or using the product naturally. She should look confident and authentic, like in a lifestyle advertisement. Professional model-quality appearance.",
+    male: "Feature an attractive adult man wearing or using the product naturally. He should look confident and authentic, like in a lifestyle advertisement. Professional model-quality appearance.",
+    diverse: "Feature a diverse group of attractive adults wearing or using the product together. They should look natural and authentic, like in a lifestyle advertisement for an inclusive brand.",
+    hands: "Show just human hands holding or using the product naturally. Focus on the hands and product interaction without showing the full person.",
+  };
+
   const productInstruction = isCustomProduct 
     ? `IMPORTANT: The user specifically wants their design/logo placed on a "${productName}". Create a realistic ${productName} with their design.`
     : `Create a realistic product mockup of the provided design/logo placed on a ${productName}.`;
 
-  const basePrompt = `${productInstruction} ${colorDesc} The scene should be ${vibeDescriptions[sceneVibe.id] || vibeDescriptions.casual} ${cameraDescriptions[cameraOption.id] || cameraDescriptions.medium}`;
+  const modelInstruction = modelOption && modelOption.id !== "none" 
+    ? ` ${modelDescriptions[modelOption.id]}` 
+    : "";
+
+  const basePrompt = `${productInstruction} ${colorDesc}${modelInstruction} The scene should be ${vibeDescriptions[sceneVibe.id] || vibeDescriptions.casual} ${cameraDescriptions[cameraOption.id] || cameraDescriptions.medium}`;
 
   const customAddition = customDescription ? ` Additional context: ${customDescription}` : "";
 
