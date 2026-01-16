@@ -36,7 +36,7 @@ export default function HomeScreen() {
 
     if (!result.canceled && result.assets.length > 0) {
       const imageUris = result.assets.map((asset) => asset.uri);
-      navigation.navigate("BatchPreview", { imageUris });
+      navigation.navigate("BatchActionSelection", { imageUris });
     }
   };
 

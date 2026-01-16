@@ -17,6 +17,7 @@ import BatchLifestyleProcessingScreen from "@/screens/BatchLifestyleProcessingSc
 import BatchLifestyleResultScreen from "@/screens/BatchLifestyleResultScreen";
 import OnboardingScreen from "@/screens/OnboardingScreen";
 import BackgroundColorSelectionScreen from "@/screens/BackgroundColorSelectionScreen";
+import BatchActionSelectionScreen from "@/screens/BatchActionSelectionScreen";
 
 
 
@@ -29,6 +30,7 @@ export type RootStackParamList = {
   Result: { resultUri: string; originalUri: string; backgroundColor?: string };
 
   // Batch flow
+  BatchActionSelection: { imageUris: string[] };
   BatchPreview: { imageUris: string[] };
   BatchProcessing: { imageUris: string[]; backgroundColor?: string };
   BatchResult: {
@@ -129,6 +131,11 @@ export default function RootStackNavigator() {
         name="Result"
         component={ResultScreen}
         options={{ headerTitle: "Product Ready" }}
+      />
+      <Stack.Screen
+        name="BatchActionSelection"
+        component={BatchActionSelectionScreen}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="BatchPreview"
