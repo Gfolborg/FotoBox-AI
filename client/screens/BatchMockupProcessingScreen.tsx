@@ -38,7 +38,7 @@ export default function BatchMockupProcessingScreen() {
   const route = useRoute<BatchMockupProcessingScreenRouteProp>();
   const insets = useSafeAreaInsets();
 
-  const { imageUris, mockupItem, sceneVibe, cameraOption, mockupColor, customDescription } = route.params;
+  const { imageUris, mockupItem, sceneVibe, cameraOption, mockupColor, customDescription, modelOption } = route.params;
 
   const [results, setResults] = useState<ProcessingResult[]>(
     imageUris.map((uri) => ({
@@ -68,7 +68,8 @@ export default function BatchMockupProcessingScreen() {
       sceneVibe,
       cameraOption,
       mockupColor,
-      customDescription
+      customDescription,
+      modelOption
     );
 
     for (let i = 0; i < imageUris.length; i++) {

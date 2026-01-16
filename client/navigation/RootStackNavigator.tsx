@@ -23,7 +23,7 @@ import MockupProcessingScreen from "@/screens/MockupProcessingScreen";
 import MockupResultScreen from "@/screens/MockupResultScreen";
 import BatchMockupProcessingScreen from "@/screens/BatchMockupProcessingScreen";
 import BatchMockupResultScreen from "@/screens/BatchMockupResultScreen";
-import { MockupItem, SceneVibe, CameraOption } from "@/lib/mockup-presets";
+import { MockupItem, SceneVibe, CameraOption, ModelOption } from "@/lib/mockup-presets";
 
 
 
@@ -72,6 +72,7 @@ export type RootStackParamList = {
     cameraOption: CameraOption;
     mockupColor?: string;
     customDescription?: string;
+    modelOption?: ModelOption;
   };
   MockupResult: {
     resultUri: string;
@@ -85,6 +86,7 @@ export type RootStackParamList = {
     cameraOption: CameraOption;
     mockupColor?: string;
     customDescription?: string;
+    modelOption?: ModelOption;
   };
   BatchMockupResult: {
     results: {

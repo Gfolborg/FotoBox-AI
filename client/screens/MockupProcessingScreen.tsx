@@ -30,7 +30,7 @@ export default function MockupProcessingScreen() {
   const route = useRoute<MockupProcessingScreenRouteProp>();
   const insets = useSafeAreaInsets();
   
-  const { imageUri, mockupItem, sceneVibe, cameraOption, mockupColor, customDescription } = route.params;
+  const { imageUri, mockupItem, sceneVibe, cameraOption, mockupColor, customDescription, modelOption } = route.params;
   
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState("Preparing your mockup...");
@@ -60,7 +60,8 @@ export default function MockupProcessingScreen() {
         sceneVibe,
         cameraOption,
         mockupColor,
-        customDescription
+        customDescription,
+        modelOption
       );
       formData.append("prompt", prompt);
       formData.append("mockupType", mockupItem.id);

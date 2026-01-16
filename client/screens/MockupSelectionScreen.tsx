@@ -28,9 +28,11 @@ import {
   MOCKUP_CATEGORIES,
   SCENE_VIBES,
   CAMERA_OPTIONS,
+  MODEL_OPTIONS,
   MockupItem,
   SceneVibe,
   CameraOption,
+  ModelOption,
 } from "@/lib/mockup-presets";
 
 type MockupSelectionScreenNavigationProp = NativeStackNavigationProp<
@@ -43,7 +45,7 @@ type MockupSelectionScreenRouteProp = RouteProp<
   "MockupSelection"
 >;
 
-type TabType = "product" | "style" | "camera";
+type TabType = "product" | "style" | "camera" | "model";
 
 export default function MockupSelectionScreen() {
   const navigation = useNavigation<MockupSelectionScreenNavigationProp>();
@@ -63,6 +65,7 @@ export default function MockupSelectionScreen() {
   const [selectedColor, setSelectedColor] = useState<string>("#FFFFFF");
   const [selectedVibe, setSelectedVibe] = useState<SceneVibe>(SCENE_VIBES[0]);
   const [selectedCamera, setSelectedCamera] = useState<CameraOption>(CAMERA_OPTIONS[0]);
+  const [selectedModel, setSelectedModel] = useState<ModelOption>(MODEL_OPTIONS[0]);
   const [customDescription, setCustomDescription] = useState("");
   const [customProductName, setCustomProductName] = useState("");
 
@@ -121,6 +124,11 @@ export default function MockupSelectionScreen() {
     setSelectedCamera(camera);
   };
 
+  const handleModelSelect = (model: ModelOption) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedModel(model);
+  };
+
   const handleColorSelect = (color: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedColor(color);
@@ -143,6 +151,7 @@ export default function MockupSelectionScreen() {
         cameraOption: selectedCamera,
         mockupColor: effectiveItem.hasColorPicker ? selectedColor : undefined,
         customDescription: customDescription || undefined,
+        modelOption: selectedModel,
       });
     } else {
       navigation.navigate("BatchMockupProcessing", {
@@ -152,6 +161,7 @@ export default function MockupSelectionScreen() {
         cameraOption: selectedCamera,
         mockupColor: effectiveItem.hasColorPicker ? selectedColor : undefined,
         customDescription: customDescription || undefined,
+        modelOption: selectedModel,
       });
     }
   };
@@ -461,6 +471,60 @@ export default function MockupSelectionScreen() {
     </Animated.View>
   );
 
+  const renderModelTab = () => (
+    <Animated.View
+      entering={FadeInRight.duration(300)}
+      exiting={FadeOutLeft.duration(200)}
+    >
+      <ThemedText style={styles.sectionTitle}>Include People</ThemedText>
+      <ThemedText style={styles.sectionSubtitle}>
+        Add models to your mockup for an advertisement-style look
+      </ThemedText>
+
+      <View style={styles.modelGrid}>
+        {MODEL_OPTIONS.map((model) => (
+          <Pressable
+            key={model.id}
+            onPress={() => handleModelSelect(model)}
+            style={[
+              styles.modelCardWithImage,
+              selectedModel.id === model.id && styles.modelCardSelected,
+            ]}
+          >
+            <View style={styles.modelIconContainer}>
+              <Feather
+                name={model.icon as any}
+                size={28}
+                color={selectedModel.id === model.id ? Colors.light.white : Colors.light.primary}
+              />
+            </View>
+            <ThemedText
+              style={[
+                styles.modelLabel,
+                selectedModel.id === model.id && styles.modelLabelSelected,
+              ]}
+            >
+              {model.label}
+            </ThemedText>
+            <ThemedText
+              style={[
+                styles.modelDescription,
+                selectedModel.id === model.id && styles.modelDescriptionSelected,
+              ]}
+            >
+              {model.description}
+            </ThemedText>
+            {selectedModel.id === model.id && (
+              <View style={styles.selectedCheckmarkModel}>
+                <Feather name="check" size={16} color={Colors.light.white} />
+              </View>
+            )}
+          </Pressable>
+        ))}
+      </View>
+    </Animated.View>
+  );
+
   return (
     <GradientBackground variant="warm">
       <ScrollView
@@ -510,7 +574,7 @@ export default function MockupSelectionScreen() {
         )}
 
         <View style={styles.tabBar}>
-          {(["product", "style", "camera"] as TabType[]).map((tab) => (
+          {(["product", "style", "camera", "model"] as TabType[]).map((tab) => (
             <Pressable
               key={tab}
               onPress={() => handleTabChange(tab)}
@@ -522,9 +586,11 @@ export default function MockupSelectionScreen() {
                     ? "box"
                     : tab === "style"
                     ? "sun"
-                    : "aperture"
+                    : tab === "camera"
+                    ? "aperture"
+                    : "users"
                 }
-                size={18}
+                size={16}
                 color={
                   activeTab === tab
                     ? Colors.light.primary
@@ -541,7 +607,9 @@ export default function MockupSelectionScreen() {
                   ? "Product"
                   : tab === "style"
                   ? "Style"
-                  : "Camera"}
+                  : tab === "camera"
+                  ? "Camera"
+                  : "Model"}
               </ThemedText>
             </Pressable>
           ))}
@@ -551,6 +619,7 @@ export default function MockupSelectionScreen() {
           {activeTab === "product" && renderProductTab()}
           {activeTab === "style" && renderStyleTab()}
           {activeTab === "camera" && renderCameraTab()}
+          {activeTab === "model" && renderModelTab()}
         </View>
       </ScrollView>
 
@@ -561,9 +630,9 @@ export default function MockupSelectionScreen() {
         ]}
       >
         <View style={styles.selectionSummary}>
-          {selectedItem && (
+          {effectiveItem && (
             <ThemedText style={styles.summaryText}>
-              {selectedItem.label} • {selectedVibe.label} • {selectedCamera.label}
+              {effectiveItem.label} • {selectedVibe.label} • {selectedModel.id !== "none" ? selectedModel.label : selectedCamera.label}
             </ThemedText>
           )}
         </View>
@@ -927,6 +996,58 @@ const styles = StyleSheet.create({
   },
   cameraDescriptionSelected: {
     color: "rgba(255, 255, 255, 0.8)",
+  },
+  modelGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.sm,
+  },
+  modelCardWithImage: {
+    width: "48%",
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.md,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    borderRadius: BorderRadius.lg,
+    alignItems: "center",
+    borderWidth: 3,
+    borderColor: "transparent",
+  },
+  modelCardSelected: {
+    backgroundColor: Colors.light.primary,
+    borderColor: Colors.light.primary,
+  },
+  modelIconContainer: {
+    marginBottom: Spacing.sm,
+  },
+  modelLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.light.text,
+    textAlign: "center",
+    marginBottom: 4,
+  },
+  modelLabelSelected: {
+    color: Colors.light.white,
+  },
+  modelDescription: {
+    fontSize: 11,
+    color: Colors.light.textSecondary,
+    textAlign: "center",
+    lineHeight: 14,
+  },
+  modelDescriptionSelected: {
+    color: "rgba(255, 255, 255, 0.8)",
+  },
+  selectedCheckmarkModel: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   bottomBar: {
     position: "absolute",
