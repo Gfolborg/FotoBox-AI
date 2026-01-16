@@ -19,7 +19,7 @@ interface IconButtonProps {
   size?: number;
   iconSize?: number;
   color?: string;
-  variant?: "default" | "glass" | "solid" | "ghost";
+  variant?: "default" | "glass" | "glassDark" | "solid" | "ghost";
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
 }
@@ -60,6 +60,8 @@ export function IconButton({
     switch (variant) {
       case "glass":
         return styles.glass;
+      case "glassDark":
+        return styles.glassDark;
       case "solid":
         return styles.solid;
       case "ghost":
@@ -84,10 +86,10 @@ export function IconButton({
         style,
       ]}
     >
-      {variant === "glass" && (
+      {(variant === "glass" || variant === "glassDark") && (
         <BlurView
           intensity={30}
-          tint="light"
+          tint={variant === "glassDark" ? "dark" : "light"}
           style={[styles.blur, { borderRadius: size / 2 }]}
         />
       )}
@@ -111,6 +113,11 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.7)",
     borderWidth: 1,
     borderColor: "rgba(0, 0, 0, 0.08)",
+  },
+  glassDark: {
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.15)",
   },
   solid: {
     backgroundColor: Colors.light.primary,

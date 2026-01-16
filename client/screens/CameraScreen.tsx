@@ -209,6 +209,8 @@ export default function CameraScreen() {
             onPress={() => navigation.goBack()}
             size={44}
             iconSize={26}
+            variant="glassDark"
+            color="#FFFFFF"
           />
 
           <GlassPill variant="dark">
@@ -225,13 +227,16 @@ export default function CameraScreen() {
               }}
               size={44}
               iconSize={20}
-              color={showGrid ? Colors.editing.primary : Colors.editing.text}
+              variant="glassDark"
+              color={showGrid ? Colors.editing.primary : "#FFFFFF"}
             />
             <IconButton
               icon="help-circle"
               onPress={() => setShowTips(true)}
               size={44}
               iconSize={20}
+              variant="glassDark"
+              color="#FFFFFF"
             />
           </View>
         </Animated.View>
@@ -248,7 +253,8 @@ export default function CameraScreen() {
               onPress={handlePickSingleImage}
               size={52}
               iconSize={24}
-              variant="glass"
+              variant="glassDark"
+              color="#FFFFFF"
             />
             <ThemedText style={styles.sideButtonLabel}>Gallery</ThemedText>
           </View>
@@ -275,7 +281,8 @@ export default function CameraScreen() {
               }}
               size={52}
               iconSize={24}
-              variant="glass"
+              variant="glassDark"
+              color="#FFFFFF"
             />
             <ThemedText style={styles.sideButtonLabel}>Flash</ThemedText>
           </View>
