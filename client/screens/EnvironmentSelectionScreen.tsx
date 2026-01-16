@@ -20,6 +20,7 @@ import { Feather } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -38,6 +39,7 @@ import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getApiUrl } from "@/lib/query-client";
 import { SCENES, Scene } from "@/lib/lifestyle-scenes";
+import { usePromptHistory } from "@/hooks/usePromptHistory";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const IMAGE_SIZE = Math.min(SCREEN_WIDTH - Spacing.lg * 2, 320);
@@ -46,6 +48,29 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, "EnvironmentSelection">;
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+const SCENE_GRADIENTS: Record<string, [string, string]> = {
+  kitchen: ["#4A5D23", "#2D3618"],
+  living: ["#8B6914", "#5C4610"],
+  office: ["#2D4A6B", "#1A2D42"],
+  bedroom: ["#4A3D5C", "#2D2538"],
+  bathroom: ["#3D5C5C", "#253838"],
+  dining: ["#6B4A2D", "#422D1A"],
+  cafe: ["#5C4A3D", "#382D25"],
+  outdoor: ["#4A6B3D", "#2D4225"],
+  park: ["#3D6B4A", "#25422D"],
+  trail: ["#5C5C3D", "#383825"],
+  beach: ["#3D5C6B", "#253842"],
+  garden: ["#4A5C3D", "#2D3825"],
+  urban: ["#4A4A5C", "#2D2D38"],
+  industrial: ["#5C5C5C", "#383838"],
+  studio: ["#3D3D4A", "#25252D"],
+  minimal: ["#4A4A4A", "#2D2D2D"],
+  lifestyle: ["#5C4A5C", "#382D38"],
+  gym: ["#5C3D3D", "#382525"],
+  garage: ["#4A4A3D", "#2D2D25"],
+  playroom: ["#5C5C3D", "#383825"],
+};
 
 function SceneCard({
   scene,
@@ -59,6 +84,7 @@ function SceneCard({
   index: number;
 }) {
   const scale = useSharedValue(1);
+  const gradientColors = SCENE_GRADIENTS[scene.id] || ["#3D3D4A", "#25252D"];
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -78,24 +104,32 @@ function SceneCard({
         animatedStyle,
       ]}
     >
-      <View
-        style={[
-          styles.sceneIconContainer,
-          selected && styles.sceneIconContainerSelected,
-        ]}
-      >
-        <Feather
-          name={scene.icon as any}
-          size={22}
-          color={selected ? Colors.editing.text : Colors.editing.primary}
-        />
+      <LinearGradient
+        colors={gradientColors as [string, string]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.sceneGradient}
+      />
+      <View style={styles.sceneCardContent}>
+        <View
+          style={[
+            styles.sceneIconContainer,
+            selected && styles.sceneIconContainerSelected,
+          ]}
+        >
+          <Feather
+            name={scene.icon as any}
+            size={20}
+            color={selected ? Colors.editing.primary : "rgba(255,255,255,0.9)"}
+          />
+        </View>
+        <ThemedText
+          style={[styles.sceneLabel, selected && styles.sceneLabelSelected]}
+          numberOfLines={2}
+        >
+          {scene.label}
+        </ThemedText>
       </View>
-      <ThemedText
-        style={[styles.sceneLabel, selected && styles.sceneLabelSelected]}
-        numberOfLines={2}
-      >
-        {scene.label}
-      </ThemedText>
       {selected && (
         <View style={styles.selectedCheck}>
           <Feather name="check" size={10} color={Colors.editing.text} />
@@ -120,6 +154,7 @@ export default function EnvironmentSelectionScreen() {
   const [selectedShadowControl, setSelectedShadowControl] =
     useState<string>("natural");
   const [isProcessing, setIsProcessing] = useState(false);
+  const { history: promptHistory, addToHistory } = usePromptHistory();
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
@@ -127,12 +162,7 @@ export default function EnvironmentSelectionScreen() {
     });
   }, [navigation]);
 
-  useEffect(() => {
-    if (customScene.trim()) {
-      setSelectedScene("");
-    }
-  }, [customScene]);
-
+  
   useEffect(() => {
     if (!imageUri) {
       handlePickImage();
@@ -154,12 +184,19 @@ export default function EnvironmentSelectionScreen() {
   };
 
   const handleSelectSceneCard = (sceneId: string) => {
-    setCustomScene("");
+    const scene = SCENES.find((s) => s.id === sceneId);
+    if (scene) {
+      setCustomScene(scene.description);
+    }
     setSelectedScene(sceneId);
   };
 
   const handleGenerate = async () => {
     if (!imageUri || (!customScene.trim() && !selectedScene)) return;
+
+    if (customScene.trim()) {
+      addToHistory(customScene.trim());
+    }
 
     setIsProcessing(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -355,6 +392,34 @@ export default function EnvironmentSelectionScreen() {
               returnKeyType="done"
             />
           </View>
+          
+          {promptHistory.length > 0 && (
+            <View style={styles.historyContainer}>
+              <ThemedText style={styles.historyLabel}>Recent</ThemedText>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.historyScroll}
+              >
+                {promptHistory.slice(0, 5).map((item) => (
+                  <Pressable
+                    key={item.id}
+                    style={styles.historyChip}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setCustomScene(item.prompt);
+                      setSelectedScene("");
+                    }}
+                  >
+                    <Feather name="clock" size={12} color={Colors.editing.textSecondary} />
+                    <ThemedText style={styles.historyChipText} numberOfLines={1}>
+                      {item.prompt.length > 30 ? item.prompt.slice(0, 30) + "..." : item.prompt}
+                    </ThemedText>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
+          )}
         </Animated.View>
 
         {/* Product Keywords Input */}
@@ -636,6 +701,35 @@ const styles = StyleSheet.create({
     color: Colors.editing.text,
     minHeight: 50,
   },
+  historyContainer: {
+    marginTop: Spacing.md,
+  },
+  historyLabel: {
+    fontSize: 12,
+    color: Colors.editing.textSecondary,
+    fontWeight: "500",
+    marginBottom: Spacing.xs,
+  },
+  historyScroll: {
+    gap: Spacing.sm,
+  },
+  historyChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.editing.backgroundSecondary,
+    borderWidth: 1,
+    borderColor: Colors.editing.border,
+    maxWidth: 200,
+  },
+  historyChipText: {
+    fontSize: 12,
+    color: Colors.editing.textSecondary,
+    flex: 1,
+  },
   shadowGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -672,35 +766,40 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: BorderRadius.lg,
-    padding: Spacing.sm,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: Colors.editing.backgroundSecondary,
+    overflow: "hidden",
     borderWidth: 1,
     borderColor: Colors.editing.border,
   },
   sceneCardSelected: {
     borderColor: Colors.editing.primary,
     borderWidth: 2,
-    backgroundColor: Colors.editing.primarySubtle,
   },
-  sceneIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  sceneGradient: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  sceneCardContent: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: Colors.editing.backgroundTertiary,
+    padding: Spacing.sm,
+  },
+  sceneIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
     marginBottom: Spacing.xs,
   },
   sceneIconContainerSelected: {
-    backgroundColor: Colors.editing.primary,
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
   },
   sceneLabel: {
     fontSize: 11,
-    fontWeight: "500",
+    fontWeight: "600",
     textAlign: "center",
-    color: Colors.editing.textSecondary,
+    color: "rgba(255, 255, 255, 0.9)",
     lineHeight: 14,
   },
   sceneLabelSelected: {
