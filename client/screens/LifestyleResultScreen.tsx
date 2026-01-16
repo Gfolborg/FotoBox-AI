@@ -26,6 +26,7 @@ import { GlassPill } from "@/components/GlassPill";
 import { IconButton } from "@/components/IconButton";
 import { SuccessAnimation } from "@/components/SuccessAnimation";
 import { BeforeAfterSlider } from "@/components/BeforeAfterSlider";
+import { GradientBackground } from "@/components/GradientBackground";
 import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { saveToFotoBoxAlbum } from "@/lib/save-to-album";
@@ -127,7 +128,7 @@ export default function LifestyleResultScreen() {
   const environmentLabel = ENVIRONMENT_LABELS[environment] || "Lifestyle Scene";
 
   return (
-    <View style={styles.container}>
+    <GradientBackground variant="warm">
       <StatusBar style="dark" />
 
       {/* Header */}
@@ -293,14 +294,13 @@ export default function LifestyleResultScreen() {
           <SuccessAnimation onComplete={() => setShowSuccess(false)} size={140} />
         </View>
       )}
-    </View>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.editing.backgroundRoot,
   },
   header: {
     position: "absolute",

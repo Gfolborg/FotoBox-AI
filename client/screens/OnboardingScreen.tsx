@@ -14,6 +14,7 @@ import * as Haptics from 'expo-haptics';
 import { GradientButton } from '@/components/GradientButton';
 import { GlassCard } from '@/components/GlassCard';
 import { ThemedText } from '@/components/ThemedText';
+import { GradientBackground } from "@/components/GradientBackground";
 import { Colors, Spacing, BorderRadius, Gradients } from '@/constants/theme';
 
 const logoImage = require("../../assets/images/fotobox-logo.png");
@@ -110,7 +111,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
   };
 
   return (
-    <View style={styles.container}>
+    <GradientBackground variant="warm">
       <FlatList
         ref={flatListRef}
         data={onboardingSlides}
@@ -162,7 +163,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
           </View>
         </GlassCard>
       </Animated.View>
-    </View>
+    </GradientBackground>
   );
 }
 
@@ -189,7 +190,6 @@ const PaginationDot = ({ active }: { active: boolean }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.backgroundRoot,
   },
   slide: {
     width: SCREEN_WIDTH,

@@ -26,6 +26,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { GlassPill } from "@/components/GlassPill";
 import { GlassCard } from "@/components/GlassCard";
 import { ProgressRing } from "@/components/ProgressRing";
+import { GradientBackground } from "@/components/GradientBackground";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getApiUrl } from "@/lib/query-client";
@@ -174,7 +175,7 @@ export default function BatchProcessingScreen() {
   }));
 
   return (
-    <View style={styles.container}>
+    <GradientBackground variant="warm">
       <StatusBar style="dark" />
 
       {/* Header */}
@@ -274,14 +275,13 @@ export default function BatchProcessingScreen() {
           </Animated.View>
         ))}
       </ScrollView>
-    </View>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.editing.backgroundRoot,
   },
   header: {
     paddingTop: 60,

@@ -24,6 +24,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { GlassCard } from "@/components/GlassCard";
 import { GradientButton } from "@/components/GradientButton";
 import { SuccessAnimation } from "@/components/SuccessAnimation";
+import { GradientBackground } from "@/components/GradientBackground";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 
@@ -132,7 +133,7 @@ export default function BatchLifestyleResultScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <GradientBackground variant="warm">
       <StatusBar style="dark" />
 
       {/* Header */}
@@ -225,14 +226,13 @@ export default function BatchLifestyleResultScreen() {
           </GlassCard>
         </Animated.View>
       )}
-    </View>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.editing.backgroundRoot,
   },
   header: {
     position: "absolute",

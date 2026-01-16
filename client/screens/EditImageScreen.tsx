@@ -30,6 +30,7 @@ import {
   SkiaEditableImage,
   SkiaEditableImageRef,
 } from "@/components/SkiaEditableImage";
+import { GradientBackground } from "@/components/GradientBackground";
 import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getApiUrl } from "@/lib/query-client";
@@ -224,6 +225,7 @@ export default function EditImageScreen() {
 
   return (
     <GestureHandlerRootView style={styles.container}>
+      <GradientBackground variant="warm" style={styles.container}>
       <StatusBar style="dark" />
 
       <Animated.View
@@ -380,6 +382,7 @@ export default function EditImageScreen() {
         }}
         isSaving={isSaving}
       />
+      </GradientBackground>
     </GestureHandlerRootView>
   );
 }
@@ -387,7 +390,6 @@ export default function EditImageScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.editing.backgroundRoot,
   },
   header: {
     position: "absolute",

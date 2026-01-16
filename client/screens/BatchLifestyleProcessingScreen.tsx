@@ -10,6 +10,7 @@ import Animated, { FadeIn, FadeInUp } from "react-native-reanimated";
 import { ThemedText } from "@/components/ThemedText";
 import { GlassCard } from "@/components/GlassCard";
 import { ProgressRing } from "@/components/ProgressRing";
+import { GradientBackground } from "@/components/GradientBackground";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getApiUrl } from "@/lib/query-client";
@@ -144,11 +145,9 @@ export default function BatchLifestyleProcessingScreen() {
   const progress = (completedCount + failedCount) / imageUris.length;
 
   return (
-    <View
-      style={[
-        styles.container,
-        { paddingTop: insets.top, paddingBottom: insets.bottom },
-      ]}
+    <GradientBackground
+      variant="warm"
+      style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
     >
       <StatusBar style="dark" />
 
@@ -222,14 +221,13 @@ export default function BatchLifestyleProcessingScreen() {
           </ThemedText>
         </Animated.View>
       </View>
-    </View>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.editing.backgroundRoot,
   },
   content: {
     flex: 1,

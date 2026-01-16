@@ -31,6 +31,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { IconButton } from "@/components/IconButton";
 import { GlassPill } from "@/components/GlassPill";
 import { GradientButton } from "@/components/GradientButton";
+import { GradientBackground } from "@/components/GradientBackground";
 import { Colors, Spacing, BorderRadius, Animations } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 
@@ -120,15 +121,15 @@ export default function CameraScreen() {
   
   if (!permission) {
     return (
-      <View style={[styles.container, styles.centered]}>
+      <GradientBackground variant="warm" style={styles.centered}>
         <ActivityIndicator size="large" color={Colors.editing.primary} />
-      </View>
+      </GradientBackground>
     );
   }
 
   if (!permission.granted) {
     return (
-      <View style={[styles.container, styles.centered, styles.permissionContainer]}>
+      <GradientBackground variant="warm" style={[styles.centered, styles.permissionContainer]}>
         <StatusBar style="dark" />
         <Animated.View entering={FadeIn.duration(500)} style={styles.permissionContent}>
           <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.permissionIconContainer}>
@@ -170,12 +171,12 @@ export default function CameraScreen() {
             )}
           </Animated.View>
         </Animated.View>
-      </View>
+      </GradientBackground>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <GradientBackground variant="warm">
       <StatusBar style="light" />
       <CameraView ref={cameraRef} style={styles.camera} facing="back">
         {/* Grid overlay */}
@@ -338,14 +339,13 @@ export default function CameraScreen() {
           </Animated.View>
         </Pressable>
       </Modal>
-    </View>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.editing.backgroundRoot,
   },
   centered: {
     justifyContent: "center",

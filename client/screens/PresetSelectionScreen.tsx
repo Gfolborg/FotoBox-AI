@@ -23,6 +23,7 @@ import { GlassPill } from "@/components/GlassPill";
 import { GradientButton } from "@/components/GradientButton";
 import { ProgressRing } from "@/components/ProgressRing";
 import { PresetCard } from "@/components/PresetCard";
+import { GradientBackground } from "@/components/GradientBackground";
 import { usePresets } from "@/hooks/usePresets";
 import { EditingPreset } from "@/types/preset";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
@@ -130,7 +131,7 @@ export default function PresetSelectionScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
+      <GradientBackground variant="warm" style={styles.loadingContainer}>
         <StatusBar style="dark" />
         <ProgressRing
           progress={0.7}
@@ -142,12 +143,12 @@ export default function PresetSelectionScreen() {
           <Feather name="loader" size={24} color={Colors.editing.primary} />
         </ProgressRing>
         <ThemedText style={styles.loadingText}>Loading presets...</ThemedText>
-      </View>
+      </GradientBackground>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <GradientBackground variant="warm">
       <StatusBar style="dark" />
 
       {/* Header */}
@@ -228,18 +229,15 @@ export default function PresetSelectionScreen() {
           )}
         </>
       )}
-    </View>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.editing.backgroundRoot,
   },
   loadingContainer: {
-    flex: 1,
-    backgroundColor: Colors.editing.backgroundRoot,
     justifyContent: "center",
     alignItems: "center",
     gap: Spacing.lg,

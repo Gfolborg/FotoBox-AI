@@ -26,6 +26,7 @@ import { GlassPill } from "@/components/GlassPill";
 import { GlassCard } from "@/components/GlassCard";
 import { SuccessAnimation } from "@/components/SuccessAnimation";
 import { BeforeAfterSlider } from "@/components/BeforeAfterSlider";
+import { GradientBackground } from "@/components/GradientBackground";
 import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getApiUrl } from "@/lib/query-client";
@@ -180,7 +181,7 @@ export default function ResultScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <GradientBackground variant="warm">
       <StatusBar style="dark" />
 
       {/* Header */}
@@ -373,14 +374,13 @@ export default function ResultScreen() {
           />
         </View>
       )}
-    </View>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.editing.backgroundRoot,
   },
   header: {
     position: "absolute",

@@ -12,6 +12,7 @@ import * as Haptics from "expo-haptics";
 import { ThemedText } from "@/components/ThemedText";
 import { IconButton } from "@/components/IconButton";
 import { GlassPill } from "@/components/GlassPill";
+import { GradientBackground } from "@/components/GradientBackground";
 import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 
@@ -78,7 +79,7 @@ export default function PhotoActionScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <GradientBackground variant="warm">
       <StatusBar style="dark" />
 
       <Animated.View
@@ -167,14 +168,13 @@ export default function PhotoActionScreen() {
           </Pressable>
         </Animated.View>
       </ScrollView>
-    </View>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.editing.backgroundRoot,
   },
   header: {
     position: "absolute",

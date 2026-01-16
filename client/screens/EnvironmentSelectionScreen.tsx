@@ -36,6 +36,7 @@ import { GlassPill } from "@/components/GlassPill";
 import { GradientButton } from "@/components/GradientButton";
 import { ProgressRing } from "@/components/ProgressRing";
 import { ScrollIndicator } from "@/components/ScrollIndicator";
+import { GradientBackground } from "@/components/GradientBackground";
 import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getApiUrl } from "@/lib/query-client";
@@ -312,7 +313,7 @@ export default function EnvironmentSelectionScreen() {
   ];
 
   return (
-    <View style={styles.container}>
+    <GradientBackground variant="warm">
       <StatusBar style="dark" />
 
       {/* Header */}
@@ -634,14 +635,13 @@ export default function EnvironmentSelectionScreen() {
           </GlassCard>
         </Animated.View>
       )}
-    </View>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.editing.backgroundRoot,
   },
   header: {
     position: "absolute",

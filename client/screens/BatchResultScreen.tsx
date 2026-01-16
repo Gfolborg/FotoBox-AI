@@ -26,6 +26,7 @@ import { GlassPill } from "@/components/GlassPill";
 import { IconButton } from "@/components/IconButton";
 import { SuccessAnimation } from "@/components/SuccessAnimation";
 import { ApplyToAllModal } from "@/components/ApplyToAllModal";
+import { GradientBackground } from "@/components/GradientBackground";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { saveToFotoBoxAlbum } from "@/lib/save-to-album";
@@ -154,7 +155,7 @@ export default function BatchResultScreen() {
   const allSaved = savedUris.size === successfulResults.length;
 
   return (
-    <View style={styles.container}>
+    <GradientBackground variant="warm">
       <StatusBar style="dark" />
 
       {/* Header */}
@@ -314,14 +315,13 @@ export default function BatchResultScreen() {
         onSkip={handleSkipApplyAll}
         onClose={() => setShowApplyAllModal(false)}
       />
-    </View>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.editing.backgroundRoot,
   },
   header: {
     position: "absolute",
