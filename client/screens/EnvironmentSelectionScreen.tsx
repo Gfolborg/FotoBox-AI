@@ -97,27 +97,22 @@ function SceneCard({
       }}
       onPressIn={() => (scale.value = withSpring(0.95))}
       onPressOut={() => (scale.value = withSpring(1))}
-      style={[
-        styles.sceneCard,
-        selected && styles.sceneCardSelected,
-        animatedStyle,
-      ]}
+      style={[styles.sceneCardWrapper, animatedStyle]}
     >
-      <Image source={scene.image} style={styles.sceneImage} />
-      <View style={styles.sceneOverlay} />
-      <View style={styles.sceneLabelContainer}>
-        <ThemedText
-          style={[styles.sceneLabel, selected && styles.sceneLabelSelected]}
-          numberOfLines={2}
-        >
-          {scene.label}
-        </ThemedText>
+      <View style={[styles.sceneCard, selected && styles.sceneCardSelected]}>
+        <Image source={scene.image} style={styles.sceneImage} resizeMode="cover" />
+        {selected && (
+          <View style={styles.selectedCheck}>
+            <Feather name="check" size={12} color="#fff" />
+          </View>
+        )}
       </View>
-      {selected && (
-        <View style={styles.selectedCheck}>
-          <Feather name="check" size={12} color="#fff" />
-        </View>
-      )}
+      <ThemedText
+        style={[styles.sceneLabel, selected && styles.sceneLabelSelected]}
+        numberOfLines={2}
+      >
+        {scene.label}
+      </ThemedText>
     </AnimatedPressable>
   );
 }
@@ -880,9 +875,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     gap: Spacing.sm,
   },
+  sceneCardWrapper: {
+    alignItems: "center",
+    width: 100,
+  },
   sceneCard: {
-    width: 150,
-    height: 110,
+    width: 100,
+    height: 100,
     borderRadius: BorderRadius.lg,
     overflow: "hidden",
     borderWidth: 1,
@@ -893,19 +892,8 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   sceneImage: {
-    ...StyleSheet.absoluteFillObject,
     width: "100%",
     height: "100%",
-  },
-  sceneOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.35)",
-  },
-  sceneLabelContainer: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: Spacing.xs,
   },
   sceneGradient: {
     ...StyleSheet.absoluteFillObject,
@@ -929,17 +917,16 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.editing.primary,
   },
   sceneLabel: {
-    fontSize: 12,
-    fontWeight: "700",
+    fontSize: 11,
+    fontWeight: "500",
     textAlign: "center",
-    color: "#ffffff",
-    lineHeight: 15,
-    textShadowColor: "rgba(0, 0, 0, 0.8)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    color: Colors.editing.textSecondary,
+    lineHeight: 14,
+    marginTop: Spacing.xs,
   },
   sceneLabelSelected: {
-    color: "#ffffff",
+    color: Colors.editing.primary,
+    fontWeight: "600",
   },
   selectedCheck: {
     position: "absolute",
