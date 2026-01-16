@@ -4,10 +4,11 @@ import {
   View,
   ScrollView,
   Pressable,
-  Image,
+  Image as RNImage,
   TextInput,
   Platform,
 } from "react-native";
+import { Image } from "expo-image";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -487,35 +488,22 @@ export default function MockupSelectionScreen() {
             key={model.id}
             onPress={() => handleModelSelect(model)}
             style={[
-              styles.modelCardWithImage,
+              styles.modelCardWithImagePreview,
               selectedModel.id === model.id && styles.modelCardSelected,
             ]}
           >
-            <View style={styles.modelIconContainer}>
-              <Feather
-                name={model.icon as any}
-                size={28}
-                color={selectedModel.id === model.id ? Colors.light.white : Colors.light.primary}
-              />
+            <Image
+              source={model.image}
+              style={styles.modelPreviewImage}
+              contentFit="cover"
+            />
+            <View style={styles.modelCardOverlay}>
+              <ThemedText style={styles.modelLabel}>
+                {model.label}
+              </ThemedText>
             </View>
-            <ThemedText
-              style={[
-                styles.modelLabel,
-                selectedModel.id === model.id && styles.modelLabelSelected,
-              ]}
-            >
-              {model.label}
-            </ThemedText>
-            <ThemedText
-              style={[
-                styles.modelDescription,
-                selectedModel.id === model.id && styles.modelDescriptionSelected,
-              ]}
-            >
-              {model.description}
-            </ThemedText>
             {selectedModel.id === model.id && (
-              <View style={styles.selectedCheckmarkModel}>
+              <View style={styles.selectedCheckmark}>
                 <Feather name="check" size={16} color={Colors.light.white} />
               </View>
             )}
@@ -1012,8 +1000,28 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: "transparent",
   },
+  modelCardWithImagePreview: {
+    width: "48%",
+    height: 120,
+    borderRadius: BorderRadius.lg,
+    overflow: "hidden",
+    borderWidth: 3,
+    borderColor: "transparent",
+  },
+  modelPreviewImage: {
+    width: "100%",
+    height: "100%",
+  },
+  modelCardOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
+  },
   modelCardSelected: {
-    backgroundColor: Colors.light.primary,
     borderColor: Colors.light.primary,
   },
   modelIconContainer: {

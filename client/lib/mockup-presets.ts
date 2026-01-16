@@ -23,6 +23,12 @@ const flatlayCameraImage = require("../../assets/images/mockups/flat_lay_camera_
 const actionCameraImage = require("../../assets/images/mockups/action_camera_angle_preview.png");
 const handheldCameraImage = require("../../assets/images/mockups/in-use_camera_angle_preview.png");
 
+const noModelImage = require("../../assets/images/mockups/no_model_preview.png");
+const femaleModelImage = require("../../assets/images/mockups/female_model_preview.png");
+const maleModelImage = require("../../assets/images/mockups/male_model_preview.png");
+const diverseGroupImage = require("../../assets/images/mockups/diverse_group_preview.png");
+const handsOnlyImage = require("../../assets/images/mockups/hands_only_preview.png");
+
 export interface MockupCategory {
   id: string;
   label: string;
@@ -329,35 +335,35 @@ export const MODEL_OPTIONS: ModelOption[] = [
     label: "No Model",
     description: "Product only, no people",
     icon: "package",
-    image: closeupCameraImage,
+    image: noModelImage,
   },
   {
     id: "female",
     label: "Female Model",
     description: "Woman wearing or using the product",
     icon: "user",
-    image: closeupCameraImage,
+    image: femaleModelImage,
   },
   {
     id: "male",
     label: "Male Model",
     description: "Man wearing or using the product",
     icon: "user",
-    image: closeupCameraImage,
+    image: maleModelImage,
   },
   {
     id: "diverse",
     label: "Diverse Group",
     description: "Group of diverse people",
     icon: "users",
-    image: closeupCameraImage,
+    image: diverseGroupImage,
   },
   {
     id: "hands",
     label: "Hands Only",
     description: "Just hands holding or using product",
     icon: "hand",
-    image: handheldCameraImage,
+    image: handsOnlyImage,
   },
 ];
 
