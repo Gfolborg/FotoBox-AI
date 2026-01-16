@@ -30,7 +30,7 @@ import {
   SkiaEditableImage,
   SkiaEditableImageRef,
 } from "@/components/SkiaEditableImage";
-import { Colors, Spacing, BorderRadius } from "@/constants/theme";
+import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getApiUrl } from "@/lib/query-client";
 import { useImageEditing } from "@/hooks/useImageEditing";
@@ -306,7 +306,7 @@ export default function EditImageScreen() {
                   size={72}
                   strokeWidth={5}
                   color={Colors.editing.primary}
-                  backgroundColor="rgba(255, 255, 255, 0.1)"
+                  backgroundColor={Colors.editing.border}
                 >
                   <Feather name="cpu" size={24} color={Colors.editing.primary} />
                 </ProgressRing>
@@ -446,13 +446,14 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   indicatorContent: {
-    backgroundColor: "rgba(0, 0, 0, 0.85)",
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.xl,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.15)",
+    borderColor: Colors.editing.border,
+    ...Shadows.lg,
   },
   indicatorLabel: {
     color: Colors.editing.textSecondary,
@@ -511,9 +512,9 @@ const styles = StyleSheet.create({
   },
   actionBarContent: {
     padding: Spacing.md,
-    backgroundColor: "rgba(26, 26, 26, 0.85)",
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
+    borderColor: Colors.editing.border,
     borderRadius: BorderRadius.xl,
   },
   buttonRow: {

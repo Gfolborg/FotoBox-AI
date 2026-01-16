@@ -900,17 +900,17 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
+    backgroundColor: Colors.editing.primarySubtle,
     marginBottom: Spacing.xs,
   },
   sceneIconContainerSelected: {
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    backgroundColor: Colors.editing.primary,
   },
   sceneLabel: {
     fontSize: 11,
     fontWeight: "600",
     textAlign: "center",
-    color: "rgba(255, 255, 255, 0.9)",
+    color: Colors.editing.text,
     lineHeight: 14,
   },
   sceneLabelSelected: {

@@ -195,7 +195,7 @@ export default function BatchProcessingScreen() {
           size={140}
           strokeWidth={8}
           color={Colors.editing.primary}
-          backgroundColor="rgba(255, 255, 255, 0.1)"
+          backgroundColor={Colors.editing.border}
         >
           <View style={styles.progressContent}>
             <ThemedText style={styles.progressNumber}>

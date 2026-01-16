@@ -98,7 +98,7 @@ export default function PresetSelectionScreen() {
           style={styles.emptyIconContainer}
         >
           <LinearGradient
-            colors={["rgba(255, 255, 255, 0.1)", "rgba(255, 255, 255, 0.05)"]}
+            colors={[Colors.editing.primarySubtle, Colors.editing.backgroundSecondary]}
             style={styles.emptyIconGradient}
           >
             <Feather name="bookmark" size={48} color={Colors.editing.textTertiary} />
@@ -137,7 +137,7 @@ export default function PresetSelectionScreen() {
           size={72}
           strokeWidth={5}
           color={Colors.editing.primary}
-          backgroundColor="rgba(255, 255, 255, 0.1)"
+          backgroundColor={Colors.editing.border}
         >
           <Feather name="loader" size={24} color={Colors.editing.primary} />
         </ProgressRing>

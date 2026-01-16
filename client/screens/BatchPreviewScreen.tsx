@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.6)",
   },
   indexText: {
-    color: Colors.editing.text,
+    color: "#FFFFFF",
     fontSize: 11,
     fontWeight: "600",
   },
@@ -438,9 +438,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.full,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    backgroundColor: Colors.editing.backgroundSecondary,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: Colors.editing.border,
   },
   presetChipSelected: {
     borderColor: Colors.editing.primary,
@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
     height: 16,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
+    borderColor: Colors.editing.border,
   },
   presetChipText: {
     fontSize: 13,

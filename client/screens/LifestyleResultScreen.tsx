@@ -366,9 +366,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.full,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    backgroundColor: Colors.editing.backgroundSecondary,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: Colors.editing.border,
   },
   toggleButtonActive: {
     backgroundColor: Colors.editing.primary,
@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
     color: Colors.editing.textSecondary,
   },
   toggleTextActive: {
-    color: Colors.editing.text,
+    color: "#FFFFFF",
   },
   bottomBar: {
     position: "absolute",
