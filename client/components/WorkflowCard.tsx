@@ -4,9 +4,9 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
-  WithSpringConfig,
   interpolate,
 } from "react-native-reanimated";
+import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { ThemedText } from "./ThemedText";
@@ -15,6 +15,8 @@ import {
   BorderRadius,
   Spacing,
   Shadows,
+  Animations,
+  Gradients,
 } from "@/constants/theme";
 
 type FeatherIconName = keyof typeof Feather.glyphMap;
@@ -27,13 +29,6 @@ interface WorkflowCardProps {
   variant?: "primary" | "secondary";
   badge?: string;
 }
-
-const springConfig: WithSpringConfig = {
-  damping: 20,
-  mass: 0.4,
-  stiffness: 200,
-  overshootClamping: true,
-};
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -49,32 +44,40 @@ export function WorkflowCard({
 
   const animatedStyle = useAnimatedStyle(() => {
     const scale = interpolate(pressed.value, [0, 1], [1, 0.97]);
-    const rotateX = interpolate(pressed.value, [0, 1], [0, 2]);
-    const rotateZ = interpolate(pressed.value, [0, 1], [0, -0.5]);
+    const rotateX = interpolate(pressed.value, [0, 1], [0, 1.5]);
 
     return {
       transform: [
         { scale },
         { perspective: 1000 },
         { rotateX: `${rotateX}deg` },
-        { rotateZ: `${rotateZ}deg` },
       ],
     };
   });
 
   const handlePressIn = () => {
-    pressed.value = withSpring(1, springConfig);
+    pressed.value = withSpring(1, Animations.springFast);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const handlePressOut = () => {
-    pressed.value = withSpring(0, springConfig);
+    pressed.value = withSpring(0, Animations.springFast);
   };
 
   const isPrimary = variant === "primary";
 
   return (
-    <View>
+    <View style={styles.wrapper}>
+      {/* Gradient border for primary cards */}
+      {isPrimary && (
+        <LinearGradient
+          colors={Gradients.accent as [string, string]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBorder}
+        />
+      )}
+
       <AnimatedPressable
         onPress={onPress}
         onPressIn={handlePressIn}
@@ -88,22 +91,24 @@ export function WorkflowCard({
         <View
           style={[
             styles.iconContainer,
-            isPrimary
-              ? styles.iconContainerPrimary
-              : styles.iconContainerSecondary,
+            isPrimary ? styles.iconContainerPrimary : styles.iconContainerSecondary,
           ]}
         >
-          <Feather
-            name={icon}
-            size={28}
-            color={isPrimary ? Colors.light.buttonText : Colors.light.primary}
-          />
+          {isPrimary ? (
+            <LinearGradient
+              colors={Gradients.primary as [string, string]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.iconGradient}
+            >
+              <Feather name={icon} size={26} color={Colors.light.buttonText} />
+            </LinearGradient>
+          ) : (
+            <Feather name={icon} size={26} color={Colors.light.primary} />
+          )}
         </View>
 
-        <ThemedText
-          style={[styles.title, isPrimary && styles.titlePrimary]}
-          numberOfLines={2}
-        >
+        <ThemedText style={styles.title} numberOfLines={2}>
           {title}
         </ThemedText>
 
@@ -111,42 +116,52 @@ export function WorkflowCard({
           {description}
         </ThemedText>
 
-        <View style={styles.arrowContainer}>
+        <View style={[styles.arrowContainer, isPrimary && styles.arrowContainerPrimary]}>
           <Feather
             name="arrow-right"
-            size={20}
-            color={isPrimary ? Colors.light.primary : Colors.light.textSecondary}
+            size={18}
+            color={isPrimary ? Colors.light.primary : Colors.light.textTertiary}
           />
         </View>
       </AnimatedPressable>
 
       {badge && (
-        <View style={styles.badge}>
+        <LinearGradient
+          colors={Gradients.secondary as [string, string]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.badge}
+        >
           <ThemedText style={styles.badgeText}>{badge}</ThemedText>
-        </View>
+        </LinearGradient>
       )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrapper: {
+    flex: 1,
+  },
+  gradientBorder: {
+    position: "absolute",
+    top: -2,
+    left: -2,
+    right: -2,
+    bottom: -2,
+    borderRadius: BorderRadius.xl + 2,
+    opacity: 0.6,
+  },
   card: {
     flex: 1,
-    minHeight: 180,
+    minHeight: 175,
     borderRadius: BorderRadius.xl,
     padding: Spacing.lg,
     ...Shadows.md,
   },
   cardPrimary: {
     backgroundColor: Colors.light.backgroundDefault,
-    borderWidth: 2,
-    borderColor: Colors.light.primary,
-    // Enhanced glow for primary card
-    shadowColor: Colors.light.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 8,
+    borderWidth: 0,
   },
   cardSecondary: {
     backgroundColor: Colors.light.backgroundDefault,
@@ -155,57 +170,49 @@ const styles = StyleSheet.create({
   },
   badge: {
     position: "absolute",
-    top: -8,
-    right: 12,
-    backgroundColor: Colors.light.primary,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
+    top: -10,
+    right: 14,
+    paddingHorizontal: Spacing.sm + 2,
+    paddingVertical: Spacing.xs + 1,
     borderRadius: BorderRadius.full,
-    borderWidth: 2,
-    borderColor: Colors.light.backgroundDefault,
-    // Glowing badge
-    shadowColor: Colors.light.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    elevation: 4,
+    ...Shadows.accentBlue,
   },
   badgeText: {
     color: Colors.light.buttonText,
     fontSize: 10,
     fontWeight: "700",
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
   },
   iconContainer: {
-    width: 56,
-    height: 56,
+    width: 52,
+    height: 52,
     borderRadius: BorderRadius.lg,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: Spacing.md,
+    overflow: "hidden",
   },
   iconContainerPrimary: {
-    backgroundColor: Colors.light.primary,
-    // Glowing icon container
-    shadowColor: Colors.light.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 6,
+    ...Shadows.accent,
   },
   iconContainerSecondary: {
-    backgroundColor: "rgba(249, 115, 22, 0.1)",
+    backgroundColor: Colors.light.primarySubtle,
     borderWidth: 1,
-    borderColor: "rgba(249, 115, 22, 0.2)",
+    borderColor: "rgba(249, 115, 22, 0.15)",
+  },
+  iconGradient: {
+    width: "100%",
+    height: "100%",
+    alignItems: "center",
+    justifyContent: "center",
   },
   title: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "700",
     color: Colors.light.text,
     marginBottom: Spacing.xs,
-  },
-  titlePrimary: {
-    color: Colors.light.text,
+    letterSpacing: -0.2,
   },
   description: {
     fontSize: 13,
@@ -217,11 +224,14 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: Spacing.md,
     right: Spacing.md,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "rgba(249, 115, 22, 0.1)",
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: Colors.light.backgroundSecondary,
     alignItems: "center",
     justifyContent: "center",
+  },
+  arrowContainerPrimary: {
+    backgroundColor: Colors.light.primarySubtle,
   },
 });

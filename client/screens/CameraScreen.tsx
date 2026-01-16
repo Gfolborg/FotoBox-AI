@@ -15,21 +15,27 @@ import { Feather } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { BlurView } from "expo-blur";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
   FadeIn,
   FadeInDown,
+  FadeInUp,
+  interpolate,
 } from "react-native-reanimated";
+import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/ThemedText";
-import { Colors, Spacing, BorderRadius } from "@/constants/theme";
+import { IconButton } from "@/components/IconButton";
+import { GlassPill } from "@/components/GlassPill";
+import { GradientButton } from "@/components/GradientButton";
+import { Colors, Spacing, BorderRadius, Animations } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "Camera">;
 
-// Retake tips data
 const RETAKE_TIPS = [
   {
     icon: "sun" as const,
@@ -64,25 +70,23 @@ export default function CameraScreen() {
   const cameraRef = useRef<CameraView>(null);
   const [permission, requestPermission] = useCameraPermissions();
   const [isCapturing, setIsCapturing] = useState(false);
-  const [selectionMode, setSelectionMode] = useState<"single" | "batch">(
-    "single",
-  );
+  const [showGrid, setShowGrid] = useState(false);
   const [showTips, setShowTips] = useState(false);
 
   const captureScale = useSharedValue(1);
-  const captureOpacity = useSharedValue(0.3);
 
-  const captureAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: captureScale.value }],
-    backgroundColor: `rgba(255, 255, 255, ${captureOpacity.value})`,
-  }));
+  const captureAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: captureScale.value }],
+    };
+  });
 
   const handleCapture = async () => {
     if (!cameraRef.current || isCapturing) return;
 
     setIsCapturing(true);
-    captureScale.value = withSpring(0.9);
-    captureOpacity.value = withSpring(1);
+    captureScale.value = withSpring(0.85, Animations.springFast);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
       const photo = await cameraRef.current.takePictureAsync({
@@ -97,13 +101,11 @@ export default function CameraScreen() {
       console.error("Failed to capture photo:", error);
     } finally {
       setIsCapturing(false);
-      captureScale.value = withSpring(1);
-      captureOpacity.value = withSpring(0.3);
+      captureScale.value = withSpring(1, Animations.spring);
     }
   };
 
   const handlePickSingleImage = async () => {
-    setSelectionMode("single");
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: false,
@@ -116,8 +118,6 @@ export default function CameraScreen() {
   };
 
   const handlePickBatchImages = async () => {
-    setSelectionMode("batch");
-
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       allowsEditing: false,
@@ -125,8 +125,6 @@ export default function CameraScreen() {
       allowsMultipleSelection: true,
       selectionLimit: 10,
     });
-
-    setSelectionMode("single");
 
     if (!result.canceled) {
       if (result.assets.length > 1) {
@@ -141,47 +139,41 @@ export default function CameraScreen() {
   if (!permission) {
     return (
       <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color={Colors.light.primary} />
+        <ActivityIndicator size="large" color={Colors.editing.primary} />
       </View>
     );
   }
 
   if (!permission.granted) {
-    if (permission.status === "denied" && !permission.canAskAgain) {
-      return (
-        <View
-          style={[
-            styles.container,
-            styles.centered,
-            styles.permissionContainer,
-          ]}
-        >
-          <Animated.View
-            entering={FadeIn.duration(500)}
-            style={styles.permissionContent}
-          >
-            <Animated.View entering={FadeInDown.delay(100).duration(400)}>
-              <Feather
-                name="camera-off"
-                size={64}
-                color={Colors.light.primary}
-              />
-            </Animated.View>
-            <Animated.View entering={FadeInDown.delay(200).duration(400)}>
-              <ThemedText type="h4" style={styles.permissionTitle}>
-                Camera Access Required
-              </ThemedText>
-            </Animated.View>
-            <Animated.View entering={FadeInDown.delay(300).duration(400)}>
-              <ThemedText style={styles.permissionText}>
-                Please enable camera access in your device settings to capture
-                product photos.
-              </ThemedText>
-            </Animated.View>
-            {Platform.OS !== "web" && (
-              <Animated.View entering={FadeInDown.delay(400).duration(400)}>
-                <Pressable
-                  style={styles.settingsButton}
+    return (
+      <View style={[styles.container, styles.centered, styles.permissionContainer]}>
+        <StatusBar style="dark" />
+        <Animated.View entering={FadeIn.duration(500)} style={styles.permissionContent}>
+          <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.permissionIconContainer}>
+            <Feather
+              name={permission.status === "denied" ? "camera-off" : "camera"}
+              size={56}
+              color={Colors.light.primary}
+            />
+          </Animated.View>
+          <Animated.View entering={FadeInDown.delay(200).duration(400)}>
+            <ThemedText type="h3" style={styles.permissionTitle}>
+              {permission.status === "denied" ? "Camera Access Required" : "Enable Camera"}
+            </ThemedText>
+          </Animated.View>
+          <Animated.View entering={FadeInDown.delay(300).duration(400)}>
+            <ThemedText style={styles.permissionText}>
+              {permission.status === "denied"
+                ? "Please enable camera access in your device settings to capture product photos."
+                : "To capture product photos, we need access to your camera."}
+            </ThemedText>
+          </Animated.View>
+          <Animated.View entering={FadeInDown.delay(400).duration(400)} style={styles.permissionButtonContainer}>
+            {permission.status === "denied" && !permission.canAskAgain ? (
+              Platform.OS !== "web" && (
+                <GradientButton
+                  title="Open Settings"
+                  icon="settings"
                   onPress={async () => {
                     try {
                       await Linking.openSettings();
@@ -189,45 +181,11 @@ export default function CameraScreen() {
                       console.error("Could not open settings");
                     }
                   }}
-                >
-                  <ThemedText style={styles.settingsButtonText}>
-                    Open Settings
-                  </ThemedText>
-                </Pressable>
-              </Animated.View>
+                />
+              )
+            ) : (
+              <GradientButton title="Enable Camera" icon="camera" onPress={requestPermission} />
             )}
-          </Animated.View>
-        </View>
-      );
-    }
-
-    return (
-      <View
-        style={[styles.container, styles.centered, styles.permissionContainer]}
-      >
-        <Animated.View
-          entering={FadeIn.duration(500)}
-          style={styles.permissionContent}
-        >
-          <Animated.View entering={FadeInDown.delay(100).duration(400)}>
-            <Feather name="camera" size={64} color={Colors.light.primary} />
-          </Animated.View>
-          <Animated.View entering={FadeInDown.delay(200).duration(400)}>
-            <ThemedText type="h4" style={styles.permissionTitle}>
-              Enable Camera
-            </ThemedText>
-          </Animated.View>
-          <Animated.View entering={FadeInDown.delay(300).duration(400)}>
-            <ThemedText style={styles.permissionText}>
-              To capture product photos, we need access to your camera.
-            </ThemedText>
-          </Animated.View>
-          <Animated.View entering={FadeInDown.delay(400).duration(400)}>
-            <Pressable style={styles.enableButton} onPress={requestPermission}>
-              <ThemedText style={styles.enableButtonText}>
-                Enable Camera
-              </ThemedText>
-            </Pressable>
           </Animated.View>
         </Animated.View>
       </View>
@@ -238,161 +196,155 @@ export default function CameraScreen() {
     <View style={styles.container}>
       <StatusBar style="light" />
       <CameraView ref={cameraRef} style={styles.camera} facing="back">
-        <View style={[styles.overlay, { paddingTop: insets.top + Spacing.xl }]}>
-          <View style={styles.header}>
-            <View style={styles.headerRow}>
-              <Pressable
-                style={styles.backButton}
-                onPress={() => navigation.goBack()}
-              >
-                <Feather
-                  name="chevron-left"
-                  size={28}
-                  color={Colors.light.white}
-                />
-              </Pressable>
-              <ThemedText type="h4" style={styles.headerTitle}>
-                Product Shot
-              </ThemedText>
-              <Pressable
-                style={styles.tipsButton}
-                onPress={() => setShowTips(true)}
-              >
-                <Feather
-                  name="help-circle"
-                  size={24}
-                  color={Colors.light.white}
-                />
-              </Pressable>
+        {/* Grid overlay */}
+        {showGrid && (
+          <View style={styles.gridOverlay}>
+            <View style={styles.gridRow}>
+              <View style={styles.gridCell} />
+              <View style={[styles.gridCell, styles.gridCellBorder]} />
+              <View style={styles.gridCell} />
             </View>
-
-            <View style={styles.segmentedControl}>
-              <Pressable
-                style={[
-                  styles.segmentButton,
-                  styles.segmentButtonLeft,
-                  selectionMode === "single" && styles.segmentButtonActive,
-                ]}
-                onPress={handlePickSingleImage}
-              >
-                <Feather
-                  name="image"
-                  size={16}
-                  color={
-                    selectionMode === "single"
-                      ? Colors.light.primary
-                      : Colors.light.white
-                  }
-                />
-                <ThemedText
-                  style={[
-                    styles.segmentText,
-                    selectionMode === "single" && styles.segmentTextActive,
-                  ]}
-                >
-                  Single
-                </ThemedText>
-              </Pressable>
-
-              <Pressable
-                style={[
-                  styles.segmentButton,
-                  styles.segmentButtonRight,
-                  selectionMode === "batch" && styles.segmentButtonActive,
-                ]}
-                onPress={handlePickBatchImages}
-              >
-                <Feather
-                  name="layers"
-                  size={16}
-                  color={
-                    selectionMode === "batch"
-                      ? Colors.light.primary
-                      : Colors.light.white
-                  }
-                />
-                <ThemedText
-                  style={[
-                    styles.segmentText,
-                    selectionMode === "batch" && styles.segmentTextActive,
-                  ]}
-                >
-                  Batch
-                </ThemedText>
-              </Pressable>
+            <View style={[styles.gridRow, styles.gridRowBorder]}>
+              <View style={styles.gridCell} />
+              <View style={[styles.gridCell, styles.gridCellBorder]} />
+              <View style={styles.gridCell} />
+            </View>
+            <View style={styles.gridRow}>
+              <View style={styles.gridCell} />
+              <View style={[styles.gridCell, styles.gridCellBorder]} />
+              <View style={styles.gridCell} />
             </View>
           </View>
-        </View>
+        )}
 
-        <View
-          style={[
-            styles.controls,
-            { paddingBottom: insets.bottom + Spacing.xl },
-          ]}
+        {/* Top controls */}
+        <Animated.View
+          entering={FadeInDown.delay(100).duration(400)}
+          style={[styles.topControls, { paddingTop: insets.top + Spacing.md }]}
         >
+          <IconButton
+            icon="chevron-left"
+            onPress={() => navigation.goBack()}
+            size={44}
+            iconSize={26}
+          />
+
+          <GlassPill>
+            <Feather name="camera" size={16} color={Colors.editing.text} />
+            <ThemedText style={styles.headerTitle}>Product Shot</ThemedText>
+          </GlassPill>
+
+          <View style={styles.topRightButtons}>
+            <IconButton
+              icon="grid"
+              onPress={() => {
+                setShowGrid(!showGrid);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }}
+              size={44}
+              iconSize={20}
+              color={showGrid ? Colors.editing.primary : Colors.editing.text}
+            />
+            <IconButton
+              icon="help-circle"
+              onPress={() => setShowTips(true)}
+              size={44}
+              iconSize={20}
+            />
+          </View>
+        </Animated.View>
+
+        {/* Bottom controls */}
+        <Animated.View
+          entering={FadeInUp.delay(200).duration(400)}
+          style={[styles.bottomControls, { paddingBottom: insets.bottom + Spacing.xl }]}
+        >
+          {/* Gallery buttons */}
+          <View style={styles.sideButton}>
+            <IconButton
+              icon="image"
+              onPress={handlePickSingleImage}
+              size={52}
+              iconSize={24}
+              variant="glass"
+            />
+            <ThemedText style={styles.sideButtonLabel}>Gallery</ThemedText>
+          </View>
+
+          {/* Capture button */}
           <Pressable onPress={handleCapture} disabled={isCapturing}>
-            <Animated.View style={[styles.captureButton, captureAnimatedStyle]}>
-              {isCapturing ? (
-                <ActivityIndicator color={Colors.light.primary} />
-              ) : (
-                <View style={styles.captureInner} />
-              )}
+            <Animated.View style={[styles.captureButtonOuter, captureAnimatedStyle]}>
+              <View style={styles.captureButtonInner}>
+                {isCapturing ? (
+                  <ActivityIndicator color={Colors.editing.backgroundRoot} size="small" />
+                ) : (
+                  <View style={styles.captureButtonCenter} />
+                )}
+              </View>
             </Animated.View>
           </Pressable>
-        </View>
+
+          {/* Batch button */}
+          <View style={styles.sideButton}>
+            <IconButton
+              icon="layers"
+              onPress={handlePickBatchImages}
+              size={52}
+              iconSize={24}
+              variant="glass"
+            />
+            <ThemedText style={styles.sideButtonLabel}>Batch</ThemedText>
+          </View>
+        </Animated.View>
       </CameraView>
 
-      {/* Retake Tips Modal */}
+      {/* Tips Modal */}
       <Modal
         visible={showTips}
         animationType="fade"
         transparent={true}
         onRequestClose={() => setShowTips(false)}
       >
-        <Pressable
-          style={styles.modalOverlay}
-          onPress={() => setShowTips(false)}
-        >
-          <View style={styles.tipsModal}>
-            <View style={styles.tipsHeader}>
-              <ThemedText type="h4" style={styles.tipsTitle}>
-                Photo Tips
-              </ThemedText>
-              <Pressable
+        <Pressable style={styles.modalOverlay} onPress={() => setShowTips(false)}>
+          <Animated.View entering={FadeIn.duration(200)} style={styles.tipsModal}>
+            <BlurView intensity={60} tint="dark" style={styles.tipsBlur} />
+            <View style={styles.tipsContent}>
+              <View style={styles.tipsHeader}>
+                <ThemedText type="h4" style={styles.tipsTitle}>
+                  Photo Tips
+                </ThemedText>
+                <IconButton
+                  icon="x"
+                  onPress={() => setShowTips(false)}
+                  size={36}
+                  iconSize={20}
+                  variant="ghost"
+                  color={Colors.editing.text}
+                />
+              </View>
+
+              <View style={styles.tipsList}>
+                {RETAKE_TIPS.map((tip, index) => (
+                  <View key={index} style={styles.tipItem}>
+                    <View style={styles.tipIconContainer}>
+                      <Feather name={tip.icon} size={18} color={Colors.editing.primary} />
+                    </View>
+                    <View style={styles.tipTextContent}>
+                      <ThemedText style={styles.tipTitle}>{tip.title}</ThemedText>
+                      <ThemedText style={styles.tipDescription}>{tip.description}</ThemedText>
+                    </View>
+                  </View>
+                ))}
+              </View>
+
+              <GradientButton
+                title="Got it!"
                 onPress={() => setShowTips(false)}
-                style={styles.closeButton}
-              >
-                <Feather name="x" size={24} color={Colors.light.text} />
-              </Pressable>
+                fullWidth
+                style={styles.gotItButton}
+              />
             </View>
-
-            <View style={styles.tipsList}>
-              {RETAKE_TIPS.map((tip, index) => (
-                <View key={index} style={styles.tipItem}>
-                  <View style={styles.tipIconContainer}>
-                    <Feather
-                      name={tip.icon}
-                      size={20}
-                      color={Colors.light.primary}
-                    />
-                  </View>
-                  <View style={styles.tipContent}>
-                    <ThemedText style={styles.tipTitle}>{tip.title}</ThemedText>
-                    <ThemedText style={styles.tipDescription}>
-                      {tip.description}
-                    </ThemedText>
-                  </View>
-                </View>
-              ))}
-            </View>
-
-            <Pressable
-              style={styles.gotItButton}
-              onPress={() => setShowTips(false)}
-            >
-              <ThemedText style={styles.gotItButtonText}>Got it!</ThemedText>
-            </Pressable>
-          </View>
+          </Animated.View>
         </Pressable>
       </Modal>
     </View>
@@ -402,7 +354,7 @@ export default function CameraScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: Colors.editing.backgroundRoot,
   },
   centered: {
     justifyContent: "center",
@@ -414,157 +366,138 @@ const styles = StyleSheet.create({
   permissionContent: {
     alignItems: "center",
     paddingHorizontal: Spacing.xl,
+    maxWidth: 340,
+  },
+  permissionIconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: Colors.light.primarySubtle,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: Spacing.lg,
   },
   permissionTitle: {
-    marginTop: Spacing.lg,
     textAlign: "center",
+    color: Colors.light.text,
+    marginBottom: Spacing.sm,
   },
   permissionText: {
-    marginTop: Spacing.sm,
     textAlign: "center",
     color: Colors.light.textSecondary,
+    lineHeight: 22,
   },
-  enableButton: {
+  permissionButtonContainer: {
     marginTop: Spacing.xl,
-    backgroundColor: Colors.light.primary,
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.sm,
-  },
-  enableButtonText: {
-    color: Colors.light.white,
-    fontWeight: "600",
-  },
-  settingsButton: {
-    marginTop: Spacing.xl,
-    backgroundColor: Colors.light.primary,
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.sm,
-  },
-  settingsButtonText: {
-    color: Colors.light.white,
-    fontWeight: "600",
+    width: "100%",
   },
   camera: {
     flex: 1,
   },
-  overlay: {
+  gridOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    flexDirection: "column",
+  },
+  gridRow: {
+    flex: 1,
+    flexDirection: "row",
+  },
+  gridRowBorder: {
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.25)",
+  },
+  gridCell: {
+    flex: 1,
+  },
+  gridCellBorder: {
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.25)",
+  },
+  topControls: {
     position: "absolute",
     top: 0,
     left: 0,
     right: 0,
-  },
-  header: {
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: Spacing.md,
   },
   headerTitle: {
-    color: Colors.light.white,
-    textShadowColor: "rgba(0, 0, 0, 0.5)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
-    flex: 1,
-    textAlign: "center",
-  },
-  segmentedControl: {
-    flexDirection: "row",
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
-    borderRadius: BorderRadius.full,
-    padding: 4,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
-  },
-  segmentButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-    gap: Spacing.xs,
-    minWidth: 100,
-  },
-  segmentButtonLeft: {
-    borderTopLeftRadius: BorderRadius.full,
-    borderBottomLeftRadius: BorderRadius.full,
-  },
-  segmentButtonRight: {
-    borderTopRightRadius: BorderRadius.full,
-    borderBottomRightRadius: BorderRadius.full,
-  },
-  segmentButtonActive: {
-    backgroundColor: Colors.light.white,
-  },
-  segmentText: {
-    color: Colors.light.white,
-    fontSize: 14,
+    color: Colors.editing.text,
+    fontSize: 15,
     fontWeight: "600",
-    textShadowColor: "rgba(0, 0, 0, 0.3)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
-  segmentTextActive: {
-    color: Colors.light.primary,
-    textShadowColor: "transparent",
+  topRightButtons: {
+    flexDirection: "row",
+    gap: Spacing.xs,
   },
-  controls: {
+  bottomControls: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
     flexDirection: "row",
-    justifyContent: "center",
     alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: Spacing.xl,
-    paddingBottom: 80,
+    gap: Spacing["2xl"],
   },
-  captureButton: {
-    width: Spacing.captureButtonSize,
-    height: Spacing.captureButtonSize,
-    borderRadius: Spacing.captureButtonSize / 2,
-    borderWidth: Spacing.captureButtonBorder,
-    borderColor: Colors.light.white,
+  sideButton: {
+    alignItems: "center",
+    gap: Spacing.xs,
+  },
+  sideButtonLabel: {
+    color: Colors.editing.text,
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  captureButtonOuter: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "rgba(255, 255, 255, 0.25)",
+    padding: 4,
+    borderWidth: 3,
+    borderColor: Colors.editing.text,
+  },
+  captureButtonInner: {
+    flex: 1,
+    borderRadius: 36,
+    backgroundColor: Colors.editing.text,
+    alignItems: "center",
     justifyContent: "center",
-    alignItems: "center",
   },
-  captureInner: {
-    width: Spacing.captureButtonSize - 16,
-    height: Spacing.captureButtonSize - 16,
-    borderRadius: (Spacing.captureButtonSize - 16) / 2,
-    backgroundColor: Colors.light.white,
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    width: "100%",
-    marginBottom: Spacing.md,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  tipsButton: {
-    width: 40,
-    height: 40,
-    justifyContent: "center",
-    alignItems: "center",
+  captureButtonCenter: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.editing.primary,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: Spacing.xl,
+    paddingHorizontal: Spacing.lg,
   },
   tipsModal: {
-    backgroundColor: Colors.light.white,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.xl,
     width: "100%",
-    maxWidth: 400,
+    maxWidth: 380,
+    borderRadius: BorderRadius.xl,
+    overflow: "hidden",
+  },
+  tipsBlur: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  tipsContent: {
+    backgroundColor: "rgba(26, 26, 26, 0.85)",
+    padding: Spacing.xl,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderRadius: BorderRadius.xl,
   },
   tipsHeader: {
     flexDirection: "row",
@@ -573,10 +506,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   tipsTitle: {
-    color: Colors.light.text,
-  },
-  closeButton: {
-    padding: Spacing.xs,
+    color: Colors.editing.text,
   },
   tipsList: {
     gap: Spacing.md,
@@ -589,34 +519,26 @@ const styles = StyleSheet.create({
   tipIconContainer: {
     width: 36,
     height: 36,
-    borderRadius: BorderRadius.full,
-    backgroundColor: Colors.light.primary + "15",
-    justifyContent: "center",
+    borderRadius: 18,
+    backgroundColor: Colors.editing.primarySubtle,
     alignItems: "center",
+    justifyContent: "center",
   },
-  tipContent: {
+  tipTextContent: {
     flex: 1,
   },
   tipTitle: {
+    color: Colors.editing.text,
     fontWeight: "600",
-    color: Colors.light.text,
+    fontSize: 14,
     marginBottom: 2,
   },
   tipDescription: {
+    color: Colors.editing.textSecondary,
     fontSize: 13,
-    color: Colors.light.textSecondary,
     lineHeight: 18,
   },
   gotItButton: {
     marginTop: Spacing.xl,
-    backgroundColor: Colors.light.primary,
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.sm,
-    alignItems: "center",
-  },
-  gotItButtonText: {
-    color: Colors.light.white,
-    fontWeight: "600",
-    fontSize: 16,
   },
 });
