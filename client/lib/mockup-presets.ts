@@ -290,7 +290,9 @@ export function getMockupPrompt(
   mockupColor?: string,
   customDescription?: string
 ): string {
-  const colorDesc = mockupColor ? `The ${mockupItem.label.toLowerCase()} color is ${mockupColor}.` : "";
+  const isCustomProduct = mockupItem.id === "custom";
+  const productName = mockupItem.label.toLowerCase();
+  const colorDesc = mockupColor ? `The ${productName} color is ${mockupColor}.` : "";
   
   const vibeDescriptions: Record<string, string> = {
     dynamic: "in an energetic, action-packed setting with dynamic lighting and motion. Think extreme sports, fitness, adventure. High energy and exciting.",
@@ -309,7 +311,11 @@ export function getMockupPrompt(
     handheld: "Shot showing someone holding or actively using the product.",
   };
 
-  const basePrompt = `Create a realistic product mockup of the provided design/logo placed on a ${mockupItem.label.toLowerCase()}. ${colorDesc} The scene should be ${vibeDescriptions[sceneVibe.id] || vibeDescriptions.casual} ${cameraDescriptions[cameraOption.id] || cameraDescriptions.medium}`;
+  const productInstruction = isCustomProduct 
+    ? `IMPORTANT: The user specifically wants their design/logo placed on a "${productName}". Create a realistic ${productName} with their design.`
+    : `Create a realistic product mockup of the provided design/logo placed on a ${productName}.`;
+
+  const basePrompt = `${productInstruction} ${colorDesc} The scene should be ${vibeDescriptions[sceneVibe.id] || vibeDescriptions.casual} ${cameraDescriptions[cameraOption.id] || cameraDescriptions.medium}`;
 
   const customAddition = customDescription ? ` Additional context: ${customDescription}` : "";
 
