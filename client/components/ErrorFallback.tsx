@@ -7,12 +7,15 @@ import {
   ScrollView,
   Text,
   Modal,
+  Image,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius, Fonts } from "@/constants/theme";
+
+const logoImage = require("../../assets/images/fotobox-logo.png");
 
 export type ErrorFallbackProps = {
   error: Error;
@@ -62,8 +65,10 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
           Oops! Something went wrong
         </ThemedText>
 
+        <Image source={logoImage} style={styles.logo} resizeMode="contain" />
+
         <ThemedText type="body" style={styles.message}>
-          FotoBox AI encountered an issue. Tap below to restart and try again.
+          Encountered an issue. Tap below to restart and try again.
         </ThemedText>
 
         <Pressable
@@ -167,6 +172,10 @@ const styles = StyleSheet.create({
     textAlign: "center",
     opacity: 0.7,
     lineHeight: 24,
+  },
+  logo: {
+    width: 200,
+    height: 60,
   },
   topButton: {
     position: "absolute",

@@ -13,7 +13,7 @@ const onboardingSlides = [
   {
     id: '1',
     icon: 'logo',
-    title: 'Welcome to FotoBox AI',
+    title: '',
     description: 'Create professional product images with one tap. Our AI removes backgrounds and creates perfect listings.',
   },
   {
@@ -36,14 +36,14 @@ interface OnboardingSlideProps {
 
 const OnboardingSlide = ({ item }: OnboardingSlideProps) => (
   <View style={styles.slide}>
-    <View style={styles.iconContainer}>
-      {item.icon === 'logo' ? (
-        <Image source={logoImage} style={styles.logoImage} resizeMode="contain" />
-      ) : (
+    {item.icon === 'logo' ? (
+      <Image source={logoImage} style={styles.fullLogo} resizeMode="contain" />
+    ) : (
+      <View style={styles.iconContainer}>
         <Feather name={item.icon as any} size={64} color={Colors.light.primary} />
-      )}
-    </View>
-    <Text style={styles.slideTitle}>{item.title}</Text>
+      </View>
+    )}
+    {item.title ? <Text style={styles.slideTitle}>{item.title}</Text> : null}
     <Text style={styles.slideDescription}>{item.description}</Text>
   </View>
 );
@@ -131,6 +131,11 @@ const styles = StyleSheet.create({
   logoImage: {
     width: 80,
     height: 80,
+  },
+  fullLogo: {
+    width: 280,
+    height: 100,
+    marginBottom: Spacing.xl,
   },
   slideTitle: {
     ...Typography.h3,

@@ -37,12 +37,7 @@ export default function HomeScreen() {
       >
         {/* Animated Header with Logo */}
         <Animated.View entering={FadeIn.duration(600)} style={styles.header}>
-          <View style={styles.logoRow}>
-            <Image source={logoImage} style={styles.logo} resizeMode="contain" />
-            <ThemedText type="h1" style={styles.title}>
-              FotoBox AI
-            </ThemedText>
-          </View>
+          <Image source={logoImage} style={styles.logo} resizeMode="contain" />
           <ThemedText style={styles.subtitle}>
             What do you want to accomplish today?
           </ThemedText>
@@ -130,18 +125,10 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: Spacing.xl,
   },
-  logoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: Spacing.xs,
-  },
   logo: {
-    width: 48,
-    height: 48,
-    marginRight: Spacing.sm,
-  },
-  title: {
-    color: Colors.light.primary,
+    width: 200,
+    height: 60,
+    marginBottom: Spacing.sm,
   },
   subtitle: {
     color: Colors.light.textSecondary,
