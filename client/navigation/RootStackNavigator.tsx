@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
 import CameraScreen from "@/screens/CameraScreen";
@@ -11,6 +12,9 @@ import HomeScreen from "@/screens/HomeScreen";
 import PresetSelectionScreen from "@/screens/PresetSelectionScreen";
 import EnvironmentSelectionScreen from "@/screens/EnvironmentSelectionScreen";
 import LifestyleResultScreen from "@/screens/LifestyleResultScreen";
+import OnboardingScreen from "@/screens/OnboardingScreen";
+
+
 
 export type RootStackParamList = {
   Home: undefined;
@@ -21,31 +25,59 @@ export type RootStackParamList = {
   // Batch flow
   BatchPreview: { imageUris: string[] };
   BatchProcessing: { imageUris: string[]; backgroundColor?: string };
-  BatchResult: {
-    results: Array<{
-      originalUri: string;
-      resultUri: string | null;
-      error?: string;
-      status: "pending" | "processing" | "completed" | "failed";
-    }>;
-  };
-
-  // Preset flow
-  PresetSelection: undefined;
-
-  // Lifestyle scene flow
-  EnvironmentSelection: { imageUri?: string };
-  LifestyleResult: {
-    resultUri: string;
-    originalUri: string;
-    environment: string;
-  };
+      BatchResult: {
+          results: {
+            originalUri: string;
+            resultUri: string | null;
+            error?: string;
+            status: "pending" | "processing" | "completed" | "failed";
+          }[];
+        };
+    
+    
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
+const ONBOARDING_COMPLETED_KEY = '@FotoBox:onboardingCompleted';
+
 export default function RootStackNavigator() {
   const screenOptions = useScreenOptions({ transparent: false });
+  const [showOnboarding, setShowOnboarding] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const checkOnboardingStatus = async () => {
+      try {
+        const onboardingCompleted = await AsyncStorage.getItem(ONBOARDING_COMPLETED_KEY);
+        if (onboardingCompleted === 'true') {
+          setShowOnboarding(false);
+        }
+      } catch (e) {
+        console.error("Failed to fetch onboarding status", e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    checkOnboardingStatus();
+  }, []);
+
+  const handleOnboardingComplete = async () => {
+    try {
+      await AsyncStorage.setItem(ONBOARDING_COMPLETED_KEY, 'true');
+      setShowOnboarding(false);
+    } catch (e) {
+      console.error("Failed to save onboarding status", e);
+    }
+  };
+
+  if (isLoading) {
+    return null; // Or a loading spinner
+  }
+
+  if (showOnboarding) {
+    return <OnboardingScreen onComplete={handleOnboardingComplete} />;
+  }
 
   return (
     <Stack.Navigator screenOptions={screenOptions}>
@@ -94,11 +126,12 @@ export default function RootStackNavigator() {
         component={EnvironmentSelectionScreen}
         options={{ headerTitle: "Lifestyle Scene" }}
       />
-      <Stack.Screen
-        name="LifestyleResult"
-        component={LifestyleResultScreen}
-        options={{ headerTitle: "Lifestyle Scene", headerBackVisible: false }}
-      />
-    </Stack.Navigator>
-  );
+               <Stack.Screen
+                 name="LifestyleResult"
+                 component={LifestyleResultScreen}
+                 options={{ headerTitle: "Lifestyle Scene", headerBackVisible: false }}
+               />
+                        
+                        
+                      </Stack.Navigator>  );
 }

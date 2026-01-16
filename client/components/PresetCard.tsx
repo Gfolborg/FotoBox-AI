@@ -71,11 +71,7 @@ export function PresetCard({
       onPressOut={handlePressOut}
       onLongPress={onLongPress}
       delayLongPress={500}
-      style={[
-        styles.card,
-        selected && styles.cardSelected,
-        animatedStyle,
-      ]}
+      style={[styles.card, selected && styles.cardSelected, animatedStyle]}
     >
       {selected && (
         <View style={styles.selectedBadge}>
@@ -115,7 +111,11 @@ export function PresetCard({
             )}
             {preset.adjustments.saturation !== 1 && (
               <View style={styles.adjustmentPill}>
-                <Feather name="droplet" size={12} color={Colors.light.primary} />
+                <Feather
+                  name="droplet"
+                  size={12}
+                  color={Colors.light.primary}
+                />
               </View>
             )}
             {preset.adjustments.warmth !== 0 && (
@@ -129,25 +129,51 @@ export function PresetCard({
             )}
           </>
         ) : (
-          <ThemedText style={styles.defaultText}>Default adjustments</ThemedText>
+          <ThemedText style={styles.defaultText}>
+            Default adjustments
+          </ThemedText>
         )}
       </View>
+
+      {/* AI Settings Display */}
+      {preset.aiSettings && (
+        <View style={styles.aiSettingsRow}>
+          {preset.aiSettings.environment && (
+            <View style={styles.adjustmentPill}>
+              <Feather name="globe" size={12} color={Colors.light.primary} />
+              <ThemedText style={styles.adjustmentPillText}>
+                {preset.aiSettings.environment}
+              </ThemedText>
+            </View>
+          )}
+          {preset.aiSettings.shadowControl && (
+            <View style={styles.adjustmentPill}>
+              <Feather name="cloud-drizzle" size={12} color={Colors.light.primary} />
+              <ThemedText style={styles.adjustmentPillText}>
+                {preset.aiSettings.shadowControl}
+              </ThemedText>
+            </View>
+          )}
+          {/* Add more AI settings here as they are integrated into presets */}
+        </View>
+      )}
     </AnimatedPressable>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.light.backgroundSecondary,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
     borderRadius: BorderRadius.lg,
     padding: Spacing.md,
     borderWidth: 1,
-    borderColor: Colors.light.border,
+    borderColor: "rgba(255, 255, 255, 0.8)",
     ...Shadows.sm,
   },
   cardSelected: {
     borderColor: Colors.light.primary,
     borderWidth: 2,
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
   },
   selectedBadge: {
     position: "absolute",
@@ -173,6 +199,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     borderWidth: 1,
     borderColor: Colors.light.border,
+    ...Shadows.sm,
   },
   titleContainer: {
     flex: 1,
@@ -201,5 +228,16 @@ const styles = StyleSheet.create({
   defaultText: {
     fontSize: 12,
     color: Colors.light.textTertiary,
+  },
+  aiSettingsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.xs,
+    marginTop: Spacing.sm,
+  },
+  adjustmentPillText: {
+    fontSize: 12,
+    color: Colors.light.text,
+    marginLeft: Spacing.xs,
   },
 });

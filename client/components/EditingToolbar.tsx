@@ -16,7 +16,7 @@ interface EditingToolbarProps {
   state: ImageEditingState;
   onUpdateAdjustment: <K extends keyof ImageEditingState>(
     key: K,
-    value: ImageEditingState[K]
+    value: ImageEditingState[K],
   ) => void;
   onSetActiveTab: (tab: ImageEditingState["activeTab"]) => void;
   onRotateCW: () => void;
@@ -35,7 +35,11 @@ export function EditingToolbar({
   onToggleFlipHorizontal,
   onToggleFlipVertical,
 }: EditingToolbarProps) {
-  const tabs: { id: ImageEditingState["activeTab"]; label: string; icon: keyof typeof Feather.glyphMap }[] = [
+  const tabs: {
+    id: ImageEditingState["activeTab"];
+    label: string;
+    icon: keyof typeof Feather.glyphMap;
+  }[] = [
     { id: "adjust", label: "Adjust", icon: "sliders" },
     { id: "transform", label: "Transform", icon: "rotate-cw" },
     { id: "crop", label: "Crop", icon: "crop" },
@@ -77,7 +81,10 @@ export function EditingToolbar({
           />
         )}
         {state.activeTab === "crop" && (
-          <CropTab crop={state.crop} onUpdateCrop={(crop) => onUpdateAdjustment("crop", crop)} />
+          <CropTab
+            crop={state.crop}
+            onUpdateCrop={(crop) => onUpdateAdjustment("crop", crop)}
+          />
         )}
       </ScrollView>
     </View>
@@ -106,9 +113,7 @@ function TabButton({
         size={20}
         color={active ? Colors.light.primary : Colors.light.textSecondary}
       />
-      <ThemedText
-        style={[styles.tabLabel, active && styles.tabLabelActive]}
-      >
+      <ThemedText style={[styles.tabLabel, active && styles.tabLabelActive]}>
         {label}
       </ThemedText>
     </Pressable>
@@ -123,7 +128,7 @@ function AdjustTab({
   state: ImageEditingState;
   onUpdateAdjustment: <K extends keyof ImageEditingState>(
     key: K,
-    value: ImageEditingState[K]
+    value: ImageEditingState[K],
   ) => void;
 }) {
   return (
@@ -223,8 +228,8 @@ function AdjustTab({
           val > 0
             ? `Warm +${val.toFixed(2)}`
             : val < 0
-            ? `Cool ${val.toFixed(2)}`
-            : "Neutral"
+              ? `Cool ${val.toFixed(2)}`
+              : "Neutral"
         }
         serverOnly
       />
@@ -269,9 +274,7 @@ function TransformTab({
 
       {rotation !== 0 && (
         <View style={styles.infoBox}>
-          <ThemedText style={styles.infoText}>
-            Rotation: {rotation}°
-          </ThemedText>
+          <ThemedText style={styles.infoText}>Rotation: {rotation}°</ThemedText>
         </View>
       )}
 

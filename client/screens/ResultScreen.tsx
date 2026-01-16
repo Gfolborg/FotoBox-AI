@@ -8,16 +8,20 @@ import {
   ScrollView,
   Alert,
   Platform,
+  Pressable,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { HeaderButton } from "@react-navigation/elements";
+import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import * as FileSystem from "expo-file-system/legacy";
 
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
-import { Colors, Spacing, BorderRadius } from "@/constants/theme";
+import { GradientBackground } from "@/components/GradientBackground";
+import { BeforeAfterSlider } from "@/components/BeforeAfterSlider";
+import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getApiUrl } from "@/lib/query-client";
 import { saveToFotoBoxAlbum } from "@/lib/save-to-album";
@@ -33,21 +37,22 @@ export default function ResultScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<ResultRouteProp>();
-  const { resultUri: initialResultUri, originalUri, backgroundColor = "#FFFFFF" } = route.params;
+  const {
+    resultUri: initialResultUri,
+    originalUri,
+    backgroundColor = "#FFFFFF",
+  } = route.params;
 
   const [resultUri, setResultUri] = useState(initialResultUri);
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
-  const [retryError, setRetryError] = useState<string | null>(null);
+  const [showComparison, setShowComparison] = useState(false);
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
       headerLeft: () => (
-        <HeaderButton
-          onPress={() => navigation.popToTop()}
-          pressOpacity={0.7}
-        >
+        <HeaderButton onPress={() => navigation.popToTop()} pressOpacity={0.7}>
           <ThemedText style={styles.headerButton}>Done</ThemedText>
         </HeaderButton>
       ),
@@ -66,7 +71,10 @@ export default function ResultScreen() {
       }
     } else {
       if (Platform.OS !== "web") {
-        Alert.alert("Save Failed", result.error || "Could not save the image. Please try again.");
+        Alert.alert(
+          "Save Failed",
+          result.error || "Could not save the image. Please try again.",
+        );
       }
     }
 
@@ -96,14 +104,16 @@ export default function ResultScreen() {
       console.error("Failed to prepare image for editing:", error);
 
       if (Platform.OS !== "web") {
-        Alert.alert("Error", "Could not prepare image for editing. Please try again.");
+        Alert.alert(
+          "Error",
+          "Could not prepare image for editing. Please try again.",
+        );
       }
     }
   };
 
   const handleRetry = async () => {
     setIsRetrying(true);
-    setRetryError(null);
 
     try {
       const formData = new FormData();
@@ -117,7 +127,10 @@ export default function ResultScreen() {
       const bgColorParam = encodeURIComponent(backgroundColor);
       const endpoint = `${apiUrl}api/amazon-main?backgroundColor=${bgColorParam}`;
 
-      console.log("[ResultScreen] Retrying generation with backgroundColor:", backgroundColor);
+      console.log(
+        "[ResultScreen] Retrying generation with backgroundColor:",
+        backgroundColor,
+      );
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 300000);
@@ -158,14 +171,16 @@ export default function ResultScreen() {
       if (err instanceof Error) {
         if (err.name === "AbortError") {
           errorMessage = "Request timed out. Please try again.";
-        } else if (err.message.includes("Network request failed") || err.message.includes("TypeError")) {
-          errorMessage = "Unable to connect to server. Please check your connection and try again.";
+        } else if (
+          err.message.includes("Network request failed") ||
+          err.message.includes("TypeError")
+        ) {
+          errorMessage =
+            "Unable to connect to server. Please check your connection and try again.";
         } else {
           errorMessage = err.message;
         }
       }
-
-      setRetryError(errorMessage);
 
       if (Platform.OS !== "web") {
         Alert.alert("Retry Failed", errorMessage);
@@ -176,90 +191,148 @@ export default function ResultScreen() {
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={[
-        styles.content,
-        { paddingBottom: insets.bottom + Spacing.xl },
-      ]}
-    >
-      <View style={styles.imageContainer}>
-        <Image
-          source={{ uri: resultUri }}
-          style={styles.image}
-          resizeMode="contain"
-        />
-      </View>
+    <GradientBackground variant="subtle">
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: insets.bottom + Spacing.xl },
+        ]}
+      >
+        {/* Image display - toggles between normal and comparison view */}
+        {showComparison ? (
+          <Animated.View
+            entering={FadeIn.duration(300)}
+            exiting={FadeOut.duration(200)}
+          >
+            <BeforeAfterSlider
+              beforeImage={originalUri}
+              afterImage={resultUri}
+              size={IMAGE_SIZE}
+            />
+          </Animated.View>
+        ) : (
+          <Animated.View
+            entering={FadeIn.duration(300)}
+            exiting={FadeOut.duration(200)}
+            style={styles.imageContainer}
+          >
+            <Image
+              source={{ uri: resultUri }}
+              style={styles.image}
+              resizeMode="contain"
+            />
+          </Animated.View>
+        )}
 
-      <View style={styles.specContainer}>
-        <ThemedText type="small" style={styles.specText}>
-          2000 x 2000 - JPG
-        </ThemedText>
-      </View>
+        {/* Comparison toggle */}
+        <View style={styles.toggleContainer}>
+          <Pressable
+            style={[
+              styles.toggleButton,
+              showComparison && styles.toggleButtonActive,
+            ]}
+            onPress={() => setShowComparison(!showComparison)}
+          >
+            <Feather
+              name={showComparison ? "eye" : "sliders"}
+              size={16}
+              color={
+                showComparison ? Colors.light.white : Colors.light.textSecondary
+              }
+            />
+            <ThemedText
+              style={[
+                styles.toggleText,
+                showComparison && styles.toggleTextActive,
+              ]}
+            >
+              {showComparison ? "View Result" : "Compare"}
+            </ThemedText>
+          </Pressable>
+        </View>
 
-      <View style={styles.buttonContainer}>
-        <Button
-          onPress={handleSaveToGallery}
-          disabled={isSaving || saved}
-          variant={saved ? "secondary" : "primary"}
-        >
-          {isSaving ? (
-            <View style={styles.loadingContent}>
-              <ActivityIndicator color={Colors.light.buttonText} size="small" />
-              <ThemedText style={styles.buttonText}>Saving...</ThemedText>
-            </View>
-          ) : saved ? (
-            <View style={styles.loadingContent}>
-              <Feather name="check-circle" size={18} color={Colors.light.success} />
-              <ThemedText style={styles.savedButtonText}>Saved to Gallery</ThemedText>
-            </View>
-          ) : (
-            "Save to Gallery"
-          )}
-        </Button>
+        <View style={styles.specContainer}>
+          <ThemedText type="small" style={styles.specText}>
+            2000 x 2000 - JPG
+          </ThemedText>
+        </View>
 
-        <Button
-          onPress={handleEdit}
-          variant="outline"
-          disabled={isRetrying}
-        >
-          Edit Image
-        </Button>
+        <View style={styles.buttonContainer}>
+          <Button
+            onPress={handleSaveToGallery}
+            disabled={isSaving || saved}
+            variant={saved ? "secondary" : "primary"}
+          >
+            {isSaving ? (
+              <View style={styles.loadingContent}>
+                <ActivityIndicator
+                  color={Colors.light.buttonText}
+                  size="small"
+                />
+                <ThemedText style={styles.buttonText}>Saving...</ThemedText>
+              </View>
+            ) : saved ? (
+              <View style={styles.loadingContent}>
+                <Feather
+                  name="check-circle"
+                  size={18}
+                  color={Colors.light.success}
+                />
+                <ThemedText style={styles.savedButtonText}>
+                  Saved to Gallery
+                </ThemedText>
+              </View>
+            ) : (
+              "Save to Gallery"
+            )}
+          </Button>
 
-        <Button
-          onPress={handleRetry}
-          disabled={isRetrying}
-          variant="outline"
-        >
-          {isRetrying ? (
-            <View style={styles.loadingContent}>
-              <ActivityIndicator color={Colors.light.primary} size="small" />
-              <ThemedText style={styles.retryButtonText}>Regenerating...</ThemedText>
-            </View>
-          ) : (
-            <View style={styles.loadingContent}>
-              <Feather name="refresh-cw" size={16} color={Colors.light.primary} />
-              <ThemedText style={styles.retryButtonText}>Retry Generation</ThemedText>
-            </View>
-          )}
-        </Button>
+          <Button onPress={handleEdit} variant="outline" disabled={isRetrying}>
+            Edit Image
+          </Button>
 
-        <Button
-          onPress={handleGenerateAnother}
-          variant="outline"
-          disabled={isRetrying}
-        >
-          Generate Another
-        </Button>
-      </View>
-    </ScrollView>
+          <Button onPress={handleRetry} disabled={isRetrying} variant="outline">
+            {isRetrying ? (
+              <View style={styles.loadingContent}>
+                <ActivityIndicator color={Colors.light.primary} size="small" />
+                <ThemedText style={styles.retryButtonText}>
+                  Regenerating...
+                </ThemedText>
+              </View>
+            ) : (
+              <View style={styles.loadingContent}>
+                <Feather
+                  name="refresh-cw"
+                  size={16}
+                  color={Colors.light.primary}
+                />
+                <ThemedText style={styles.retryButtonText}>
+                  Retry Generation
+                </ThemedText>
+              </View>
+            )}
+          </Button>
+
+          <Button
+            onPress={handleGenerateAnother}
+            variant="outline"
+            disabled={isRetrying}
+          >
+            Generate Another
+          </Button>
+        </View>
+      </ScrollView>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.backgroundRoot,
+  },
+  scrollView: {
+    flex: 1,
   },
   content: {
     paddingHorizontal: Spacing.xl,
@@ -273,18 +346,19 @@ const styles = StyleSheet.create({
   imageContainer: {
     width: IMAGE_SIZE,
     height: IMAGE_SIZE,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    borderColor: Colors.light.borderLight,
-    backgroundColor: Colors.light.backgroundSecondary,
+    borderRadius: BorderRadius.xl,
+    borderWidth: 2,
+    borderColor: "rgba(255, 255, 255, 0.9)",
+    backgroundColor: Colors.light.white,
     overflow: "hidden",
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: Colors.light.black,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 8,
+    // Enhanced layered shadow for depth
+    shadowColor: Colors.light.primary,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 12,
   },
   image: {
     width: "100%",
@@ -320,5 +394,32 @@ const styles = StyleSheet.create({
     color: Colors.light.primary,
     fontWeight: "600",
     fontSize: 16,
+  },
+  toggleContainer: {
+    marginTop: Spacing.md,
+  },
+  toggleButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.light.backgroundTertiary,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  toggleButtonActive: {
+    backgroundColor: Colors.light.primary,
+    borderColor: Colors.light.primary,
+    ...Shadows.accent,
+  },
+  toggleText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: Colors.light.textSecondary,
+  },
+  toggleTextActive: {
+    color: Colors.light.white,
   },
 });

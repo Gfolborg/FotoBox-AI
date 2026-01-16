@@ -6,7 +6,6 @@ import {
   Platform,
   Linking,
   ActivityIndicator,
-  Dimensions,
   Modal,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -20,6 +19,8 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  FadeIn,
+  FadeInDown,
 } from "react-native-reanimated";
 
 import { ThemedText } from "@/components/ThemedText";
@@ -28,15 +29,33 @@ import { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "Camera">;
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-
 // Retake tips data
 const RETAKE_TIPS = [
-  { icon: "sun" as const, title: "Good Lighting", description: "Use natural light or well-lit area. Avoid harsh shadows." },
-  { icon: "maximize" as const, title: "Fill the Frame", description: "Position product to take up 80-85% of the image." },
-  { icon: "target" as const, title: "Stay Centered", description: "Keep the product centered and straight." },
-  { icon: "image" as const, title: "Plain Background", description: "Use a simple, uncluttered background." },
-  { icon: "zap" as const, title: "Hold Steady", description: "Keep phone stable to avoid blur." },
+  {
+    icon: "sun" as const,
+    title: "Good Lighting",
+    description: "Use natural light or well-lit area. Avoid harsh shadows.",
+  },
+  {
+    icon: "maximize" as const,
+    title: "Fill the Frame",
+    description: "Position product to take up 80-85% of the image.",
+  },
+  {
+    icon: "target" as const,
+    title: "Stay Centered",
+    description: "Keep the product centered and straight.",
+  },
+  {
+    icon: "image" as const,
+    title: "Plain Background",
+    description: "Use a simple, uncluttered background.",
+  },
+  {
+    icon: "zap" as const,
+    title: "Hold Steady",
+    description: "Keep phone stable to avoid blur.",
+  },
 ];
 
 export default function CameraScreen() {
@@ -45,7 +64,9 @@ export default function CameraScreen() {
   const cameraRef = useRef<CameraView>(null);
   const [permission, requestPermission] = useCameraPermissions();
   const [isCapturing, setIsCapturing] = useState(false);
-  const [selectionMode, setSelectionMode] = useState<"single" | "batch">("single");
+  const [selectionMode, setSelectionMode] = useState<"single" | "batch">(
+    "single",
+  );
   const [showTips, setShowTips] = useState(false);
 
   const captureScale = useSharedValue(1);
@@ -80,7 +101,7 @@ export default function CameraScreen() {
       captureOpacity.value = withSpring(0.3);
     }
   };
-  
+
   const handlePickSingleImage = async () => {
     setSelectionMode("single");
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -128,48 +149,87 @@ export default function CameraScreen() {
   if (!permission.granted) {
     if (permission.status === "denied" && !permission.canAskAgain) {
       return (
-        <View style={[styles.container, styles.centered, styles.permissionContainer]}>
-          <View style={styles.permissionContent}>
-            <Feather name="camera-off" size={64} color={Colors.light.primary} />
-            <ThemedText type="h4" style={styles.permissionTitle}>
-              Camera Access Required
-            </ThemedText>
-            <ThemedText style={styles.permissionText}>
-              Please enable camera access in your device settings to capture product photos.
-            </ThemedText>
+        <View
+          style={[
+            styles.container,
+            styles.centered,
+            styles.permissionContainer,
+          ]}
+        >
+          <Animated.View
+            entering={FadeIn.duration(500)}
+            style={styles.permissionContent}
+          >
+            <Animated.View entering={FadeInDown.delay(100).duration(400)}>
+              <Feather
+                name="camera-off"
+                size={64}
+                color={Colors.light.primary}
+              />
+            </Animated.View>
+            <Animated.View entering={FadeInDown.delay(200).duration(400)}>
+              <ThemedText type="h4" style={styles.permissionTitle}>
+                Camera Access Required
+              </ThemedText>
+            </Animated.View>
+            <Animated.View entering={FadeInDown.delay(300).duration(400)}>
+              <ThemedText style={styles.permissionText}>
+                Please enable camera access in your device settings to capture
+                product photos.
+              </ThemedText>
+            </Animated.View>
             {Platform.OS !== "web" && (
-              <Pressable
-                style={styles.settingsButton}
-                onPress={async () => {
-                  try {
-                    await Linking.openSettings();
-                  } catch (error) {
-                    console.error("Could not open settings");
-                  }
-                }}
-              >
-                <ThemedText style={styles.settingsButtonText}>Open Settings</ThemedText>
-              </Pressable>
+              <Animated.View entering={FadeInDown.delay(400).duration(400)}>
+                <Pressable
+                  style={styles.settingsButton}
+                  onPress={async () => {
+                    try {
+                      await Linking.openSettings();
+                    } catch {
+                      console.error("Could not open settings");
+                    }
+                  }}
+                >
+                  <ThemedText style={styles.settingsButtonText}>
+                    Open Settings
+                  </ThemedText>
+                </Pressable>
+              </Animated.View>
             )}
-          </View>
+          </Animated.View>
         </View>
       );
     }
 
     return (
-      <View style={[styles.container, styles.centered, styles.permissionContainer]}>
-        <View style={styles.permissionContent}>
-          <Feather name="camera" size={64} color={Colors.light.primary} />
-          <ThemedText type="h4" style={styles.permissionTitle}>
-            Enable Camera
-          </ThemedText>
-          <ThemedText style={styles.permissionText}>
-            To capture product photos, we need access to your camera.
-          </ThemedText>
-          <Pressable style={styles.enableButton} onPress={requestPermission}>
-            <ThemedText style={styles.enableButtonText}>Enable Camera</ThemedText>
-          </Pressable>
-        </View>
+      <View
+        style={[styles.container, styles.centered, styles.permissionContainer]}
+      >
+        <Animated.View
+          entering={FadeIn.duration(500)}
+          style={styles.permissionContent}
+        >
+          <Animated.View entering={FadeInDown.delay(100).duration(400)}>
+            <Feather name="camera" size={64} color={Colors.light.primary} />
+          </Animated.View>
+          <Animated.View entering={FadeInDown.delay(200).duration(400)}>
+            <ThemedText type="h4" style={styles.permissionTitle}>
+              Enable Camera
+            </ThemedText>
+          </Animated.View>
+          <Animated.View entering={FadeInDown.delay(300).duration(400)}>
+            <ThemedText style={styles.permissionText}>
+              To capture product photos, we need access to your camera.
+            </ThemedText>
+          </Animated.View>
+          <Animated.View entering={FadeInDown.delay(400).duration(400)}>
+            <Pressable style={styles.enableButton} onPress={requestPermission}>
+              <ThemedText style={styles.enableButtonText}>
+                Enable Camera
+              </ThemedText>
+            </Pressable>
+          </Animated.View>
+        </Animated.View>
       </View>
     );
   }
@@ -185,7 +245,11 @@ export default function CameraScreen() {
                 style={styles.backButton}
                 onPress={() => navigation.goBack()}
               >
-                <Feather name="chevron-left" size={28} color={Colors.light.white} />
+                <Feather
+                  name="chevron-left"
+                  size={28}
+                  color={Colors.light.white}
+                />
               </Pressable>
               <ThemedText type="h4" style={styles.headerTitle}>
                 Product Shot
@@ -194,7 +258,11 @@ export default function CameraScreen() {
                 style={styles.tipsButton}
                 onPress={() => setShowTips(true)}
               >
-                <Feather name="help-circle" size={24} color={Colors.light.white} />
+                <Feather
+                  name="help-circle"
+                  size={24}
+                  color={Colors.light.white}
+                />
               </Pressable>
             </View>
 

@@ -9,12 +9,12 @@ import {
   ScrollView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRoute, useNavigation } from "@react-navigation/native";
+import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RouteProp } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
+import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 
-import { ThemedView } from "@/components/ThemedView";
+import { GradientBackground } from "@/components/GradientBackground";
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
 import { BackgroundColorPicker } from "@/components/BackgroundColorPicker";
@@ -29,6 +29,7 @@ type NavigationProp = NativeStackNavigationProp<
 >;
 type RouteProps = RouteProp<RootStackParamList, "BatchPreview">;
 
+const AI_COST_PER_IMAGE = 0.01; // Example: $0.01 per AI-processed image
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const IMAGE_SIZE = (SCREEN_WIDTH - Spacing.xl * 3) / 2;
 
@@ -39,10 +40,15 @@ export default function BatchPreviewScreen() {
   const { imageUris } = route.params;
 
   const [selectedImages, setSelectedImages] = useState<string[]>(imageUris);
-  const [selectedBackgroundColor, setSelectedBackgroundColor] = useState("#FFFFFF");
-  const [selectedPreset, setSelectedPreset] = useState<EditingPreset | null>(null);
+  const [selectedBackgroundColor, setSelectedBackgroundColor] =
+    useState("#FFFFFF");
+  const [selectedPreset, setSelectedPreset] = useState<EditingPreset | null>(
+    null,
+  );
 
   const { presets } = usePresets();
+
+  const estimatedCost = selectedImages.length * AI_COST_PER_IMAGE;
 
   const handleRemoveImage = (uri: string) => {
     setSelectedImages((prev) => prev.filter((img) => img !== uri));
@@ -64,24 +70,28 @@ export default function BatchPreviewScreen() {
   };
 
   return (
-    <ThemedView style={styles.container}>
+    <GradientBackground variant="subtle">
       <View style={[styles.content, { paddingTop: Spacing.md }]}>
-        <View style={styles.header}>
+        <Animated.View entering={FadeIn.duration(400)} style={styles.header}>
           <ThemedText type="h4">
-            {selectedImages.length} {selectedImages.length === 1 ? "Image" : "Images"} Selected
+            {selectedImages.length}{" "}
+            {selectedImages.length === 1 ? "Image" : "Images"} Selected
           </ThemedText>
           <ThemedText type="small" style={styles.subtitle}>
             Tap X to remove images • Max 10 images
           </ThemedText>
-        </View>
+        </Animated.View>
 
         <FlatList
           data={selectedImages}
           numColumns={2}
           keyExtractor={(item) => item}
           contentContainerStyle={styles.grid}
-          renderItem={({ item }) => (
-            <View style={styles.imageCard}>
+          renderItem={({ item, index }) => (
+            <Animated.View
+              entering={FadeInDown.delay(index * 80).duration(400)}
+              style={styles.imageCard}
+            >
               <Image source={{ uri: item }} style={styles.image} />
               <Pressable
                 style={styles.removeButton}
@@ -89,7 +99,7 @@ export default function BatchPreviewScreen() {
               >
                 <Feather name="x" size={16} color={Colors.light.white} />
               </Pressable>
-            </View>
+            </Animated.View>
           )}
         />
 
@@ -123,7 +133,8 @@ export default function BatchPreviewScreen() {
                   key={preset.id}
                   style={[
                     styles.presetChip,
-                    selectedPreset?.id === preset.id && styles.presetChipSelected,
+                    selectedPreset?.id === preset.id &&
+                      styles.presetChipSelected,
                   ]}
                   onPress={() => handleSelectPreset(preset)}
                 >
@@ -136,7 +147,8 @@ export default function BatchPreviewScreen() {
                   <ThemedText
                     style={[
                       styles.presetChipText,
-                      selectedPreset?.id === preset.id && styles.presetChipTextSelected,
+                      selectedPreset?.id === preset.id &&
+                        styles.presetChipTextSelected,
                     ]}
                     numberOfLines={1}
                   >
@@ -165,6 +177,9 @@ export default function BatchPreviewScreen() {
           { paddingBottom: insets.bottom + Spacing.md },
         ]}
       >
+        <ThemedText style={styles.costEstimateText}>
+          Estimated Cost: ${estimatedCost.toFixed(2)}
+        </ThemedText>
         <Button onPress={handleGenerate} disabled={selectedImages.length === 0}>
           <ThemedText style={styles.buttonText}>
             Generate {selectedImages.length} Product{" "}
@@ -172,7 +187,7 @@ export default function BatchPreviewScreen() {
           </ThemedText>
         </Button>
       </View>
-    </ThemedView>
+    </GradientBackground>
   );
 }
 
@@ -228,6 +243,12 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.md,
     borderTopWidth: 1,
     borderTopColor: Colors.light.border,
+  },
+  costEstimateText: {
+    textAlign: "center",
+    color: Colors.light.textSecondary,
+    marginBottom: Spacing.sm,
+    fontSize: 14,
   },
   buttonText: {
     color: Colors.light.white,

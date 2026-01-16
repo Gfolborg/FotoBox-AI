@@ -12,7 +12,8 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { Feather } from "@expo/vector-icons";
-import { ThemedView } from "@/components/ThemedView";
+import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
+import { GradientBackground } from "@/components/GradientBackground";
 import { ThemedText } from "@/components/ThemedText";
 import { PresetCard } from "@/components/PresetCard";
 import { usePresets } from "@/hooks/usePresets";
@@ -26,38 +27,36 @@ export default function PresetSelectionScreen() {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
   const { presets, isLoading, removePreset, isDeleting } = usePresets();
-  const [selectedPreset, setSelectedPreset] = useState<EditingPreset | null>(null);
+  const [selectedPreset, setSelectedPreset] = useState<EditingPreset | null>(
+    null,
+  );
 
   const handlePresetPress = (preset: EditingPreset) => {
     setSelectedPreset(preset.id === selectedPreset?.id ? null : preset);
   };
 
   const handlePresetLongPress = (preset: EditingPreset) => {
-    Alert.alert(
-      preset.name,
-      "What would you like to do?",
-      [
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => {
-            Alert.alert(
-              "Delete Preset",
-              `Are you sure you want to delete "${preset.name}"?`,
-              [
-                { text: "Cancel", style: "cancel" },
-                {
-                  text: "Delete",
-                  style: "destructive",
-                  onPress: () => removePreset(preset.id),
-                },
-              ]
-            );
-          },
+    Alert.alert(preset.name, "What would you like to do?", [
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => {
+          Alert.alert(
+            "Delete Preset",
+            `Are you sure you want to delete "${preset.name}"?`,
+            [
+              { text: "Cancel", style: "cancel" },
+              {
+                text: "Delete",
+                style: "destructive",
+                onPress: () => removePreset(preset.id),
+              },
+            ],
+          );
         },
-        { text: "Cancel", style: "cancel" },
-      ]
-    );
+      },
+      { text: "Cancel", style: "cancel" },
+    ]);
   };
 
   const handleApplyPreset = async () => {
@@ -78,37 +77,46 @@ export default function PresetSelectionScreen() {
   };
 
   const renderEmptyState = () => (
-    <View style={styles.emptyState}>
-      <View style={styles.emptyIconContainer}>
-        <Feather name="bookmark" size={48} color={Colors.light.textTertiary} />
-      </View>
-      <ThemedText type="h4" style={styles.emptyTitle}>
-        No Saved Presets
-      </ThemedText>
-      <ThemedText style={styles.emptyDescription}>
-        Create presets by editing an image and tapping the bookmark icon to save
-        your adjustments.
-      </ThemedText>
-      <Pressable
-        style={styles.emptyButton}
-        onPress={() => navigation.navigate("Camera")}
+    <Animated.View entering={FadeIn.duration(500)} style={styles.emptyState}>
+      <Animated.View
+        entering={FadeInDown.delay(100).duration(400)}
+        style={styles.emptyIconContainer}
       >
-        <Feather name="camera" size={18} color={Colors.light.buttonText} />
-        <ThemedText style={styles.emptyButtonText}>Take a Photo</ThemedText>
-      </Pressable>
-    </View>
+        <Feather name="bookmark" size={48} color={Colors.light.textTertiary} />
+      </Animated.View>
+      <Animated.View entering={FadeInDown.delay(200).duration(400)}>
+        <ThemedText type="h4" style={styles.emptyTitle}>
+          No Saved Presets
+        </ThemedText>
+      </Animated.View>
+      <Animated.View entering={FadeInDown.delay(300).duration(400)}>
+        <ThemedText style={styles.emptyDescription}>
+          Create presets by editing an image and tapping the bookmark icon to
+          save your adjustments.
+        </ThemedText>
+      </Animated.View>
+      <Animated.View entering={FadeInDown.delay(400).duration(400)}>
+        <Pressable
+          style={styles.emptyButton}
+          onPress={() => navigation.navigate("Camera")}
+        >
+          <Feather name="camera" size={18} color={Colors.light.buttonText} />
+          <ThemedText style={styles.emptyButtonText}>Take a Photo</ThemedText>
+        </Pressable>
+      </Animated.View>
+    </Animated.View>
   );
 
   if (isLoading) {
     return (
-      <ThemedView style={[styles.container, styles.centered]}>
+      <GradientBackground variant="subtle" style={styles.centered}>
         <ActivityIndicator size="large" color={Colors.light.primary} />
-      </ThemedView>
+      </GradientBackground>
     );
   }
 
   return (
-    <ThemedView style={styles.container}>
+    <GradientBackground variant="subtle">
       {presets.length === 0 ? (
         renderEmptyState()
       ) : (
@@ -116,13 +124,17 @@ export default function PresetSelectionScreen() {
           <FlatList
             data={presets}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <PresetCard
-                preset={item}
-                onPress={() => handlePresetPress(item)}
-                onLongPress={() => handlePresetLongPress(item)}
-                selected={selectedPreset?.id === item.id}
-              />
+            renderItem={({ item, index }) => (
+              <Animated.View
+                entering={FadeInDown.delay(index * 100).duration(400)}
+              >
+                <PresetCard
+                  preset={item}
+                  onPress={() => handlePresetPress(item)}
+                  onLongPress={() => handlePresetLongPress(item)}
+                  selected={selectedPreset?.id === item.id}
+                />
+              </Animated.View>
             )}
             contentContainerStyle={[
               styles.listContent,
@@ -133,7 +145,8 @@ export default function PresetSelectionScreen() {
           />
 
           {selectedPreset && (
-            <View
+            <Animated.View
+              entering={FadeInDown.duration(300)}
               style={[
                 styles.bottomAction,
                 { paddingBottom: insets.bottom + Spacing.md },
@@ -150,14 +163,14 @@ export default function PresetSelectionScreen() {
                   color={Colors.light.buttonText}
                 />
                 <ThemedText style={styles.applyButtonText}>
-                  Apply "{selectedPreset.name}" to Photo
+                  Apply &quot;{selectedPreset.name}&quot; to Photo
                 </ThemedText>
               </Pressable>
-            </View>
+            </Animated.View>
           )}
         </>
       )}
-    </ThemedView>
+    </GradientBackground>
   );
 }
 

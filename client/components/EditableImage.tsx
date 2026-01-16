@@ -25,8 +25,8 @@ interface EditableImageProps {
     | "flipHorizontal"
     | "flipVertical"
   >;
-  showOriginal?: boolean;  // For before/after comparison
-  showCropOverlay?: boolean;  // Show crop overlay
+  showOriginal?: boolean; // For before/after comparison
+  showCropOverlay?: boolean; // Show crop overlay
   crop: ImageEditingState["crop"];
   onCropChange: (crop: ImageEditingState["crop"]) => void;
 }

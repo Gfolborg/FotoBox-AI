@@ -1,16 +1,7 @@
 import React, { useState } from "react";
-import {
-  View,
-  StyleSheet,
-  ScrollView,
-  Pressable,
-  Dimensions,
-} from "react-native";
+import { View, StyleSheet, ScrollView, Pressable } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import Animated, {
-  FadeIn,
-  FadeOut,
-} from "react-native-reanimated";
+import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 
 import { ThemedText } from "./ThemedText";
 import { CircularDial } from "./CircularDial";
@@ -18,8 +9,6 @@ import { BackgroundColorPicker } from "./BackgroundColorPicker";
 import { Button } from "./Button";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import type { ImageEditingState } from "@/hooks/useImageEditing";
-
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 type ToolType = "adjustment" | "transform" | "crop" | "amazon";
 type ToolKey =
@@ -66,7 +55,8 @@ const TOOLS: ToolConfig[] = [
     max: 1,
     step: 0.05,
     defaultValue: 0,
-    format: (v) => (v > 0 ? `+${(v * 100).toFixed(0)}%` : `${(v * 100).toFixed(0)}%`),
+    format: (v) =>
+      v > 0 ? `+${(v * 100).toFixed(0)}%` : `${(v * 100).toFixed(0)}%`,
   },
   {
     key: "contrast",
@@ -110,7 +100,8 @@ const TOOLS: ToolConfig[] = [
     max: 1,
     step: 0.05,
     defaultValue: 0,
-    format: (v) => (v > 0 ? `+${(v * 100).toFixed(0)}` : `${(v * 100).toFixed(0)}`),
+    format: (v) =>
+      v > 0 ? `+${(v * 100).toFixed(0)}` : `${(v * 100).toFixed(0)}`,
   },
   {
     key: "shadows",
@@ -121,7 +112,8 @@ const TOOLS: ToolConfig[] = [
     max: 1,
     step: 0.05,
     defaultValue: 0,
-    format: (v) => (v > 0 ? `+${(v * 100).toFixed(0)}` : `${(v * 100).toFixed(0)}`),
+    format: (v) =>
+      v > 0 ? `+${(v * 100).toFixed(0)}` : `${(v * 100).toFixed(0)}`,
   },
   {
     key: "warmth",
@@ -132,7 +124,8 @@ const TOOLS: ToolConfig[] = [
     max: 1,
     step: 0.05,
     defaultValue: 0,
-    format: (v) => (v > 0 ? `+${(v * 100).toFixed(0)}` : `${(v * 100).toFixed(0)}`),
+    format: (v) =>
+      v > 0 ? `+${(v * 100).toFixed(0)}` : `${(v * 100).toFixed(0)}`,
   },
   // Transform tools
   {
@@ -160,7 +153,7 @@ interface DialToolbarProps {
   state: ImageEditingState;
   onUpdateAdjustment: <K extends keyof ImageEditingState>(
     key: K,
-    value: ImageEditingState[K]
+    value: ImageEditingState[K],
   ) => void;
   onRotateCW: () => void;
   onRotateCCW: () => void;
@@ -178,9 +171,11 @@ export function DialToolbar({
   onToggleFlipHorizontal,
   onToggleFlipVertical,
   onGenerate,
-  isProcessing
+  isProcessing,
 }: DialToolbarProps) {
-  const [selectedTool, setSelectedTool] = useState<ToolKey | null>("amazonMain");
+  const [selectedTool, setSelectedTool] = useState<ToolKey | null>(
+    "amazonMain",
+  );
 
   const handleToolSelect = (tool: ToolConfig) => {
     if (selectedTool === tool.key) {
@@ -203,7 +198,9 @@ export function DialToolbar({
   const getToolModified = (tool: ToolConfig): boolean => {
     if (tool.type === "adjustment") {
       const value = state[tool.key as keyof ImageEditingState] as number;
-      return Math.abs(value - (tool.defaultValue || 0)) > (tool.step || 0.01) / 2;
+      return (
+        Math.abs(value - (tool.defaultValue || 0)) > (tool.step || 0.01) / 2
+      );
     }
     if (tool.key === "rotate") {
       return state.rotation !== 0;
@@ -247,7 +244,10 @@ export function DialToolbar({
 
       {/* Tool Controls */}
       {currentTool && currentTool.type === "adjustment" && (
-        <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(150)}>
+        <Animated.View
+          entering={FadeIn.duration(200)}
+          exiting={FadeOut.duration(150)}
+        >
           <CircularDial
             value={state[currentTool.key as keyof ImageEditingState] as number}
             min={currentTool.min!}
@@ -256,7 +256,9 @@ export function DialToolbar({
             defaultValue={currentTool.defaultValue!}
             label={currentTool.label}
             formatValue={currentTool.format}
-            onValueChange={(val) => onUpdateAdjustment(currentTool.key as any, val)}
+            onValueChange={(val) =>
+              onUpdateAdjustment(currentTool.key as any, val)
+            }
           />
         </Animated.View>
       )}
@@ -269,7 +271,9 @@ export function DialToolbar({
         >
           <BackgroundColorPicker
             selectedColor={state.selectedBackgroundColor}
-            onColorSelect={(color) => onUpdateAdjustment("selectedBackgroundColor", color)}
+            onColorSelect={(color) =>
+              onUpdateAdjustment("selectedBackgroundColor", color)
+            }
           />
           <View style={styles.generateButtonContainer}>
             <Button
@@ -290,13 +294,23 @@ export function DialToolbar({
           style={styles.transformContent}
         >
           <View style={styles.transformButtons}>
-            <TransformButton icon="rotate-ccw" label="Left" onPress={onRotateCCW} />
+            <TransformButton
+              icon="rotate-ccw"
+              label="Left"
+              onPress={onRotateCCW}
+            />
             {state.rotation !== 0 && (
               <View style={styles.rotationBadge}>
-                <ThemedText style={styles.rotationText}>{state.rotation}°</ThemedText>
+                <ThemedText style={styles.rotationText}>
+                  {state.rotation}°
+                </ThemedText>
               </View>
             )}
-            <TransformButton icon="rotate-cw" label="Right" onPress={onRotateCW} />
+            <TransformButton
+              icon="rotate-cw"
+              label="Right"
+              onPress={onRotateCW}
+            />
           </View>
         </Animated.View>
       )}
@@ -337,24 +351,35 @@ export function DialToolbar({
               onPress={() => {
                 onUpdateAdjustment("aspectRatio", "free");
                 if (!state.crop) {
-                  onUpdateAdjustment("crop", { x: 0.1, y: 0.1, width: 0.8, height: 0.8 });
+                  onUpdateAdjustment("crop", {
+                    x: 0.1,
+                    y: 0.1,
+                    width: 0.8,
+                    height: 0.8,
+                  });
                 }
               }}
             />
             <AspectButton
               label="1:1"
               active={state.aspectRatio === "square"}
-              onPress={() => handleAspectRatio("square", state, onUpdateAdjustment)}
+              onPress={() =>
+                handleAspectRatio("square", state, onUpdateAdjustment)
+              }
             />
             <AspectButton
               label="4:3"
               active={state.aspectRatio === "4:3"}
-              onPress={() => handleAspectRatio("4:3", state, onUpdateAdjustment)}
+              onPress={() =>
+                handleAspectRatio("4:3", state, onUpdateAdjustment)
+              }
             />
             <AspectButton
               label="16:9"
               active={state.aspectRatio === "16:9"}
-              onPress={() => handleAspectRatio("16:9", state, onUpdateAdjustment)}
+              onPress={() =>
+                handleAspectRatio("16:9", state, onUpdateAdjustment)
+              }
             />
           </View>
 
@@ -380,7 +405,10 @@ export function DialToolbar({
 function handleAspectRatio(
   ratio: "square" | "4:3" | "16:9",
   state: ImageEditingState,
-  onUpdateAdjustment: <K extends keyof ImageEditingState>(key: K, value: ImageEditingState[K]) => void
+  onUpdateAdjustment: <K extends keyof ImageEditingState>(
+    key: K,
+    value: ImageEditingState[K],
+  ) => void,
 ) {
   onUpdateAdjustment("aspectRatio", ratio);
 
@@ -412,7 +440,12 @@ function handleAspectRatio(
   const newX = Math.max(0, Math.min(centerX - newWidth / 2, 1 - newWidth));
   const newY = Math.max(0, Math.min(centerY - newHeight / 2, 1 - newHeight));
 
-  onUpdateAdjustment("crop", { x: newX, y: newY, width: newWidth, height: newHeight });
+  onUpdateAdjustment("crop", {
+    x: newX,
+    y: newY,
+    width: newWidth,
+    height: newHeight,
+  });
 }
 
 // Sub-components
@@ -430,7 +463,10 @@ function ToolChip({
   onPress: () => void;
 }) {
   return (
-    <Pressable onPress={onPress} style={[styles.chip, active && styles.chipActive]}>
+    <Pressable
+      onPress={onPress}
+      style={[styles.chip, active && styles.chipActive]}
+    >
       <View style={styles.chipContent}>
         <Feather
           name={icon}
@@ -458,13 +494,21 @@ function TransformButton({
   onPress: () => void;
 }) {
   return (
-    <Pressable onPress={onPress} style={[styles.transformBtn, active && styles.transformBtnActive]}>
+    <Pressable
+      onPress={onPress}
+      style={[styles.transformBtn, active && styles.transformBtnActive]}
+    >
       <Feather
         name={icon}
         size={18}
         color={active ? Colors.light.white : Colors.light.primary}
       />
-      <ThemedText style={[styles.transformBtnText, active && styles.transformBtnTextActive]}>
+      <ThemedText
+        style={[
+          styles.transformBtnText,
+          active && styles.transformBtnTextActive,
+        ]}
+      >
         {label}
       </ThemedText>
     </Pressable>
@@ -481,8 +525,13 @@ function AspectButton({
   onPress: () => void;
 }) {
   return (
-    <Pressable onPress={onPress} style={[styles.aspectBtn, active && styles.aspectBtnActive]}>
-      <ThemedText style={[styles.aspectBtnText, active && styles.aspectBtnTextActive]}>
+    <Pressable
+      onPress={onPress}
+      style={[styles.aspectBtn, active && styles.aspectBtnActive]}
+    >
+      <ThemedText
+        style={[styles.aspectBtnText, active && styles.aspectBtnTextActive]}
+      >
         {label}
       </ThemedText>
     </Pressable>

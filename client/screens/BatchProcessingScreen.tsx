@@ -6,12 +6,21 @@ import {
   Image,
   ActivityIndicator,
 } from "react-native";
-import { useRoute, useNavigation } from "@react-navigation/native";
+import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RouteProp } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+  Easing,
+} from "react-native-reanimated";
+import pLimit from 'p-limit'; // Import p-limit
 
-import { ThemedView } from "@/components/ThemedView";
+import { GradientBackground } from "@/components/GradientBackground";
 import { ThemedText } from "@/components/ThemedText";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
@@ -40,17 +49,23 @@ export default function BatchProcessingScreen() {
       originalUri: uri,
       resultUri: null,
       status: "pending" as const,
-    }))
+    })),
   );
 
   useEffect(() => {
     processImages();
+    // Run once on mount - processImages uses current closure values
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const processImages = async () => {
-    for (let i = 0; i < imageUris.length; i++) {
-      await processImage(imageUris[i], i);
-    }
+    const limit = pLimit(5); // Limit to 5 concurrent operations
+
+    const processingPromises = imageUris.map((uri, i) =>
+      limit(() => processImage(uri, i))
+    );
+
+    await Promise.all(processingPromises);
 
     // Use callback to get the most up-to-date results
     setResults((finalResults) => {
@@ -62,8 +77,8 @@ export default function BatchProcessingScreen() {
   const processImage = async (imageUri: string, index: number) => {
     setResults((prev) =>
       prev.map((r, idx) =>
-        idx === index ? { ...r, status: "processing" as const } : r
-      )
+        idx === index ? { ...r, status: "processing" as const } : r,
+      ),
     );
 
     try {
@@ -77,8 +92,14 @@ export default function BatchProcessingScreen() {
       const apiUrl = getApiUrl();
       const bgColorParam = encodeURIComponent(backgroundColor);
       const endpoint = `${apiUrl}api/amazon-main?backgroundColor=${bgColorParam}`;
-      console.log(`[BatchProcessing] Image ${index + 1} - Background Color:`, backgroundColor);
-      console.log(`[BatchProcessing] Image ${index + 1} - API Endpoint:`, endpoint);
+      console.log(
+        `[BatchProcessing] Image ${index + 1} - Background Color:`,
+        backgroundColor,
+      );
+      console.log(
+        `[BatchProcessing] Image ${index + 1} - API Endpoint:`,
+        endpoint,
+      );
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 300000);
@@ -106,16 +127,12 @@ export default function BatchProcessingScreen() {
 
       setResults((prev) =>
         prev.map((r, idx) =>
-          idx === index
-            ? { ...r, resultUri, status: "completed" as const }
-            : r
-        )
+          idx === index ? { ...r, resultUri, status: "completed" as const } : r,
+        ),
       );
     } catch (error) {
       const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Unknown error occurred";
+        error instanceof Error ? error.message : "Unknown error occurred";
 
       setResults((prev) =>
         prev.map((r, idx) =>
@@ -125,40 +142,60 @@ export default function BatchProcessingScreen() {
                 status: "failed" as const,
                 error: errorMessage,
               }
-            : r
-        )
+            : r,
+        ),
       );
     }
   };
 
-  const completedCount = results.filter(
-    (r) => r.status === "completed"
-  ).length;
+  const completedCount = results.filter((r) => r.status === "completed").length;
   const failedCount = results.filter((r) => r.status === "failed").length;
   const processedCount = completedCount + failedCount;
   const progressPercentage = (processedCount / imageUris.length) * 100;
 
+  // Animated progress bar glow
+  const progressGlow = useSharedValue(0);
+  useEffect(() => {
+    progressGlow.value = withRepeat(
+      withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      true,
+    );
+  }, [progressGlow]);
+
+  const progressGlowStyle = useAnimatedStyle(() => ({
+    opacity: 0.4 + progressGlow.value * 0.4,
+  }));
+
   return (
-    <ThemedView style={styles.container}>
-      <View style={styles.header}>
+    <GradientBackground variant="warm">
+      <Animated.View entering={FadeIn.duration(400)} style={styles.header}>
         <ThemedText type="h3">Processing Images</ThemedText>
         <ThemedText type="body" style={styles.progress}>
           {processedCount} / {imageUris.length} complete
         </ThemedText>
-      </View>
+      </Animated.View>
 
       <View style={styles.progressBarContainer}>
-        <View
+        <Animated.View
           style={[
             styles.progressBar,
             { width: `${progressPercentage}%` },
+            progressGlowStyle,
           ]}
         />
       </View>
 
-      <ScrollView style={styles.imageList} contentContainerStyle={styles.listContent}>
+      <ScrollView
+        style={styles.imageList}
+        contentContainerStyle={styles.listContent}
+      >
         {results.map((result, index) => (
-          <View key={result.originalUri} style={styles.imageRow}>
+          <Animated.View
+            key={result.originalUri}
+            entering={FadeInDown.delay(index * 100).duration(400)}
+            style={styles.imageRow}
+          >
             <Image
               source={{ uri: result.originalUri }}
               style={styles.thumbnail}
@@ -189,23 +226,27 @@ export default function BatchProcessingScreen() {
               )}
               {result.status === "failed" && (
                 <View style={styles.errorContainer}>
-                  <Feather name="x-circle" size={20} color={Colors.light.error} />
+                  <Feather
+                    name="x-circle"
+                    size={20}
+                    color={Colors.light.error}
+                  />
                   <ThemedText type="small" style={styles.errorText}>
                     {result.error}
                   </ThemedText>
                 </View>
               )}
             </View>
-          </View>
+          </Animated.View>
         ))}
       </ScrollView>
 
-      <View style={styles.note}>
+      <Animated.View entering={FadeIn.delay(300).duration(400)} style={styles.note}>
         <ThemedText type="small" style={styles.noteText}>
           AI is removing backgrounds and creating listing-ready images...
         </ThemedText>
-      </View>
-    </ThemedView>
+      </Animated.View>
+    </GradientBackground>
   );
 }
 

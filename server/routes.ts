@@ -4,27 +4,24 @@ import multer from "multer";
 import sharp from "sharp";
 import { GoogleGenAI, Modality } from "@google/genai";
 
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
 });
 
-const ai = new GoogleGenAI({
-  apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY,
-  httpOptions: {
-    apiVersion: "",
-    baseUrl: process.env.AI_INTEGRATIONS_GEMINI_BASE_URL,
-  },
-});
-
 // Helper function to convert hex color to RGB values
 function hexToRGB(hex: string): { r: number; g: number; b: number } {
-  const cleanHex = hex.replace(/^#/, '');
+  const cleanHex = hex.replace(/^#/, "");
 
   // Handle 3-char hex
-  const fullHex = cleanHex.length === 3
-    ? cleanHex.split('').map(c => c + c).join('')
-    : cleanHex;
+  const fullHex =
+    cleanHex.length === 3
+      ? cleanHex
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : cleanHex;
 
   return {
     r: parseInt(fullHex.substring(0, 2), 16),
@@ -35,16 +32,49 @@ function hexToRGB(hex: string): { r: number; g: number; b: number } {
 
 // Lifestyle scene environment prompts
 const LIFESTYLE_ENVIRONMENTS: Record<string, string> = {
-  kitchen: "Place this product on a modern kitchen counter with natural lighting streaming through a window, marble or granite surface, with subtle kitchen background elements like wooden cutting boards or fresh herbs. The scene should feel clean, bright, and aspirational.",
-  outdoor: "Place this product in a natural outdoor setting with soft golden-hour sunlight, lush greenery or flowers in the background, creating a fresh and organic atmosphere. The lighting should be warm and inviting.",
-  studio: "Place this product in a professional photography studio with soft box lighting, clean neutral background with subtle shadows, creating a high-end commercial look. The lighting should be even and flattering.",
-  living: "Place this product in a cozy, well-decorated living room setting with warm ambient lighting, comfortable textiles like throws or cushions visible, creating a homey and inviting atmosphere.",
-  office: "Place this product on a clean, modern office desk with a professional workspace background, good natural or artificial lighting, perhaps with a plant or minimalist decor elements visible.",
-  minimal: "Place this product on a clean, minimalist surface with a soft gradient or solid neutral background, using even studio-like lighting to create a sophisticated, modern aesthetic.",
+  kitchen:
+    "Place this product on a modern kitchen counter with natural lighting streaming through a window, marble or granite surface, with subtle kitchen background elements like wooden cutting boards or fresh herbs. The scene should feel clean, bright, and aspirational.",
+  outdoor:
+    "Place this product in a natural outdoor setting with soft golden-hour sunlight, lush greenery or flowers in the background, creating a fresh and organic atmosphere. The lighting should be warm and inviting.",
+  studio:
+    "Place this product in a professional photography studio with soft box lighting, clean neutral background with subtle shadows, creating a high-end commercial look. The lighting should be even and flattering.",
+  living:
+    "Place this product in a cozy, well-decorated living room setting with warm ambient lighting, comfortable textiles like throws or cushions visible, creating a homey and inviting atmosphere.",
+  office:
+    "Place this product on a clean, modern office desk with a professional workspace background, good natural or artificial lighting, perhaps with a plant or minimalist decor elements visible.",
+  minimal:
+    "Place this product on a clean, minimalist surface with a soft gradient or solid neutral background, using even studio-like lighting to create a sophisticated, modern aesthetic.",
+  cafe: "Place this product on a rustic wooden table in a sunlit cafe, with subtle background elements like a latte art cup, a book, or a potted plant, creating a relaxed and inviting atmosphere.",
+  bedroom: "Place this product on a minimalist nightstand in a serene bedroom with soft, indirect lighting, featuring neutral tones and cozy textiles in the background.",
+  garden: "Place this product amidst lush green foliage in a vibrant garden, with dappled sunlight and a natural, organic feel. The background should be slightly blurred to keep the focus on the product.",
+  industrial: "Place this product on a concrete surface in an industrial-chic loft, with exposed brick or metal accents in the background, and strong, directional lighting to create a modern, edgy look.",
 };
 
-function getLifestyleScenePrompt(environment: string): string {
-  const basePrompt = LIFESTYLE_ENVIRONMENTS[environment] || LIFESTYLE_ENVIRONMENTS.minimal;
+function getLifestyleScenePrompt(
+  environment: string,
+  isCustom: boolean,
+  productDescription?: string,
+  shadowControl?: string,
+): string {
+  let basePrompt: string;
+
+  if (isCustom) {
+    // The 'environment' is a custom user-written prompt
+    if (productDescription) {
+      basePrompt = `Place a product described as "${productDescription}" into the following scene: ${environment}.`;
+    } else {
+      basePrompt = `Place the product into the following scene: ${environment}.`;
+    }
+  } else {
+    // The 'environment' is a key for a predefined scene
+    const sceneDescription =
+      LIFESTYLE_ENVIRONMENTS[environment] || LIFESTYLE_ENVIRONMENTS.minimal;
+    if (productDescription) {
+      basePrompt = `A product described as "${productDescription}" is in a scene. ${sceneDescription}`;
+    } else {
+      basePrompt = sceneDescription;
+    }
+  }
 
   return `${basePrompt}
 
@@ -52,29 +82,47 @@ CRITICAL INSTRUCTIONS:
 - Keep the product EXACTLY the same (do not modify, repaint, or change any details of the product).
 - The product should be the clear focal point of the image.
 - Generate a photorealistic lifestyle scene.
-- Maintain natural shadows and reflections consistent with the environment lighting.
+- Maintain ${shadowControl || "natural"} shadows and reflections consistent with the environment lighting.
 - The scene should look like a professional product photography shoot.
 - Output a square image, photorealistic, no text, no watermark, no borders.
 - The composition should be balanced and aesthetically pleasing.`;
 }
 
 // Generate prompt with explicit background color specification
-function getAmazonMainPrompt(backgroundColor: string): string {
+function getGenericMainPrompt(backgroundColor: string, platform: string): string {
   const rgb = hexToRGB(backgroundColor);
   const isWhite = rgb.r === 255 && rgb.g === 255 && rgb.b === 255;
 
-  return `Edit this product photo for an Amazon main listing image.
+  let platformSpecificInstructions = "";
+  if (platform === "amazon") {
+    platformSpecificInstructions = `- The product should fill about 85% of a square frame with safe margins.
+- Output a square image, 2000x2000.`;
+  } else if (platform === "shopify") {
+    platformSpecificInstructions = `- The product should be centered and well-lit.
+- Output a square image, 2048x2048, or a 4:3 aspect ratio image (e.g., 2048x1536).
+- Ensure high resolution for zoom functionality (min 800x800).`;
+  } else if (platform === "etsy") {
+    platformSpecificInstructions = `- The product should be clearly visible and well-lit.
+- Output an image with a 4:3 aspect ratio (e.g., 3000x2250) or a square image (e.g., 2000x2000).
+- Use original product photo (no renderings/stock).`;
+  }
+
+  return `Edit this product photo for a ${platform} main listing image.
 
 CRITICAL INSTRUCTIONS:
 - Keep the product EXACTLY the same (do not repaint, retouch, change colors, patterns, logos, labels, or shape).
 - Remove the entire background (walls, floors, tables, clutter, and any other non-product elements).
-- REPLACE the background with a solid color: RGB(${rgb.r}, ${rgb.g}, ${rgb.b})${isWhite ? ' - pure white' : ''}.
+- REPLACE the background with a solid color: RGB(${rgb.r}, ${rgb.g}, ${
+    rgb.b
+  })${isWhite ? " - pure white" : ""}.
 - The ENTIRE background must be this exact RGB color - no gradients, no variations.
 - Keep product edges clean with no halos, fringing, or artifacts.
-- Center the product and scale it to fill about 85% of the frame.
-- Output a square image, photorealistic, no text, no watermark, no borders.
+${platformSpecificInstructions}
+- Photorealistic, no text, no watermark, no borders.
 
-REMEMBER: The background color is RGB(${rgb.r}, ${rgb.g}, ${rgb.b}) - apply this color to ALL background pixels.`;
+REMEMBER: The background color is RGB(${rgb.r}, ${rgb.g}, ${
+    rgb.b
+  }) - apply this color to ALL background pixels.`;
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -82,8 +130,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ status: "ok" });
   });
 
-  app.post(
-    "/api/amazon-main",
+  app.post("/api/main-image",
     upload.single("file"),
     async (req: Request, res: Response) => {
       try {
@@ -100,27 +147,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
               "Gemini AI integration is not configured. Please set up the AI integration.",
           });
         }
+        
+        const ai = new GoogleGenAI({
+          apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY,
+          httpOptions: {
+            apiVersion: "",
+            baseUrl: process.env.AI_INTEGRATIONS_GEMINI_BASE_URL,
+          },
+        });
 
         // Parse background color from query param or body (default to white)
-        const backgroundColor = (req.query.backgroundColor as string) ||
-                                (req.body?.backgroundColor as string) ||
-                                '#FFFFFF';
+        const backgroundColor =
+          (req.query.backgroundColor as string) ||
+          (req.body?.backgroundColor as string) ||
+          "#FFFFFF";
+        // Extract platform parameter, default to 'amazon'
+        const platform = (req.query.platform as string)?.toLowerCase() || "amazon";
 
         const imageBuffer = req.file.buffer;
         const base64Image = imageBuffer.toString("base64");
         const mimeType = req.file.mimetype || "image/jpeg";
 
-        // Generate prompt with the specified background color
-        const prompt = getAmazonMainPrompt(backgroundColor);
-
-        // DEBUG: Log the color being used
-        console.log("=== IMAGE PROCESSING ===");
-        console.log("Background Color (Hex):", backgroundColor);
-        const rgb = hexToRGB(backgroundColor);
-        console.log("Background Color (RGB):", `RGB(${rgb.r}, ${rgb.g}, ${rgb.b})`);
-        console.log("Full Prompt sent to Gemini:");
-        console.log(prompt);
-        console.log("======================");
+        // Generate prompt with the specified background color and platform
+        const prompt = getGenericMainPrompt(backgroundColor, platform);
 
         const response = await ai.models.generateContent({
           model: "gemini-2.5-flash-image",
@@ -146,7 +195,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const candidate = response.candidates?.[0];
         const imagePart = candidate?.content?.parts?.find(
           (part: { inlineData?: { data?: string; mimeType?: string } }) =>
-            part.inlineData
+            part.inlineData,
         );
 
         if (!imagePart?.inlineData?.data) {
@@ -157,18 +206,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const generatedImageBuffer = Buffer.from(
           imagePart.inlineData.data,
-          "base64"
+          "base64",
         );
 
-        // Get the RGB values for the selected background color
         const bgRgb = hexToRGB(backgroundColor);
 
-        // Simple resize and format to 2000x2000 JPEG
-        // Gemini has already applied the background color
-        const finalBuffer = await sharp(generatedImageBuffer)
-          .resize(2000, 2000, {
+        let resizeOptions = {
+            width: 2000,
+            height: 2000,
             fit: "contain",
             background: { r: bgRgb.r, g: bgRgb.g, b: bgRgb.b },
+        };
+
+        // Platform-specific resizing/formatting
+        if (platform === "shopify") {
+            // Shopify recommends 2048x2048 for square, or flexible aspect ratios
+            resizeOptions.width = 2048;
+            resizeOptions.height = 2048;
+        } else if (platform === "etsy") {
+            // Etsy recommends 4:3 aspect ratio, e.g., 3000x2250, or square
+            resizeOptions.width = 3000;
+            resizeOptions.height = 2250; // Will be adjusted by 'contain' if square
+            resizeOptions.fit = 'contain';
+        }
+
+        const finalBuffer = await sharp(generatedImageBuffer)
+          .resize(resizeOptions.width, resizeOptions.height, {
+            fit: resizeOptions.fit,
+            background: resizeOptions.background,
           })
           .flatten({ background: { r: bgRgb.r, g: bgRgb.g, b: bgRgb.b } })
           .jpeg({ quality: 95 })
@@ -177,7 +242,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.set("Content-Type", "image/jpeg");
         res.set(
           "Content-Disposition",
-          'attachment; filename="amazon-main.jpg"'
+          `attachment; filename="${platform}-main.jpg"`,
         );
         res.send(finalBuffer);
       } catch (error) {
@@ -188,7 +253,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           error: `Failed to process image: ${errorMessage}`,
         });
       }
-    }
+    },
   );
 
   // Image editing endpoint - handles brightness, contrast, saturation, rotation, crop
@@ -202,26 +267,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         // Parse editing parameters from query or body
-        const brightness = parseFloat((req.query.brightness as string) || req.body?.brightness || "0");
-        const contrast = parseFloat((req.query.contrast as string) || req.body?.contrast || "1");
-        const saturation = parseFloat((req.query.saturation as string) || req.body?.saturation || "1");
-        const rotation = parseInt((req.query.rotation as string) || req.body?.rotation || "0");
+        const brightness = parseFloat(
+          (req.query.brightness as string) || req.body?.brightness || "0",
+        );
+        const contrast = parseFloat(
+          (req.query.contrast as string) || req.body?.contrast || "1",
+        );
+        const saturation = parseFloat(
+          (req.query.saturation as string) || req.body?.saturation || "1",
+        );
+        const rotation = parseInt(
+          (req.query.rotation as string) || req.body?.rotation || "0",
+        );
 
         // New advanced adjustments
-        const exposure = parseFloat((req.query.exposure as string) || req.body?.exposure || "0");
-        const highlights = parseFloat((req.query.highlights as string) || req.body?.highlights || "0");
-        const shadows = parseFloat((req.query.shadows as string) || req.body?.shadows || "0");
-        const warmth = parseFloat((req.query.warmth as string) || req.body?.warmth || "0");
+        const exposure = parseFloat(
+          (req.query.exposure as string) || req.body?.exposure || "0",
+        );
+        const highlights = parseFloat(
+          (req.query.highlights as string) || req.body?.highlights || "0",
+        );
+        const shadows = parseFloat(
+          (req.query.shadows as string) || req.body?.shadows || "0",
+        );
+        const warmth = parseFloat(
+          (req.query.warmth as string) || req.body?.warmth || "0",
+        );
 
         // Flip/Mirror transforms
-        const flipHorizontal = (req.query.flipHorizontal as string) === "true" || req.body?.flipHorizontal === true;
-        const flipVertical = (req.query.flipVertical as string) === "true" || req.body?.flipVertical === true;
+        const flipHorizontal =
+          (req.query.flipHorizontal as string) === "true" ||
+          req.body?.flipHorizontal === true;
+        const flipVertical =
+          (req.query.flipVertical as string) === "true" ||
+          req.body?.flipVertical === true;
 
         // Crop parameters (optional, as percentages 0-1)
-        const cropX = parseFloat((req.query.cropX as string) || req.body?.cropX || "0");
-        const cropY = parseFloat((req.query.cropY as string) || req.body?.cropY || "0");
-        const cropWidth = parseFloat((req.query.cropWidth as string) || req.body?.cropWidth || "1");
-        const cropHeight = parseFloat((req.query.cropHeight as string) || req.body?.cropHeight || "1");
+        const cropX = parseFloat(
+          (req.query.cropX as string) || req.body?.cropX || "0",
+        );
+        const cropY = parseFloat(
+          (req.query.cropY as string) || req.body?.cropY || "0",
+        );
+        const cropWidth = parseFloat(
+          (req.query.cropWidth as string) || req.body?.cropWidth || "1",
+        );
+        const cropHeight = parseFloat(
+          (req.query.cropHeight as string) || req.body?.cropHeight || "1",
+        );
 
         const imageBuffer = req.file.buffer;
 
@@ -255,7 +348,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Apply rotation
         if (rotation !== 0) {
-          pipeline = pipeline.rotate(rotation, { background: { r: 255, g: 255, b: 255, alpha: 1 } });
+          pipeline = pipeline.rotate(rotation, {
+            background: { r: 255, g: 255, b: 255, alpha: 1 },
+          });
         }
 
         // Apply exposure adjustment (photographic-style brightness)
@@ -277,7 +372,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             pipeline = pipeline.gamma(gamma);
           } else {
             // Brighten highlights using linear adjustment
-            const mult = 1 + (highlights * 0.3);
+            const mult = 1 + highlights * 0.3;
             pipeline = pipeline.linear(mult, 0);
           }
         }
@@ -306,8 +401,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // contrast: 0.5 to 2, where 1 is normal
         // Sharp doesn't have direct contrast in modulate, use linear() instead
         if (contrast !== 1) {
-          const a = contrast;  // Multiplier
-          const b = 128 * (1 - contrast);  // Offset to keep middle gray stable
+          const a = contrast; // Multiplier
+          const b = 128 * (1 - contrast); // Offset to keep middle gray stable
           pipeline = pipeline.linear(a, b);
         }
 
@@ -315,29 +410,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // warmth: -1 to 1, where 0 is unchanged
         // Negative values = cooler (blue tint), positive = warmer (orange tint)
         if (warmth !== 0) {
-          const tintColor = warmth > 0
-            ? { r: 255, g: Math.round(200 + warmth * 55), b: 150 }  // Warm orange
-            : { r: 150, g: 200, b: 255 };  // Cool blue
+          const tintColor =
+            warmth > 0
+              ? { r: 255, g: Math.round(200 + warmth * 55), b: 150 } // Warm orange
+              : { r: 150, g: 200, b: 255 }; // Cool blue
 
           pipeline = pipeline.tint(tintColor);
         }
 
         // Convert to JPEG with high quality
-        const editedBuffer = await pipeline
-          .jpeg({ quality: 95 })
-          .toBuffer();
-
-        console.log("=== IMAGE EDITING ===");
-        console.log("Basic:", { brightness, contrast, saturation, rotation });
-        console.log("Advanced:", { exposure, highlights, shadows, warmth });
-        console.log("Transform:", { flipHorizontal, flipVertical });
-        console.log("Crop:", { cropX, cropY, cropWidth, cropHeight });
-        console.log("======================");
+        const editedBuffer = await pipeline.jpeg({ quality: 95 }).toBuffer();
 
         res.set("Content-Type", "image/jpeg");
         res.set(
           "Content-Disposition",
-          'attachment; filename="edited-image.jpg"'
+          'attachment; filename="edited-image.jpg"',
         );
         res.send(editedBuffer);
       } catch (error) {
@@ -348,7 +435,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           error: `Failed to edit image: ${errorMessage}`,
         });
       }
-    }
+    },
   );
 
   // Lifestyle scene generation endpoint
@@ -370,24 +457,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
               "Gemini AI integration is not configured. Please set up the AI integration.",
           });
         }
+        
+        const ai = new GoogleGenAI({
+          apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY,
+          httpOptions: {
+            apiVersion: "",
+            baseUrl: process.env.AI_INTEGRATIONS_GEMINI_BASE_URL,
+          },
+        });
 
-        // Parse environment from query param or body (default to minimal)
-        const environment = (req.query.environment as string) ||
-                           (req.body?.environment as string) ||
-                           'minimal';
+        // Parse parameters from query
+        const environment =
+          (req.query.environment as string) || "minimal";
+        const isCustom = (req.query.isCustom as string) === "true";
+        const productDescription = req.query.productDescription as string;
+        const shadowControl = req.query.shadowControl as string; // Extract new parameter
 
         const imageBuffer = req.file.buffer;
         const base64Image = imageBuffer.toString("base64");
         const mimeType = req.file.mimetype || "image/jpeg";
 
         // Generate prompt for the specified environment
-        const prompt = getLifestyleScenePrompt(environment);
-
-        console.log("=== LIFESTYLE SCENE GENERATION ===");
-        console.log("Environment:", environment);
-        console.log("Full Prompt sent to Gemini:");
-        console.log(prompt);
-        console.log("================================");
+        const prompt = getLifestyleScenePrompt(
+          environment,
+          isCustom,
+          productDescription,
+          shadowControl, // Pass the new parameter
+        );
 
         const response = await ai.models.generateContent({
           model: "gemini-2.5-flash-image",
@@ -413,7 +509,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const candidate = response.candidates?.[0];
         const imagePart = candidate?.content?.parts?.find(
           (part: { inlineData?: { data?: string; mimeType?: string } }) =>
-            part.inlineData
+            part.inlineData,
         );
 
         if (!imagePart?.inlineData?.data) {
@@ -424,7 +520,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const generatedImageBuffer = Buffer.from(
           imagePart.inlineData.data,
-          "base64"
+          "base64",
         );
 
         // Resize and format to 2000x2000 JPEG
@@ -439,7 +535,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.set("Content-Type", "image/jpeg");
         res.set(
           "Content-Disposition",
-          'attachment; filename="lifestyle-scene.jpg"'
+          'attachment; filename="lifestyle-scene.jpg"',
         );
         res.send(finalBuffer);
       } catch (error) {
@@ -450,8 +546,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           error: `Failed to generate lifestyle scene: ${errorMessage}`,
         });
       }
-    }
+    },
   );
+
+
+
 
   const httpServer = createServer(app);
   return httpServer;

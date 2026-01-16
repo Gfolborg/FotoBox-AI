@@ -11,13 +11,13 @@ import {
   Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRoute, useNavigation } from "@react-navigation/native";
+import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RouteProp } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import * as FileSystem from "expo-file-system/legacy";
+import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 
-import { ThemedView } from "@/components/ThemedView";
+import { GradientBackground } from "@/components/GradientBackground";
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
@@ -93,42 +93,60 @@ export default function BatchResultScreen() {
       console.error("Failed to prepare image for editing:", error);
 
       if (Platform.OS !== "web") {
-        Alert.alert("Error", "Could not prepare image for editing. Please try again.");
+        Alert.alert(
+          "Error",
+          "Could not prepare image for editing. Please try again.",
+        );
       }
     }
   };
 
   return (
-    <ThemedView style={styles.container}>
+    <GradientBackground variant="subtle">
       <View style={[styles.content, { paddingTop: Spacing.md }]}>
-        <View style={styles.header}>
+        <Animated.View entering={FadeIn.duration(400)} style={styles.header}>
           <ThemedText type="h3">Results</ThemedText>
           <ThemedText type="small" style={styles.subtitle}>
-            {successfulResults.length} of {results.length} images processed successfully
+            {successfulResults.length} of {results.length} images processed
+            successfully
           </ThemedText>
-        </View>
+        </Animated.View>
 
         <FlatList
           data={results}
           numColumns={2}
           keyExtractor={(item) => item.originalUri}
           contentContainerStyle={styles.grid}
-          renderItem={({ item }) => (
-            <View style={styles.resultCard}>
+          renderItem={({ item, index }) => (
+            <Animated.View
+              entering={FadeInDown.delay(index * 80).duration(400)}
+              style={styles.resultCard}
+            >
               {item.resultUri ? (
                 <>
                   <Pressable
                     style={styles.imageContainer}
-                    onPress={() => handleEditImage(item.resultUri!, item.originalUri)}
+                    onPress={() =>
+                      handleEditImage(item.resultUri!, item.originalUri)
+                    }
                   >
-                    <Image source={{ uri: item.resultUri }} style={styles.image} />
+                    <Image
+                      source={{ uri: item.resultUri }}
+                      style={styles.image}
+                    />
                   </Pressable>
                   <View style={styles.actionButtonsRow}>
                     <Pressable
                       style={styles.editButton}
-                      onPress={() => handleEditImage(item.resultUri!, item.originalUri)}
+                      onPress={() =>
+                        handleEditImage(item.resultUri!, item.originalUri)
+                      }
                     >
-                      <Feather name="edit-2" size={14} color={Colors.light.buttonText} />
+                      <Feather
+                        name="edit-2"
+                        size={14}
+                        color={Colors.light.buttonText}
+                      />
                     </Pressable>
                     <Pressable
                       style={[
@@ -152,11 +170,19 @@ export default function BatchResultScreen() {
                         />
                       ) : savedUris.has(item.originalUri) ? (
                         <View style={styles.savedRow}>
-                          <Feather name="check" size={14} color={Colors.light.white} />
-                          <ThemedText style={styles.saveButtonText}>Saved</ThemedText>
+                          <Feather
+                            name="check"
+                            size={14}
+                            color={Colors.light.white}
+                          />
+                          <ThemedText style={styles.saveButtonText}>
+                            Saved
+                          </ThemedText>
                         </View>
                       ) : (
-                        <ThemedText style={styles.saveButtonText}>Save</ThemedText>
+                        <ThemedText style={styles.saveButtonText}>
+                          Save
+                        </ThemedText>
                       )}
                     </Pressable>
                   </View>
@@ -173,7 +199,7 @@ export default function BatchResultScreen() {
                   </ThemedText>
                 </View>
               )}
-            </View>
+            </Animated.View>
           )}
         />
       </View>
@@ -197,16 +223,13 @@ export default function BatchResultScreen() {
           </Button>
         )}
 
-        <Pressable
-          style={styles.secondaryButton}
-          onPress={handleGenerateMore}
-        >
+        <Pressable style={styles.secondaryButton} onPress={handleGenerateMore}>
           <ThemedText style={styles.secondaryButtonText}>
             Generate More
           </ThemedText>
         </Pressable>
       </View>
-    </ThemedView>
+    </GradientBackground>
   );
 }
 

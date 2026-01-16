@@ -1,15 +1,22 @@
 import React, { ReactNode } from "react";
-import { StyleSheet, Pressable, ViewStyle, StyleProp, View } from "react-native";
+import {
+  StyleSheet,
+  Pressable,
+  ViewStyle,
+  StyleProp,
+  View,
+} from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
   WithSpringConfig,
   withTiming,
+  interpolate,
 } from "react-native-reanimated";
+import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/ThemedText";
-import { useTheme } from "@/hooks/useTheme";
 import { BorderRadius, Spacing, Colors } from "@/constants/theme";
 
 interface ButtonProps {
@@ -38,26 +45,35 @@ export function Button({
   textStyle,
   variant = "primary",
 }: ButtonProps) {
-  const { theme } = useTheme();
   const scale = useSharedValue(1);
-  const opacity = useSharedValue(1);
+  const pressed = useSharedValue(0);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
-    opacity: opacity.value,
   }));
+
+  // Animated glow effect for primary button
+  const glowStyle = useAnimatedStyle(() => {
+    if (variant !== "primary") return {};
+    return {
+      shadowOpacity: interpolate(pressed.value, [0, 1], [0.35, 0.6]),
+      shadowRadius: interpolate(pressed.value, [0, 1], [12, 20]),
+    };
+  });
 
   const handlePressIn = () => {
     if (!disabled) {
       scale.value = withSpring(0.96, springConfig);
-      opacity.value = withTiming(0.85, { duration: 100 });
+      pressed.value = withTiming(1, { duration: 150 });
+      // Light haptic feedback
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
   };
 
   const handlePressOut = () => {
     if (!disabled) {
       scale.value = withSpring(1, springConfig);
-      opacity.value = withTiming(1, { duration: 100 });
+      pressed.value = withTiming(0, { duration: 200 });
     }
   };
 
@@ -105,12 +121,11 @@ export function Button({
         disabled && styles.disabled,
         style,
         animatedStyle,
+        variant === "primary" && glowStyle,
       ]}
     >
       {isStringChild ? (
-        <ThemedText style={[getTextStyle(), textStyle]}>
-          {children}
-        </ThemedText>
+        <ThemedText style={[getTextStyle(), textStyle]}>{children}</ThemedText>
       ) : (
         <View style={styles.childContainer}>{children}</View>
       )}
@@ -130,7 +145,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.primary,
     shadowColor: Colors.light.primary,
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.35,
     shadowRadius: 12,
     elevation: 8,
   },

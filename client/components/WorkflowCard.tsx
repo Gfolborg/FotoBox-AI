@@ -5,10 +5,17 @@ import Animated, {
   useSharedValue,
   withSpring,
   WithSpringConfig,
+  interpolate,
 } from "react-native-reanimated";
 import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { ThemedText } from "./ThemedText";
-import { Colors, BorderRadius, Spacing, Shadows } from "@/constants/theme";
+import {
+  Colors,
+  BorderRadius,
+  Spacing,
+  Shadows,
+} from "@/constants/theme";
 
 type FeatherIconName = keyof typeof Feather.glyphMap;
 
@@ -38,71 +45,87 @@ export function WorkflowCard({
   variant = "secondary",
   badge,
 }: WorkflowCardProps) {
-  const scale = useSharedValue(1);
+  const pressed = useSharedValue(0);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
+  const animatedStyle = useAnimatedStyle(() => {
+    const scale = interpolate(pressed.value, [0, 1], [1, 0.97]);
+    const rotateX = interpolate(pressed.value, [0, 1], [0, 2]);
+    const rotateZ = interpolate(pressed.value, [0, 1], [0, -0.5]);
+
+    return {
+      transform: [
+        { scale },
+        { perspective: 1000 },
+        { rotateX: `${rotateX}deg` },
+        { rotateZ: `${rotateZ}deg` },
+      ],
+    };
+  });
 
   const handlePressIn = () => {
-    scale.value = withSpring(0.97, springConfig);
+    pressed.value = withSpring(1, springConfig);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const handlePressOut = () => {
-    scale.value = withSpring(1, springConfig);
+    pressed.value = withSpring(0, springConfig);
   };
 
   const isPrimary = variant === "primary";
 
   return (
-    <AnimatedPressable
-      onPress={onPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-      style={[
-        styles.card,
-        isPrimary ? styles.cardPrimary : styles.cardSecondary,
-        animatedStyle,
-      ]}
-    >
+    <View>
+      <AnimatedPressable
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        style={[
+          styles.card,
+          isPrimary ? styles.cardPrimary : styles.cardSecondary,
+          animatedStyle,
+        ]}
+      >
+        <View
+          style={[
+            styles.iconContainer,
+            isPrimary
+              ? styles.iconContainerPrimary
+              : styles.iconContainerSecondary,
+          ]}
+        >
+          <Feather
+            name={icon}
+            size={28}
+            color={isPrimary ? Colors.light.buttonText : Colors.light.primary}
+          />
+        </View>
+
+        <ThemedText
+          style={[styles.title, isPrimary && styles.titlePrimary]}
+          numberOfLines={2}
+        >
+          {title}
+        </ThemedText>
+
+        <ThemedText style={styles.description} numberOfLines={2}>
+          {description}
+        </ThemedText>
+
+        <View style={styles.arrowContainer}>
+          <Feather
+            name="arrow-right"
+            size={20}
+            color={isPrimary ? Colors.light.primary : Colors.light.textSecondary}
+          />
+        </View>
+      </AnimatedPressable>
+
       {badge && (
         <View style={styles.badge}>
           <ThemedText style={styles.badgeText}>{badge}</ThemedText>
         </View>
       )}
-
-      <View
-        style={[
-          styles.iconContainer,
-          isPrimary ? styles.iconContainerPrimary : styles.iconContainerSecondary,
-        ]}
-      >
-        <Feather
-          name={icon}
-          size={28}
-          color={isPrimary ? Colors.light.buttonText : Colors.light.primary}
-        />
-      </View>
-
-      <ThemedText
-        style={[styles.title, isPrimary && styles.titlePrimary]}
-        numberOfLines={2}
-      >
-        {title}
-      </ThemedText>
-
-      <ThemedText style={styles.description} numberOfLines={2}>
-        {description}
-      </ThemedText>
-
-      <View style={styles.arrowContainer}>
-        <Feather
-          name="arrow-right"
-          size={20}
-          color={isPrimary ? Colors.light.primary : Colors.light.textSecondary}
-        />
-      </View>
-    </AnimatedPressable>
+    </View>
   );
 }
 
@@ -112,27 +135,40 @@ const styles = StyleSheet.create({
     minHeight: 180,
     borderRadius: BorderRadius.xl,
     padding: Spacing.lg,
-    position: "relative",
     ...Shadows.md,
   },
   cardPrimary: {
-    backgroundColor: Colors.light.backgroundTertiary,
-    borderWidth: 1,
+    backgroundColor: Colors.light.backgroundDefault,
+    borderWidth: 2,
     borderColor: Colors.light.primary,
+    // Enhanced glow for primary card
+    shadowColor: Colors.light.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 8,
   },
   cardSecondary: {
-    backgroundColor: Colors.light.backgroundSecondary,
+    backgroundColor: Colors.light.backgroundDefault,
     borderWidth: 1,
-    borderColor: Colors.light.border,
+    borderColor: Colors.light.borderLight,
   },
   badge: {
     position: "absolute",
-    top: Spacing.md,
-    right: Spacing.md,
+    top: -8,
+    right: 12,
     backgroundColor: Colors.light.primary,
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.sm,
+    borderRadius: BorderRadius.full,
+    borderWidth: 2,
+    borderColor: Colors.light.backgroundDefault,
+    // Glowing badge
+    shadowColor: Colors.light.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    elevation: 4,
   },
   badgeText: {
     color: Colors.light.buttonText,
@@ -150,15 +186,21 @@ const styles = StyleSheet.create({
   },
   iconContainerPrimary: {
     backgroundColor: Colors.light.primary,
+    // Glowing icon container
+    shadowColor: Colors.light.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 6,
   },
   iconContainerSecondary: {
-    backgroundColor: Colors.light.backgroundTertiary,
+    backgroundColor: "rgba(249, 115, 22, 0.1)",
     borderWidth: 1,
-    borderColor: Colors.light.border,
+    borderColor: "rgba(249, 115, 22, 0.2)",
   },
   title: {
     fontSize: 18,
-    fontWeight: "600",
+    fontWeight: "700",
     color: Colors.light.text,
     marginBottom: Spacing.xs,
   },
@@ -173,7 +215,13 @@ const styles = StyleSheet.create({
   },
   arrowContainer: {
     position: "absolute",
-    bottom: Spacing.lg,
-    right: Spacing.lg,
+    bottom: Spacing.md,
+    right: Spacing.md,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(249, 115, 22, 0.1)",
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

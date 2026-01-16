@@ -2,21 +2,27 @@ import { useState, useCallback } from "react";
 
 export interface ImageEditingState {
   // CSS-previewable adjustments (instant feedback)
-  brightness: number;      // -1 to 1
-  contrast: number;        // 0.5 to 2
-  saturation: number;      // 0 to 2
-  rotation: number;        // 0, 90, 180, 270
+  brightness: number; // -1 to 1
+  contrast: number; // 0.5 to 2
+  saturation: number; // 0 to 2
+  rotation: number; // 0, 90, 180, 270
   flipHorizontal: boolean;
   flipVertical: boolean;
 
   // Server-only adjustments (no CSS preview)
-  exposure: number;        // -2 to 2
-  highlights: number;      // -1 to 1
-  shadows: number;         // -1 to 1
-  warmth: number;          // -1 to 1
-  
+  exposure: number; // -2 to 2
+  highlights: number; // -1 to 1
+  shadows: number; // -1 to 1
+  warmth: number; // -1 to 1
+
   // Amazon Main Generation
   selectedBackgroundColor: string;
+
+  // AI-related settings for Lifestyle Scene (for Presets/Templates)
+  aiEnvironment?: string;
+  aiIsCustom?: boolean;
+  aiProductDescription?: string;
+  aiShadowControl?: string;
 
   // Crop (percentages 0-1)
   crop: {
@@ -49,7 +55,13 @@ const DEFAULT_STATE: ImageEditingState = {
 
   // Amazon Main
   selectedBackgroundColor: "#FFFFFF",
-  
+
+  // AI-related settings for Lifestyle Scene (for Presets/Templates)
+  aiEnvironment: undefined,
+  aiIsCustom: undefined,
+  aiProductDescription: undefined,
+  aiShadowControl: undefined,
+
   // Crop
   crop: null,
   aspectRatio: null,
@@ -65,11 +77,11 @@ export function useImageEditing() {
   const updateAdjustment = useCallback(
     <K extends keyof ImageEditingState>(
       key: K,
-      value: ImageEditingState[K]
+      value: ImageEditingState[K],
     ) => {
       setState((prev) => ({ ...prev, [key]: value }));
     },
-    []
+    [],
   );
 
   const resetAll = useCallback(() => {
@@ -80,14 +92,14 @@ export function useImageEditing() {
     <K extends keyof ImageEditingState>(key: K) => {
       setState((prev) => ({ ...prev, [key]: DEFAULT_STATE[key] }));
     },
-    []
+    [],
   );
 
   const setActiveTab = useCallback(
     (tab: "adjust" | "crop" | "transform" | "amazonMain") => {
       updateAdjustment("activeTab", tab);
     },
-    [updateAdjustment]
+    [updateAdjustment],
   );
 
   const toggleBeforeAfter = useCallback(() => {

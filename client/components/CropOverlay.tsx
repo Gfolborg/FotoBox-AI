@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { View, StyleSheet, Dimensions } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   useSharedValue,
@@ -9,8 +9,6 @@ import Animated, {
 
 import { Colors } from "@/constants/theme";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const IMAGE_SIZE = SCREEN_WIDTH * 0.85;
 const HANDLE_SIZE = 32; // Increased from 24 for easier grabbing
 const MIN_CROP_SIZE = 50;
 
@@ -18,9 +16,9 @@ interface CropOverlayProps {
   imageWidth: number;
   imageHeight: number;
   crop: {
-    x: number;      // 0-1 (percentage)
-    y: number;      // 0-1 (percentage)
-    width: number;  // 0-1 (percentage)
+    x: number; // 0-1 (percentage)
+    y: number; // 0-1 (percentage)
+    width: number; // 0-1 (percentage)
     height: number; // 0-1 (percentage)
   } | null;
   onCropChange: (crop: {
@@ -54,6 +52,8 @@ export function CropOverlay({
       width.value = crop.width * imageWidth;
       height.value = crop.height * imageHeight;
     }
+    // Shared values are stable refs and shouldn't trigger re-runs
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [crop, imageWidth, imageHeight]);
 
   // Context for tracking gesture start position
@@ -63,7 +63,12 @@ export function CropOverlay({
   const startHeight = useSharedValue(0);
 
   // Helper to report crop change (must use runOnJS from worklet)
-  const reportCropChange = (cropX: number, cropY: number, cropW: number, cropH: number) => {
+  const reportCropChange = (
+    cropX: number,
+    cropY: number,
+    cropW: number,
+    cropH: number,
+  ) => {
     onCropChange({
       x: cropX / imageWidth,
       y: cropY / imageHeight,
@@ -119,7 +124,13 @@ export function CropOverlay({
         } else if (corner === "tr") {
           // Top-right: adjust y, width, height
           const newY = Math.max(0, startY.value + e.translationY);
-          const newWidth = Math.max(MIN_CROP_SIZE, Math.min(startWidth.value + e.translationX, imageWidth - startX.value));
+          const newWidth = Math.max(
+            MIN_CROP_SIZE,
+            Math.min(
+              startWidth.value + e.translationX,
+              imageWidth - startX.value,
+            ),
+          );
           const newHeight = startHeight.value - (newY - startY.value);
 
           if (newHeight >= MIN_CROP_SIZE) {
@@ -131,7 +142,13 @@ export function CropOverlay({
           // Bottom-left: adjust x, width, height
           const newX = Math.max(0, startX.value + e.translationX);
           const newWidth = startWidth.value - (newX - startX.value);
-          const newHeight = Math.max(MIN_CROP_SIZE, Math.min(startHeight.value + e.translationY, imageHeight - startY.value));
+          const newHeight = Math.max(
+            MIN_CROP_SIZE,
+            Math.min(
+              startHeight.value + e.translationY,
+              imageHeight - startY.value,
+            ),
+          );
 
           if (newWidth >= MIN_CROP_SIZE) {
             x.value = newX;
@@ -140,8 +157,20 @@ export function CropOverlay({
           }
         } else if (corner === "br") {
           // Bottom-right: adjust width, height
-          width.value = Math.max(MIN_CROP_SIZE, Math.min(startWidth.value + e.translationX, imageWidth - startX.value));
-          height.value = Math.max(MIN_CROP_SIZE, Math.min(startHeight.value + e.translationY, imageHeight - startY.value));
+          width.value = Math.max(
+            MIN_CROP_SIZE,
+            Math.min(
+              startWidth.value + e.translationX,
+              imageWidth - startX.value,
+            ),
+          );
+          height.value = Math.max(
+            MIN_CROP_SIZE,
+            Math.min(
+              startHeight.value + e.translationY,
+              imageHeight - startY.value,
+            ),
+          );
         }
       })
       .onEnd(() => {
@@ -181,7 +210,9 @@ export function CropOverlay({
   }));
 
   return (
-    <View style={[styles.container, { width: imageWidth, height: imageHeight }]}>
+    <View
+      style={[styles.container, { width: imageWidth, height: imageHeight }]}
+    >
       {/* Dark overlays outside crop area */}
       <Animated.View style={[styles.overlay, topOverlayStyle]} />
       <Animated.View style={[styles.overlay, leftOverlayStyle]} />
@@ -193,10 +224,34 @@ export function CropOverlay({
         <Animated.View style={[styles.cropArea, cropAreaStyle]}>
           {/* Grid overlay (rule of thirds) */}
           <View style={styles.grid}>
-            <View style={[styles.gridLine, styles.gridLineVertical, { left: "33.33%" }]} />
-            <View style={[styles.gridLine, styles.gridLineVertical, { left: "66.66%" }]} />
-            <View style={[styles.gridLine, styles.gridLineHorizontal, { top: "33.33%" }]} />
-            <View style={[styles.gridLine, styles.gridLineHorizontal, { top: "66.66%" }]} />
+            <View
+              style={[
+                styles.gridLine,
+                styles.gridLineVertical,
+                { left: "33.33%" },
+              ]}
+            />
+            <View
+              style={[
+                styles.gridLine,
+                styles.gridLineVertical,
+                { left: "66.66%" },
+              ]}
+            />
+            <View
+              style={[
+                styles.gridLine,
+                styles.gridLineHorizontal,
+                { top: "33.33%" },
+              ]}
+            />
+            <View
+              style={[
+                styles.gridLine,
+                styles.gridLineHorizontal,
+                { top: "66.66%" },
+              ]}
+            />
           </View>
 
           {/* Corner handles */}

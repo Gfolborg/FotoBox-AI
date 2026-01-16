@@ -9,6 +9,7 @@ import {
   Alert,
   Platform,
   TextInput,
+  FlatList,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
@@ -19,74 +20,55 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
-  FadeIn,
+  FadeInDown,
+  FadeInLeft,
+  FadeInRight,
 } from "react-native-reanimated";
 
-import { ThemedView } from "@/components/ThemedView";
+import { GradientBackground } from "@/components/GradientBackground";
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
 import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getApiUrl } from "@/lib/query-client";
-import {
-  SCENES,
-  PRODUCT_CATEGORIES,
-  Scene,
-  getRecommendedScenes,
-  getOrganizedScenes,
-} from "@/lib/lifestyle-scenes";
+import { SCENES, Scene } from "@/lib/lifestyle-scenes";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, "EnvironmentSelection">;
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-function CategoryChip({
-  category,
-  selected,
-  onPress,
-}: {
-  category: { id: string; label: string; icon: keyof typeof Feather.glyphMap };
-  selected: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={[styles.categoryChip, selected && styles.categoryChipSelected]}
-    >
-      <Feather
-        name={category.icon}
-        size={16}
-        color={selected ? Colors.light.buttonText : Colors.light.primary}
-      />
-      <ThemedText
-        style={[
-          styles.categoryChipText,
-          selected && styles.categoryChipTextSelected,
-        ]}
-      >
-        {category.label}
-      </ThemedText>
-    </Pressable>
-  );
-}
-
 function SceneCard({
   scene,
   selected,
-  recommended,
   onPress,
 }: {
   scene: Scene;
   selected: boolean;
-  recommended?: boolean;
   onPress: () => void;
 }) {
   const scale = useSharedValue(1);
+  const isSelected = useSharedValue(selected ? 1 : 0);
 
-  const animatedStyle = useAnimatedStyle(() => ({
+  useEffect(() => {
+    isSelected.value = withSpring(selected ? 1 : 0, {
+      damping: 10,
+      stiffness: 200,
+    });
+  }, [selected]);
+
+  const animatedContainerStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
+    borderColor: isSelected.value === 1 ? Colors.light.primary : Colors.light.border,
+    borderWidth: isSelected.value === 1 ? 2 : 1,
+  }));
+
+  const animatedIconContainerStyle = useAnimatedStyle(() => ({
+    backgroundColor: isSelected.value === 1 ? Colors.light.primary : Colors.light.backgroundSecondary,
+  }));
+
+  const animatedIconStyle = useAnimatedStyle(() => ({
+    color: isSelected.value === 1 ? Colors.light.white : Colors.light.primary,
   }));
 
   return (
@@ -94,31 +76,17 @@ function SceneCard({
       onPress={onPress}
       onPressIn={() => (scale.value = withSpring(0.95))}
       onPressOut={() => (scale.value = withSpring(1))}
-      style={[styles.sceneCard, selected && styles.sceneCardSelected, animatedStyle]}
+      style={[styles.sceneCard, animatedContainerStyle]}
     >
-      {recommended && (
-        <View style={styles.recommendedBadge}>
-          <Feather name="star" size={10} color={Colors.light.buttonText} />
-        </View>
-      )}
-      <View
-        style={[
-          styles.sceneIconContainer,
-          selected && styles.sceneIconContainerSelected,
-        ]}
-      >
-        <Feather
-          name={scene.icon}
-          size={20}
-          color={selected ? Colors.light.buttonText : Colors.light.primary}
-        />
-      </View>
-      <ThemedText style={styles.sceneLabel} numberOfLines={1}>
+      <Animated.View style={[styles.sceneIconContainer, animatedIconContainerStyle]}>
+        <Feather name={scene.icon} size={24} color={Colors.light.primary} style={animatedIconStyle} />
+      </Animated.View>
+      <ThemedText style={styles.sceneLabel} numberOfLines={2}>
         {scene.label}
       </ThemedText>
       {selected && (
         <View style={styles.selectedCheck}>
-          <Feather name="check" size={12} color={Colors.light.buttonText} />
+          <Feather name="check" size={12} color={Colors.light.white} />
         </View>
       )}
     </AnimatedPressable>
@@ -129,39 +97,71 @@ export default function EnvironmentSelectionScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
+  const flatListRef = React.useRef<FlatList>(null);
 
   const [imageUri, setImageUri] = useState<string | null>(
-    route.params?.imageUri || null
+    route.params?.imageUri || null,
   );
-  const [productDescription, setProductDescription] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedScene, setSelectedScene] = useState<string>("studio");
+  const [customScene, setCustomScene] = useState('');
+  const [productKeywords, setProductKeywords] = useState('');
+  const [selectedScene, setSelectedScene] = useState<string>('studio');
+  const [selectedShadowControl, setSelectedShadowControl] =
+    useState<string>('natural');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showLeftArrow, setShowLeftArrow] = useState(false);
+  const [showRightArrow, setShowRightArrow] = useState(false);
+  const [scrollOffset, setScrollOffset] = useState(0);
+  const [contentWidth, setContentWidth] = useState(0);
+  const [layoutWidth, setLayoutWidth] = useState(0);
 
-  // Get recommended scenes based on description and category
-  const { scenes: recommendedSceneIds, matched, matchedCategory } = useMemo(
-    () => getRecommendedScenes(productDescription, selectedCategory),
-    [productDescription, selectedCategory]
-  );
+  const handleScroll = (event: any) => {
+    const offset = event.nativeEvent.contentOffset.x;
+    setScrollOffset(offset);
+    setShowLeftArrow(offset > 0);
+    setShowRightArrow(offset < contentWidth - layoutWidth - 1);
+  };
 
-  // Organize scenes into recommended and other
-  const { recommended: recommendedScenes, other: otherScenes } = useMemo(
-    () => getOrganizedScenes(recommendedSceneIds),
-    [recommendedSceneIds]
-  );
+  const handleContentSizeChange = (width: number) => {
+    setContentWidth(width);
+    setShowRightArrow(width > layoutWidth);
+  };
 
-  // Auto-select first recommended scene when recommendations change
-  useEffect(() => {
-    if (recommendedScenes.length > 0 && matched) {
-      setSelectedScene(recommendedScenes[0].id);
+  const handleLayout = (event: any) => {
+    setLayoutWidth(event.nativeEvent.layout.width);
+  };
+
+  const scrollLeft = () => {
+    if (flatListRef.current) {
+      flatListRef.current.scrollToOffset({
+        offset: Math.max(0, scrollOffset - layoutWidth),
+        animated: true,
+      });
     }
-  }, [recommendedSceneIds]);
+  };
+
+  const scrollRight = () => {
+    if (flatListRef.current) {
+      flatListRef.current.scrollToOffset({
+        offset: Math.min(contentWidth - layoutWidth, scrollOffset + layoutWidth),
+        animated: true,
+      });
+    }
+  };
+
+  // When a user types a custom scene, deselect the card
+  useEffect(() => {
+    if (customScene.trim()) {
+      setSelectedScene('');
+    }
+  }, [customScene]);
 
   // If no image provided, prompt user to select one
   useEffect(() => {
     if (!imageUri) {
       handlePickImage();
     }
+    // Run once on mount to prompt for image selection
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handlePickImage = async () => {
@@ -178,17 +178,13 @@ export default function EnvironmentSelectionScreen() {
     }
   };
 
-  const handleCategoryPress = (categoryId: string) => {
-    if (selectedCategory === categoryId) {
-      setSelectedCategory(null);
-    } else {
-      setSelectedCategory(categoryId);
-      setProductDescription(""); // Clear description when selecting category
-    }
+  const handleSelectSceneCard = (sceneId: string) => {
+    setCustomScene(""); // Clear custom scene input
+    setSelectedScene(sceneId);
   };
 
   const handleGenerate = async () => {
-    if (!imageUri) return;
+    if (!imageUri || (!customScene.trim() && !selectedScene)) return;
 
     setIsProcessing(true);
 
@@ -201,12 +197,28 @@ export default function EnvironmentSelectionScreen() {
       } as unknown as Blob);
 
       const apiUrl = getApiUrl();
-      let endpoint = `${apiUrl}api/lifestyle-scene?environment=${selectedScene}`;
+      let endpoint = `${apiUrl}api/lifestyle-scene`;
+      const params = new URLSearchParams();
 
-      // Add product description if provided
-      if (productDescription.trim()) {
-        endpoint += `&productDescription=${encodeURIComponent(productDescription.trim())}`;
+      // Prioritize custom scene description
+      if (customScene.trim()) {
+        params.append("environment", customScene.trim());
+        params.append("isCustom", "true");
+      } else if (selectedScene) {
+        params.append("environment", selectedScene);
       }
+
+      // Add product keywords if provided
+      if (productKeywords.trim()) {
+        params.append("productDescription", productKeywords.trim());
+      }
+
+      // Add shadow control if not natural
+      if (selectedShadowControl !== "natural") {
+        params.append("shadowControl", selectedShadowControl);
+      }
+      
+      endpoint += `?${params.toString()}`;
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 300000);
@@ -235,7 +247,7 @@ export default function EnvironmentSelectionScreen() {
         navigation.replace("LifestyleResult", {
           resultUri: base64data,
           originalUri: imageUri!,
-          environment: selectedScene,
+          environment: customScene.trim() || selectedScene,
         });
       };
 
@@ -264,7 +276,7 @@ export default function EnvironmentSelectionScreen() {
   };
 
   return (
-    <ThemedView style={styles.container}>
+    <GradientBackground variant="subtle">
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
@@ -275,140 +287,157 @@ export default function EnvironmentSelectionScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {/* Selected Image Preview */}
-        <Pressable style={styles.imageContainer} onPress={handlePickImage}>
-          {imageUri ? (
-            <>
-              <Image source={{ uri: imageUri }} style={styles.previewImage} />
-              <View style={styles.changeImageOverlay}>
-                <Feather name="camera" size={20} color={Colors.light.white} />
-                <ThemedText style={styles.changeImageText}>Tap to change</ThemedText>
+        <Animated.View entering={FadeInDown.delay(100).duration(400)}>
+          <Pressable style={styles.imageContainer} onPress={handlePickImage}>
+            {imageUri ? (
+              <>
+                <Image source={{ uri: imageUri }} style={styles.previewImage} />
+                <View style={styles.changeImageOverlay}>
+                  <Feather name="camera" size={20} color={Colors.light.white} />
+                  <ThemedText style={styles.changeImageText}>
+                    Tap to change
+                  </ThemedText>
+                </View>
+              </>
+            ) : (
+              <View style={styles.placeholderContainer}>
+                <Feather
+                  name="image"
+                  size={48}
+                  color={Colors.light.textTertiary}
+                />
+                <ThemedText style={styles.placeholderText}>
+                  Select a product image
+                </ThemedText>
               </View>
-            </>
-          ) : (
-            <View style={styles.placeholderContainer}>
-              <Feather name="image" size={48} color={Colors.light.textTertiary} />
-              <ThemedText style={styles.placeholderText}>
-                Select a product image
-              </ThemedText>
-            </View>
-          )}
-        </Pressable>
+            )}
+          </Pressable>
+        </Animated.View>
 
-        {/* Product Description Input */}
-        <View style={styles.section}>
+        {/* Custom Scene Input */}
+        <Animated.View
+          entering={FadeInDown.delay(200).duration(400)}
+          style={styles.section}
+        >
           <ThemedText type="h4" style={styles.sectionTitle}>
-            Describe Your Product
+            Describe Your Desired Scene
           </ThemedText>
           <ThemedText style={styles.sectionSubtitle}>
-            Optional - helps us recommend the best scenes
+            Be descriptive for the best results.
           </ThemedText>
           <TextInput
             style={styles.descriptionInput}
-            placeholder="e.g., Red mountain bike for trail riding"
+            placeholder="e.g., On a marble countertop next to a plant"
             placeholderTextColor={Colors.light.textTertiary}
-            value={productDescription}
-            onChangeText={(text) => {
-              setProductDescription(text);
-              if (text.trim()) {
-                setSelectedCategory(null); // Clear category when typing
-              }
-            }}
+            value={customScene}
+            onChangeText={setCustomScene}
             multiline={false}
             returnKeyType="done"
           />
-        </View>
+        </Animated.View>
 
-        {/* Category Selection */}
-        <View style={styles.section}>
-          <ThemedText style={styles.sectionLabel}>Or select a category</ThemedText>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoriesContainer}
-          >
-            {PRODUCT_CATEGORIES.map((category) => (
-              <CategoryChip
-                key={category.id}
-                category={category}
-                selected={selectedCategory === category.id}
-                onPress={() => handleCategoryPress(category.id)}
-              />
-            ))}
-          </ScrollView>
-        </View>
-
+        {/* Product Keywords Input */}
+                    <Animated.View
+                      entering={FadeInDown.delay(300).duration(400)}
+                      style={styles.section}
+                    >
+                      <ThemedText type="h5" style={styles.sectionTitle}>
+                        Product Keywords (Optional)
+                      </ThemedText>
+                      <ThemedText style={styles.sectionSubtitle}>
+                        Helps the AI understand your product.
+                      </ThemedText>
+                      <TextInput
+                        style={styles.keywordsInput}
+                        placeholder="e.g., red glossy lipstick"
+                        placeholderTextColor={Colors.light.textTertiary}
+                        value={productKeywords}
+                        onChangeText={setProductKeywords}
+                        multiline={false}
+                        returnKeyType="done"
+                      />
+                    </Animated.View>
+        
+                    {/* Shadow Control Selection */}
+                    <Animated.View
+                      entering={FadeInDown.delay(350).duration(400)}
+                      style={styles.section}
+                    >
+                      <ThemedText type="h5" style={styles.sectionTitle}>
+                        Shadow Control
+                      </ThemedText>
+                      <ThemedText style={styles.sectionSubtitle}>
+                        Adjust the prominence of shadows in the scene.
+                      </ThemedText>
+                      <View style={styles.shadowControlGrid}>
+                        {["natural", "no shadows", "subtle shadows", "prominent shadows"].map((option) => (
+                          <Pressable
+                            key={option}
+                            style={[
+                              styles.shadowOptionChip,
+                              selectedShadowControl === option && styles.shadowOptionChipSelected,
+                            ]}
+                            onPress={() => setSelectedShadowControl(option)}
+                          >
+                            <ThemedText
+                              style={[
+                                styles.shadowOptionChipText,
+                                selectedShadowControl === option && styles.shadowOptionChipTextSelected,
+                              ]}
+                            >
+                              {option}
+                            </ThemedText>
+                          </Pressable>
+                        ))}
+                      </View>
+                    </Animated.View>
         {/* Scene Selection */}
-        <View style={styles.section}>
-          {matched && recommendedScenes.length > 0 ? (
-            <>
-              {/* Recommended Scenes */}
-              <Animated.View entering={FadeIn.duration(300)}>
-                <View style={styles.recommendedHeader}>
-                  <Feather name="star" size={16} color={Colors.light.primary} />
-                  <ThemedText type="h4" style={styles.sectionTitle}>
-                    Recommended Scenes
-                  </ThemedText>
-                </View>
-                <ThemedText style={styles.sectionSubtitle}>
-                  Best matches for your product
-                </ThemedText>
-                <View style={styles.scenesGrid}>
-                  {recommendedScenes.map((scene) => (
-                    <SceneCard
-                      key={scene.id}
-                      scene={scene}
-                      selected={selectedScene === scene.id}
-                      recommended
-                      onPress={() => setSelectedScene(scene.id)}
-                    />
-                  ))}
-                </View>
-              </Animated.View>
-
-              {/* Other Scenes */}
-              <View style={styles.otherScenesSection}>
-                <ThemedText style={styles.otherScenesTitle}>
-                  Other Scenes
-                </ThemedText>
-                <View style={styles.scenesGrid}>
-                  {otherScenes.map((scene) => (
-                    <SceneCard
-                      key={scene.id}
-                      scene={scene}
-                      selected={selectedScene === scene.id}
-                      onPress={() => setSelectedScene(scene.id)}
-                    />
-                  ))}
-                </View>
-              </View>
-            </>
-          ) : (
-            <>
-              {/* No Match - Show All Scenes */}
-              <ThemedText type="h4" style={styles.sectionTitle}>
-                Choose a Scene
-              </ThemedText>
-              {productDescription.trim().length > 0 && (
-                <View style={styles.tipContainer}>
-                  <Feather name="info" size={14} color={Colors.light.primary} />
-                  <ThemedText style={styles.tipText}>
-                    Your description will help AI place your product naturally
-                  </ThemedText>
-                </View>
+        <Animated.View
+          entering={FadeInDown.delay(400).duration(400)}
+          style={styles.section}
+        >
+          <ThemedText type="h4" style={styles.sectionTitle}>
+            Or Get Inspired
+          </ThemedText>
+          <ThemedText style={styles.sectionSubtitle}>
+            Select a preset scene to start with.
+          </ThemedText>
+          <View style={styles.flatListContainer}>
+            <FlatList
+              ref={flatListRef}
+              data={SCENES}
+              renderItem={({ item }) => (
+                <SceneCard
+                  scene={item}
+                  selected={selectedScene === item.id}
+                  onPress={() => handleSelectSceneCard(item.id)}
+                />
               )}
-              <View style={styles.scenesGrid}>
-                {SCENES.map((scene) => (
-                  <SceneCard
-                    key={scene.id}
-                    scene={scene}
-                    selected={selectedScene === scene.id}
-                    onPress={() => setSelectedScene(scene.id)}
-                  />
-                ))}
-              </View>
-            </>
-          )}
-        </View>
+              keyExtractor={(item) => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.scenesGrid}
+              onScroll={handleScroll}
+              onContentSizeChange={handleContentSizeChange}
+              onLayout={handleLayout}
+              scrollEventThrottle={16}
+            />
+            {showLeftArrow && (
+              <Animated.View entering={FadeInLeft}>
+                <Pressable style={[styles.arrow, styles.leftArrow]} onPress={scrollLeft}>
+                  <Feather name="chevron-left" size={24} color={Colors.light.text} />
+                </Pressable>
+              </Animated.View>
+            )}
+            {showRightArrow && (
+              <Animated.View entering={FadeInRight}>
+                <Pressable style={[styles.arrow, styles.rightArrow]} onPress={scrollRight}>
+                  <Feather name="chevron-right" size={24} color={Colors.light.text} />
+                </Pressable>
+              </Animated.View>
+            )}
+          </View>
+        </Animated.View>
       </ScrollView>
 
       {/* Generate Button */}
@@ -420,7 +449,7 @@ export default function EnvironmentSelectionScreen() {
       >
         <Button
           onPress={handleGenerate}
-          disabled={!imageUri || isProcessing}
+          disabled={!imageUri || isProcessing || (!customScene && !selectedScene)}
         >
           {isProcessing ? (
             <View style={styles.loadingContent}>
@@ -430,7 +459,9 @@ export default function EnvironmentSelectionScreen() {
           ) : (
             <View style={styles.buttonContent}>
               <Feather name="zap" size={20} color={Colors.light.buttonText} />
-              <ThemedText style={styles.buttonText}>Generate Lifestyle Scene</ThemedText>
+              <ThemedText style={styles.buttonText}>
+                Generate Lifestyle Scene
+              </ThemedText>
             </View>
           )}
         </Button>
@@ -450,7 +481,7 @@ export default function EnvironmentSelectionScreen() {
           </View>
         </View>
       )}
-    </ThemedView>
+    </GradientBackground>
   );
 }
 
@@ -513,12 +544,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginBottom: Spacing.md,
   },
-  sectionLabel: {
-    color: Colors.light.textSecondary,
-    fontSize: 13,
-    fontWeight: "500",
-    marginBottom: Spacing.sm,
-  },
   descriptionInput: {
     backgroundColor: Colors.light.backgroundSecondary,
     borderRadius: BorderRadius.md,
@@ -527,122 +552,85 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
     borderWidth: 1,
     borderColor: Colors.light.border,
+    minHeight: 50,
   },
-  categoriesContainer: {
-    flexDirection: "row",
-    gap: Spacing.sm,
-    paddingVertical: Spacing.xs,
-  },
-  categoryChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.xs,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    borderRadius: BorderRadius.full,
-    backgroundColor: Colors.light.backgroundSecondary,
-    borderWidth: 1,
-    borderColor: Colors.light.border,
-  },
-  categoryChipSelected: {
-    backgroundColor: Colors.light.primary,
-    borderColor: Colors.light.primary,
-  },
-  categoryChipText: {
-    fontSize: 13,
-    fontWeight: "500",
-    color: Colors.light.text,
-  },
-  categoryChipTextSelected: {
-    color: Colors.light.buttonText,
-  },
-  recommendedHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-  },
-  scenesGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: Spacing.sm,
-  },
-  sceneCard: {
-    width: "31%",
-    aspectRatio: 1,
+  keywordsInput: {
     backgroundColor: Colors.light.backgroundSecondary,
     borderRadius: BorderRadius.md,
     padding: Spacing.sm,
-    alignItems: "center",
-    justifyContent: "center",
+    fontSize: 14,
+    color: Colors.light.text,
     borderWidth: 1,
     borderColor: Colors.light.border,
+  },
+  flatListContainer: {
+    position: 'relative',
+    marginHorizontal: -Spacing.lg,
+  },
+  scenesGrid: {
+    paddingHorizontal: Spacing.lg,
+    gap: Spacing.sm,
+  },
+  arrow: {
+    position: 'absolute',
+    top: '50%',
+    marginTop: -22,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Shadows.md,
+    zIndex: 1,
+  },
+  leftArrow: {
+    left: Spacing.sm,
+  },
+  rightArrow: {
+    right: Spacing.sm,
+  },
+  sceneCard: {
+    width: 110,
+    aspectRatio: 1,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.light.backgroundSecondary,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    ...Shadows.sm,
   },
   sceneCardSelected: {
     borderColor: Colors.light.primary,
     borderWidth: 2,
-    backgroundColor: Colors.light.primary + "10",
   },
   sceneIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: BorderRadius.md,
-    backgroundColor: Colors.light.backgroundTertiary,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: Spacing.xs,
-  },
-  sceneIconContainerSelected: {
-    backgroundColor: Colors.light.primary,
+    width: 50,
+    height: 50,
+    borderRadius: BorderRadius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.sm,
   },
   sceneLabel: {
-    fontSize: 11,
-    fontWeight: "500",
-    textAlign: "center",
-  },
-  recommendedBadge: {
-    position: "absolute",
-    top: 4,
-    right: 4,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: Colors.light.primary,
-    alignItems: "center",
-    justifyContent: "center",
+    fontSize: 12,
+    fontWeight: '500',
+    textAlign: 'center',
+    color: Colors.light.textSecondary,
   },
   selectedCheck: {
-    position: "absolute",
-    bottom: 4,
-    right: 4,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    position: 'absolute',
+    top: Spacing.xs,
+    right: Spacing.xs,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     backgroundColor: Colors.light.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  otherScenesSection: {
-    marginTop: Spacing.xl,
-  },
-  otherScenesTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: Colors.light.textSecondary,
-    marginBottom: Spacing.md,
-  },
-  tipContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    backgroundColor: Colors.light.primary + "15",
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
-    marginBottom: Spacing.md,
-  },
-  tipText: {
-    flex: 1,
-    fontSize: 13,
-    color: Colors.light.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Shadows.sm,
   },
   bottomAction: {
     position: "absolute",

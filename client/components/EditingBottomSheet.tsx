@@ -6,12 +6,11 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
   withTiming,
-  interpolate,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ThemedText } from "./ThemedText";
-import { Colors, Spacing, BorderRadius } from "@/constants/theme";
+import { Colors, Spacing } from "@/constants/theme";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 const SHEET_MAX_HEIGHT = SCREEN_HEIGHT * 0.45;
@@ -47,6 +46,8 @@ export function EditingBottomSheet({
       translateY.value = withSpring(SHEET_MAX_HEIGHT, SPRING_CONFIG);
       opacity.value = withTiming(0, { duration: 150 });
     }
+    // Shared values are stable refs and shouldn't trigger re-runs
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   const sheetStyle = useAnimatedStyle(() => ({

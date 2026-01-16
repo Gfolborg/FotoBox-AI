@@ -42,7 +42,8 @@ export async function loadPresets(): Promise<EditingPreset[]> {
 export async function savePreset(
   name: string,
   adjustments: PresetAdjustments,
-  backgroundColor: string
+  backgroundColor: string,
+  aiSettings?: EditingPreset['aiSettings'], // Add aiSettings parameter
 ): Promise<EditingPreset> {
   const storage = await getStorage();
   const now = new Date().toISOString();
@@ -54,6 +55,7 @@ export async function savePreset(
     updatedAt: now,
     adjustments,
     backgroundColor,
+    aiSettings, // Add aiSettings to the newPreset object
   };
 
   storage.presets.unshift(newPreset);
@@ -64,7 +66,7 @@ export async function savePreset(
 
 export async function updatePreset(
   id: string,
-  updates: Partial<Omit<EditingPreset, "id" | "createdAt">>
+  updates: Partial<Omit<EditingPreset, "id" | "createdAt">>,
 ): Promise<EditingPreset | null> {
   const storage = await getStorage();
   const index = storage.presets.findIndex((p) => p.id === id);

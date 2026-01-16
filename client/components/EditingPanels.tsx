@@ -12,7 +12,7 @@ interface AdjustPanelProps {
   state: ImageEditingState;
   onUpdateAdjustment: <K extends keyof ImageEditingState>(
     key: K,
-    value: ImageEditingState[K]
+    value: ImageEditingState[K],
   ) => void;
 }
 
@@ -118,8 +118,8 @@ export function AdjustPanel({ state, onUpdateAdjustment }: AdjustPanelProps) {
           val > 0
             ? `Warm +${val.toFixed(2)}`
             : val < 0
-            ? `Cool ${val.toFixed(2)}`
-            : "Neutral"
+              ? `Cool ${val.toFixed(2)}`
+              : "Neutral"
         }
         serverOnly
       />
@@ -152,16 +152,8 @@ export function TransformPanel({
       <ThemedText style={styles.sectionTitle}>Rotate</ThemedText>
 
       <View style={styles.buttonRow}>
-        <ActionButton
-          icon="rotate-ccw"
-          label="90 Left"
-          onPress={onRotateCCW}
-        />
-        <ActionButton
-          icon="rotate-cw"
-          label="90 Right"
-          onPress={onRotateCW}
-        />
+        <ActionButton icon="rotate-ccw" label="90 Left" onPress={onRotateCCW} />
+        <ActionButton icon="rotate-cw" label="90 Right" onPress={onRotateCW} />
       </View>
 
       {rotation !== 0 && (
@@ -337,7 +329,10 @@ function ActionButton({
         color={active ? Colors.light.white : Colors.light.primary}
       />
       <ThemedText
-        style={[styles.actionButtonText, active && styles.actionButtonTextActive]}
+        style={[
+          styles.actionButtonText,
+          active && styles.actionButtonTextActive,
+        ]}
       >
         {label}
       </ThemedText>
@@ -367,7 +362,10 @@ function AspectButton({
         color={active ? Colors.light.white : Colors.light.text}
       />
       <ThemedText
-        style={[styles.aspectButtonText, active && styles.aspectButtonTextActive]}
+        style={[
+          styles.aspectButtonText,
+          active && styles.aspectButtonTextActive,
+        ]}
       >
         {label}
       </ThemedText>

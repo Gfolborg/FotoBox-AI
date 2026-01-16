@@ -12,17 +12,17 @@ export function getApiUrl(): string {
   }
 
   // Handle domain with or without port
-  // Always strip port suffix as mobile devices on external networks 
+  // Always strip port suffix as mobile devices on external networks
   // cannot reach non-standard ports. The API must be accessible on standard HTTPS (443).
   let urlString = host;
-  
+
   // Normalize: ensure https:// prefix
-  if (!urlString.startsWith('http://') && !urlString.startsWith('https://')) {
+  if (!urlString.startsWith("http://") && !urlString.startsWith("https://")) {
     urlString = `https://${urlString}`;
   }
-  
+
   const url = new URL(urlString);
-  
+
   // Use only hostname (strip port) - API must be on standard HTTPS port
   return `https://${url.hostname}/`;
 }

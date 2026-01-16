@@ -6,8 +6,6 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
   runOnJS,
-  interpolate,
-  Extrapolation,
 } from "react-native-reanimated";
 
 import { ThemedText } from "./ThemedText";
@@ -60,7 +58,10 @@ export function CircularDial({
     .onUpdate((e) => {
       // Invert translation for intuitive control: drag right = dial moves left
       const newOffset = startX.value - e.translationX;
-      const clampedOffset = Math.max(-DIAL_WIDTH / 2, Math.min(DIAL_WIDTH / 2, newOffset));
+      const clampedOffset = Math.max(
+        -DIAL_WIDTH / 2,
+        Math.min(DIAL_WIDTH / 2, newOffset),
+      );
       translateX.value = clampedOffset;
 
       // Convert offset to value
@@ -69,7 +70,10 @@ export function CircularDial({
       runOnJS(updateValue)(newValue);
     })
     .onEnd(() => {
-      translateX.value = withSpring(dialOffset, { damping: 20, stiffness: 200 });
+      translateX.value = withSpring(dialOffset, {
+        damping: 20,
+        stiffness: 200,
+      });
     });
 
   const dialStyle = useAnimatedStyle(() => ({
@@ -99,7 +103,9 @@ export function CircularDial({
           <Animated.View style={[styles.ticksContainer, dialStyle]}>
             {Array.from({ length: TICK_COUNT }).map((_, index) => {
               const tickValue = min + (index / (TICK_COUNT - 1)) * valueRange;
-              const isCenter = Math.abs(tickValue - defaultValue) < valueRange / (TICK_COUNT - 1);
+              const isCenter =
+                Math.abs(tickValue - defaultValue) <
+                valueRange / (TICK_COUNT - 1);
               const isMajor = index % 5 === 0;
 
               return (

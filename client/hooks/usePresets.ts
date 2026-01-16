@@ -28,11 +28,13 @@ export function usePresets() {
       name,
       adjustments,
       backgroundColor,
+      aiSettings, // Added aiSettings
     }: {
       name: string;
       adjustments: PresetAdjustments;
       backgroundColor: string;
-    }) => savePreset(name, adjustments, backgroundColor),
+      aiSettings?: EditingPreset['aiSettings']; // Added aiSettings type
+    }) => savePreset(name, adjustments, backgroundColor, aiSettings), // Pass aiSettings
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: PRESETS_QUERY_KEY });
     },
@@ -60,7 +62,7 @@ export function usePresets() {
 
   const saveCurrentAsPreset = async (
     name: string,
-    state: ImageEditingState
+    state: ImageEditingState,
   ): Promise<EditingPreset> => {
     const adjustments: PresetAdjustments = {
       brightness: state.brightness,
@@ -72,10 +74,18 @@ export function usePresets() {
       warmth: state.warmth,
     };
 
+    const aiSettings: EditingPreset['aiSettings'] = {
+      environment: state.aiEnvironment,
+      isCustom: state.aiIsCustom,
+      productDescription: state.aiProductDescription,
+      shadowControl: state.aiShadowControl,
+    };
+
     const result = await saveMutation.mutateAsync({
       name,
       adjustments,
       backgroundColor: state.selectedBackgroundColor,
+      aiSettings: aiSettings, // Pass the new AI settings
     });
 
     return result;
@@ -85,8 +95,8 @@ export function usePresets() {
     preset: EditingPreset,
     updateAdjustment: <K extends keyof ImageEditingState>(
       key: K,
-      value: ImageEditingState[K]
-    ) => void
+      value: ImageEditingState[K],
+    ) => void,
   ) => {
     updateAdjustment("brightness", preset.adjustments.brightness);
     updateAdjustment("contrast", preset.adjustments.contrast);
@@ -96,6 +106,14 @@ export function usePresets() {
     updateAdjustment("shadows", preset.adjustments.shadows);
     updateAdjustment("warmth", preset.adjustments.warmth);
     updateAdjustment("selectedBackgroundColor", preset.backgroundColor);
+
+    // Apply AI-related settings
+    if (preset.aiSettings) {
+      updateAdjustment("aiEnvironment", preset.aiSettings.environment);
+      updateAdjustment("aiIsCustom", preset.aiSettings.isCustom);
+      updateAdjustment("aiProductDescription", preset.aiSettings.productDescription);
+      updateAdjustment("aiShadowControl", preset.aiSettings.shadowControl);
+    }
   };
 
   const renamePreset = async (id: string, newName: string) => {

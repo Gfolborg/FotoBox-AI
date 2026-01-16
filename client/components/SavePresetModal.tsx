@@ -17,9 +17,10 @@ import { PresetAdjustments } from "@/types/preset";
 interface SavePresetModalProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (name: string) => Promise<void>;
+  onSave: (name: string, aiSettings?: EditingPreset['aiSettings']) => Promise<void>;
   adjustments: PresetAdjustments;
   backgroundColor: string;
+  aiSettings?: EditingPreset['aiSettings'];
   isSaving?: boolean;
 }
 
@@ -29,13 +30,14 @@ export function SavePresetModal({
   onSave,
   adjustments,
   backgroundColor,
+  aiSettings, // Added aiSettings prop
   isSaving = false,
 }: SavePresetModalProps) {
   const [name, setName] = useState("");
 
   const handleSave = async () => {
     if (!name.trim()) return;
-    await onSave(name.trim());
+    await onSave(name.trim(), aiSettings);
     setName("");
     onClose();
   };
@@ -100,7 +102,9 @@ export function SavePresetModal({
                       { backgroundColor: backgroundColor },
                     ]}
                   />
-                  <ThemedText style={styles.previewLabel}>Background</ThemedText>
+                  <ThemedText style={styles.previewLabel}>
+                    Background
+                  </ThemedText>
                 </View>
 
                 <View style={styles.previewItem}>
@@ -141,7 +145,10 @@ export function SavePresetModal({
               disabled={!name.trim() || isSaving}
             >
               {isSaving ? (
-                <ActivityIndicator size="small" color={Colors.light.buttonText} />
+                <ActivityIndicator
+                  size="small"
+                  color={Colors.light.buttonText}
+                />
               ) : (
                 <>
                   <Feather
@@ -149,7 +156,9 @@ export function SavePresetModal({
                     size={18}
                     color={Colors.light.buttonText}
                   />
-                  <ThemedText style={styles.saveButtonText}>Save Preset</ThemedText>
+                  <ThemedText style={styles.saveButtonText}>
+                    Save Preset
+                  </ThemedText>
                 </>
               )}
             </Pressable>

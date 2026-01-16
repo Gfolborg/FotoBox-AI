@@ -10,7 +10,7 @@ const ALBUM_NAME = "FotoBox";
  */
 export async function saveToFotoBoxAlbum(
   base64Uri: string,
-  filenamePrefix: string = "product_image"
+  filenamePrefix: string = "product_image",
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // Request permissions
@@ -66,7 +66,7 @@ export async function saveToFotoBoxAlbum(
  * Creates the album if it doesn't exist.
  */
 export async function saveFileToFotoBoxAlbum(
-  fileUri: string
+  fileUri: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // Request permissions

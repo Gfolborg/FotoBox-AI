@@ -19,7 +19,7 @@ interface AdjustmentSliderProps {
   defaultValue: number;
   onValueChange: (value: number) => void;
   formatValue?: (value: number) => string;
-  serverOnly?: boolean;  // Show badge if adjustment is server-only
+  serverOnly?: boolean; // Show badge if adjustment is server-only
 }
 
 export function AdjustmentSlider({
@@ -47,8 +47,8 @@ export function AdjustmentSlider({
   const formattedValue = formatValue
     ? formatValue(value)
     : value > 0
-    ? `+${value.toFixed(2)}`
-    : value.toFixed(2);
+      ? `+${value.toFixed(2)}`
+      : value.toFixed(2);
 
   const isModified = value !== defaultValue;
 
@@ -59,12 +59,13 @@ export function AdjustmentSlider({
           <Feather
             name={icon}
             size={18}
-            color={isModified ? Colors.light.primary : Colors.light.textSecondary}
+            color={
+              isModified ? Colors.light.primary : Colors.light.textSecondary
+            }
           />
-          <ThemedText style={[
-            styles.label,
-            isModified && styles.labelModified,
-          ]}>
+          <ThemedText
+            style={[styles.label, isModified && styles.labelModified]}
+          >
             {label}
           </ThemedText>
           {serverOnly && (
@@ -74,10 +75,9 @@ export function AdjustmentSlider({
           )}
         </View>
         <Pressable onPress={handleDoubleTap} hitSlop={8}>
-          <ThemedText style={[
-            styles.value,
-            isModified && styles.valueModified,
-          ]}>
+          <ThemedText
+            style={[styles.value, isModified && styles.valueModified]}
+          >
             {formattedValue}
           </ThemedText>
         </Pressable>

@@ -15,6 +15,12 @@ export interface EditingPreset {
   updatedAt: string;
   adjustments: PresetAdjustments;
   backgroundColor: string;
+  aiSettings?: {
+    environment?: string;
+    isCustom?: boolean;
+    productDescription?: string;
+    shadowControl?: string;
+  };
 }
 
 export interface PresetStorage {

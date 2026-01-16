@@ -170,6 +170,70 @@ export const Typography = {
   },
 };
 
+// Glassmorphism styles for modern card effects
+export const Glassmorphism = {
+  light: {
+    card: {
+      backgroundColor: pureWhite,
+      borderWidth: 1,
+      borderColor: warmGrayLight,
+    },
+    cardSolid: {
+      backgroundColor: pureWhite,
+      borderWidth: 1,
+      borderColor: warmGrayLight,
+    },
+    cardSubtle: {
+      backgroundColor: pureWhite,
+      borderWidth: 1,
+      borderColor: warmGrayLight,
+    },
+    input: {
+      backgroundColor: warmGrayLight,
+      borderWidth: 1,
+      borderColor: warmGrayMedium,
+    },
+    overlay: {
+      backgroundColor: pureWhite,
+      borderWidth: 1,
+      borderColor: warmGrayLight,
+    },
+  },
+  dark: {
+    card: {
+      backgroundColor: warmCharcoalLight,
+      borderWidth: 1,
+      borderColor: warmCharcoalMedium,
+    },
+    cardSolid: {
+      backgroundColor: warmCharcoalLight,
+      borderWidth: 1,
+      borderColor: warmCharcoalMedium,
+    },
+    cardSubtle: {
+      backgroundColor: warmCharcoalLight,
+      borderWidth: 1,
+      borderColor: warmCharcoalMedium,
+    },
+    input: {
+      backgroundColor: warmCharcoalMedium,
+      borderWidth: 1,
+      borderColor: warmCharcoalMedium,
+    },
+    overlay: {
+      backgroundColor: warmCharcoalLight,
+      borderWidth: 1,
+      borderColor: warmCharcoalMedium,
+    },
+  },
+  // Blur intensity for BackdropFilter (if using expo-blur)
+  blurIntensity: {
+    light: 0,
+    medium: 0,
+    heavy: 0,
+  },
+};
+
 export const Fonts = Platform.select({
   ios: {
     sans: "system-ui",

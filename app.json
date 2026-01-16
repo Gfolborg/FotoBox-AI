@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "owner": "flashingpoint87",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./attached_assets/ChatGPT_Image_Jan_16,_2026,_10_42_33_AM_1768533252216.png",
     "scheme": "fotoboxai",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -15,10 +15,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#F97316",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./attached_assets/ChatGPT_Image_Jan_16,_2026,_10_42_33_AM_1768533252216.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -47,12 +45,12 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./attached_assets/ChatGPT_Image_Jan_16,_2026,_10_42_33_AM_1768533252216.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#F97316",
+          "backgroundColor": "#FFFFFF",
           "dark": {
-            "backgroundColor": "#EA580C"
+            "backgroundColor": "#000000"
           }
         }
       ],

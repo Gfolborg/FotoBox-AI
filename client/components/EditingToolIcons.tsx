@@ -4,7 +4,6 @@ import { Feather } from "@expo/vector-icons";
 import Animated, {
   useAnimatedStyle,
   withSpring,
-  withSequence,
   withTiming,
 } from "react-native-reanimated";
 
@@ -64,9 +63,7 @@ function ToolIcon({
 }) {
   const animatedStyle = useAnimatedStyle(() => {
     return {
-      transform: [
-        { scale: withSpring(isActive ? 1.05 : 1, SPRING_CONFIG) },
-      ],
+      transform: [{ scale: withSpring(isActive ? 1.05 : 1, SPRING_CONFIG) }],
     };
   });
 
@@ -74,7 +71,7 @@ function ToolIcon({
     return {
       backgroundColor: withTiming(
         isActive ? Colors.light.primary : Colors.light.backgroundDefault,
-        { duration: 200 }
+        { duration: 200 },
       ),
     };
   });

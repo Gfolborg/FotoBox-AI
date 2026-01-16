@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { useColorScheme as useSystemColorScheme } from "react-native";
 
 // Default to light mode for ecommerce tool

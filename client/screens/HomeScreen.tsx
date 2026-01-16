@@ -1,11 +1,14 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { StyleSheet, View, ScrollView } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ThemedView } from "@/components/ThemedView";
+import Animated, { FadeInDown, FadeIn } from "react-native-reanimated";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemedText } from "@/components/ThemedText";
 import { WorkflowCard } from "@/components/WorkflowCard";
+
+import { GradientBackground } from "@/components/GradientBackground";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { Colors, Spacing } from "@/constants/theme";
 
@@ -19,7 +22,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
 
   return (
-    <ThemedView style={styles.container}>
+    <GradientBackground variant="warm">
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
@@ -31,63 +34,89 @@ export default function HomeScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
+        {/* Animated Header */}
+        <Animated.View entering={FadeIn.duration(600)} style={styles.header}>
           <ThemedText type="h1" style={styles.title}>
             FotoBox AI
           </ThemedText>
           <ThemedText style={styles.subtitle}>
             What do you want to accomplish today?
           </ThemedText>
-        </View>
+        </Animated.View>
 
+        {/* Staggered Card Grid */}
         <View style={styles.cardGrid}>
           <View style={styles.cardRow}>
-            <WorkflowCard
-              icon="camera"
-              title="Generate Product Shot"
-              description="Remove backgrounds and create listing-ready images"
-              onPress={() => navigation.navigate("Camera")}
-              variant="primary"
-            />
-            <WorkflowCard
-              icon="image"
-              title="Create Lifestyle Scene"
-              description="Place products in AI-generated environments"
-              onPress={() => navigation.navigate("EnvironmentSelection", {})}
-              badge="AI"
-            />
+            <Animated.View
+              entering={FadeInDown.delay(100).duration(500).springify()}
+              style={styles.cardWrapper}
+              
+            >
+              <WorkflowCard
+                icon="camera"
+                title="Generate Product Shot"
+                description="Remove backgrounds and create listing-ready images"
+                onPress={() => navigation.navigate("Camera")}
+                variant="primary"
+              />
+            </Animated.View>
+            <Animated.View
+              entering={FadeInDown.delay(200).duration(500).springify()}
+              style={styles.cardWrapper}
+            >
+              <WorkflowCard
+                icon="image"
+                title="Create Lifestyle Scene"
+                description="Place products in AI-generated environments"
+                onPress={() => navigation.navigate("EnvironmentSelection", {})}
+                badge="AI"
+              />
+            </Animated.View>
           </View>
 
           <View style={styles.cardRow}>
-            <WorkflowCard
-              icon="bookmark"
-              title="Apply Saved Style"
-              description="Apply your saved presets to new photos"
-              onPress={() => navigation.navigate("PresetSelection")}
-            />
-            <WorkflowCard
-              icon="layers"
-              title="Batch Edit Photos"
-              description="Process multiple images at once"
-              onPress={() => navigation.navigate("Camera")}
-            />
+            <Animated.View
+              entering={FadeInDown.delay(300).duration(500).springify()}
+              style={styles.cardWrapper}
+            >
+              <WorkflowCard
+                icon="bookmark"
+                title="Apply Saved Style"
+                description="Apply your saved presets to new photos"
+                onPress={() => navigation.navigate("PresetSelection")}
+              />
+            </Animated.View>
+            <Animated.View
+              entering={FadeInDown.delay(400).duration(500).springify()}
+              style={styles.cardWrapper}
+            >
+              <WorkflowCard
+                icon="layers"
+                title="Batch Edit Photos"
+                description="Process multiple images at once"
+                onPress={() => navigation.navigate("Camera")}
+              />
+            </Animated.View>
           </View>
         </View>
 
-        <View style={styles.footer}>
+        {/* Animated Footer */}
+        <Animated.View
+          entering={FadeIn.delay(600).duration(400)}
+          style={styles.footer}
+        >
           <ThemedText style={styles.footerText}>
             Powered by AI for e-commerce sellers
           </ThemedText>
-        </View>
+        </Animated.View>
       </ScrollView>
-    </ThemedView>
+
+
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
   scrollView: {
     flex: 1,
   },
@@ -111,6 +140,9 @@ const styles = StyleSheet.create({
   cardRow: {
     flexDirection: "row",
     gap: Spacing.md,
+  },
+  cardWrapper: {
+    flex: 1,
   },
   footer: {
     marginTop: Spacing["2xl"],

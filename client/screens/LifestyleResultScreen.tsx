@@ -7,19 +7,25 @@ import {
   Alert,
   Platform,
   ActivityIndicator,
+  Dimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import * as FileSystem from "expo-file-system/legacy";
 import { Feather } from "@expo/vector-icons";
+import Animated, { FadeIn, FadeInDown, FadeOut } from "react-native-reanimated";
 
-import { ThemedView } from "@/components/ThemedView";
+import { GradientBackground } from "@/components/GradientBackground";
+import { BeforeAfterSlider } from "@/components/BeforeAfterSlider";
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
 import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { saveToFotoBoxAlbum } from "@/lib/save-to-album";
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const IMAGE_SIZE = SCREEN_WIDTH * 0.85;
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, "LifestyleResult">;
@@ -58,6 +64,7 @@ export default function LifestyleResultScreen() {
 
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
 
   const handleSaveToGallery = async () => {
     setIsSaving(true);
@@ -71,7 +78,10 @@ export default function LifestyleResultScreen() {
       }
     } else {
       if (Platform.OS !== "web") {
-        Alert.alert("Error", result.error || "Failed to save image. Please try again.");
+        Alert.alert(
+          "Error",
+          result.error || "Failed to save image. Please try again.",
+        );
       }
     }
 
@@ -107,29 +117,81 @@ export default function LifestyleResultScreen() {
       console.error("Failed to prepare image for editing:", error);
 
       if (Platform.OS !== "web") {
-        Alert.alert("Error", "Could not prepare image for editing. Please try again.");
+        Alert.alert(
+          "Error",
+          "Could not prepare image for editing. Please try again.",
+        );
       }
     }
   };
 
-  const environmentLabel =
-    ENVIRONMENT_LABELS[environment] || "Lifestyle Scene";
+  const environmentLabel = ENVIRONMENT_LABELS[environment] || "Lifestyle Scene";
 
   return (
-    <ThemedView style={styles.container}>
+    <GradientBackground variant="subtle">
       <View style={[styles.content, { paddingTop: Spacing.md }]}>
-        {/* Result Image */}
-        <View style={styles.imageContainer}>
-          <Image source={{ uri: resultUri }} style={styles.resultImage} />
-        </View>
+        {/* Image display - toggles between normal and comparison view */}
+        {showComparison ? (
+          <Animated.View
+            entering={FadeIn.duration(300)}
+            exiting={FadeOut.duration(200)}
+          >
+            <BeforeAfterSlider
+              beforeImage={originalUri}
+              afterImage={resultUri}
+              size={IMAGE_SIZE}
+            />
+          </Animated.View>
+        ) : (
+          <Animated.View
+            entering={FadeInDown.delay(100).duration(400)}
+            exiting={FadeOut.duration(200)}
+            style={styles.imageContainer}
+          >
+            <Image source={{ uri: resultUri }} style={styles.resultImage} />
+          </Animated.View>
+        )}
+
+        {/* Comparison toggle */}
+        <Animated.View
+          entering={FadeInDown.delay(200).duration(400)}
+          style={styles.toggleContainer}
+        >
+          <Pressable
+            style={[
+              styles.toggleButton,
+              showComparison && styles.toggleButtonActive,
+            ]}
+            onPress={() => setShowComparison(!showComparison)}
+          >
+            <Feather
+              name={showComparison ? "eye" : "sliders"}
+              size={16}
+              color={
+                showComparison ? Colors.light.white : Colors.light.textSecondary
+              }
+            />
+            <ThemedText
+              style={[
+                styles.toggleText,
+                showComparison && styles.toggleTextActive,
+              ]}
+            >
+              {showComparison ? "View Result" : "Compare"}
+            </ThemedText>
+          </Pressable>
+        </Animated.View>
 
         {/* Environment Badge */}
-        <View style={styles.environmentBadge}>
+        <Animated.View
+          entering={FadeInDown.delay(300).duration(400)}
+          style={styles.environmentBadge}
+        >
           <Feather name="check-circle" size={16} color={Colors.light.success} />
           <ThemedText style={styles.environmentText}>
             {environmentLabel}
           </ThemedText>
-        </View>
+        </Animated.View>
       </View>
 
       {/* Action Buttons */}
@@ -187,7 +249,7 @@ export default function LifestyleResultScreen() {
           </View>
         </Button>
       </View>
-    </ThemedView>
+    </GradientBackground>
   );
 }
 
@@ -229,6 +291,33 @@ const styles = StyleSheet.create({
     color: Colors.light.success,
     fontWeight: "600",
     fontSize: 14,
+  },
+  toggleContainer: {
+    marginTop: Spacing.md,
+  },
+  toggleButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.light.backgroundTertiary,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  toggleButtonActive: {
+    backgroundColor: Colors.light.primary,
+    borderColor: Colors.light.primary,
+    ...Shadows.accent,
+  },
+  toggleText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: Colors.light.textSecondary,
+  },
+  toggleTextActive: {
+    color: Colors.light.white,
   },
   buttonContainer: {
     paddingHorizontal: Spacing.lg,

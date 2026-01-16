@@ -1,10 +1,5 @@
 import React from "react";
-import {
-  View,
-  StyleSheet,
-  Pressable,
-  ScrollView,
-} from "react-native";
+import { View, StyleSheet, Pressable, ScrollView } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -15,7 +10,7 @@ import { Feather } from "@expo/vector-icons";
 
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
-import { BorderRadius, Spacing, Colors } from "@/constants/theme";
+import { BorderRadius, Spacing } from "@/constants/theme";
 
 // Background color presets with labels
 export const BACKGROUND_COLORS = [
@@ -28,7 +23,7 @@ export const BACKGROUND_COLORS = [
   { hex: "#000000", label: "Black" },
 ] as const;
 
-export type BackgroundColor = typeof BACKGROUND_COLORS[number]["hex"];
+export type BackgroundColor = (typeof BACKGROUND_COLORS)[number]["hex"];
 
 interface BackgroundColorPickerProps {
   selectedColor: string;
@@ -67,7 +62,8 @@ function ColorButton({ color, label, isSelected, onPress }: ColorButtonProps) {
   };
 
   // Determine if color needs a border (for white/light colors)
-  const isLightColor = color === "#FFFFFF" || color === "#F5F5F5" || color === "#FFF8E7";
+  const isLightColor =
+    color === "#FFFFFF" || color === "#F5F5F5" || color === "#FFF8E7";
   const isBlack = color === "#000000";
 
   return (
@@ -129,7 +125,9 @@ export function BackgroundColorPicker({
             key={colorOption.hex}
             color={colorOption.hex}
             label={colorOption.label}
-            isSelected={selectedColor.toUpperCase() === colorOption.hex.toUpperCase()}
+            isSelected={
+              selectedColor.toUpperCase() === colorOption.hex.toUpperCase()
+            }
             onPress={() => onColorSelect(colorOption.hex)}
           />
         ))}

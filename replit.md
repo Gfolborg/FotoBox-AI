@@ -1,4 +1,4 @@
-# Amazon Photo Editor
+# FotoBox AI
 
 ## Overview
 A mobile-first AI product photo editor built with Expo React Native. The app captures product photos and uses Gemini 2.5 Flash Image to automatically remove backgrounds and create Amazon-ready white background product images (2000x2000 JPG).

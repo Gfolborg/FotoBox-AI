@@ -1,41 +1,49 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   StyleSheet,
   ActivityIndicator,
-  Alert,
-  Platform,
   Pressable,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
+import Animated, { FadeIn } from "react-native-reanimated";
 
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
-import { SkiaEditableImage } from "@/components/SkiaEditableImage";
+import {
+  SkiaEditableImage,
+  SkiaEditableImageRef,
+} from "@/components/SkiaEditableImage";
 import { DialToolbar } from "@/components/DialToolbar";
 import { SavePresetModal } from "@/components/SavePresetModal";
-import { Colors, Spacing } from "@/constants/theme";
+import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getApiUrl } from "@/lib/query-client";
 import { useImageEditing } from "@/hooks/useImageEditing";
 import { usePresets } from "@/hooks/usePresets";
 import { getPresetById } from "@/lib/preset-storage";
+import { useNotification } from "@/context/NotificationContext";
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList, "EditImage">;
+type NavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  "EditImage"
+>;
 type EditImageRouteProp = RouteProp<RootStackParamList, "EditImage">;
 
 export default function EditImageScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<EditImageRouteProp>();
+  const { showNotification } = useNotification();
   const { imageUri, presetId } = route.params;
 
+  const imageRef = useRef<SkiaEditableImageRef>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [showSavePresetModal, setShowSavePresetModal] = useState(false);
+  const [selectedPlatform, setSelectedPlatform] = useState<string>("amazon");
 
   const {
     state,
@@ -60,24 +68,26 @@ export default function EditImageScreen() {
         }
       });
     }
+    // Only re-run when presetId changes, not when helper functions change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [presetId]);
 
   const handleSavePreset = async (name: string) => {
     try {
       await saveCurrentAsPreset(name, state);
-      Alert.alert("Preset Saved", `"${name}" has been saved to your presets.`);
-    } catch (err) {
-      Alert.alert("Error", "Failed to save preset. Please try again.");
+      showNotification(
+        `"${name}" has been saved to your presets.`,
+        "success",
+      );
+    } catch {
+      showNotification("Failed to save preset. Please try again.", "error");
     }
   };
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
       headerLeft: () => (
-        <Button
-          onPress={() => navigation.goBack()}
-          style={styles.headerButton}
-        >
+        <Button onPress={() => navigation.goBack()} style={styles.headerButton}>
           <ThemedText style={styles.headerButtonText}>Cancel</ThemedText>
         </Button>
       ),
@@ -102,10 +112,9 @@ export default function EditImageScreen() {
     });
   }, [navigation, toggleBeforeAfter]);
 
-  const handleGenerateAmazonMain = async () => {
+  // This function still needs to exist for the AI-specific generation
+  const handleGenerateMainImage = async () => { // Renamed function
     setIsProcessing(true);
-    setError(null);
-
     try {
       const formData = new FormData();
       formData.append("file", {
@@ -116,21 +125,10 @@ export default function EditImageScreen() {
 
       const apiUrl = getApiUrl();
       const bgColorParam = encodeURIComponent(state.selectedBackgroundColor);
-      const endpoint = `${apiUrl}api/amazon-main?backgroundColor=${bgColorParam}`;
-      
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 300000);
-      
-      let response: Response;
-      try {
-        response = await fetch(endpoint, {
-          method: "POST",
-          body: formData,
-          signal: controller.signal,
-        });
-      } finally {
-        clearTimeout(timeoutId);
-      }
+      // Pass selectedPlatform to the endpoint
+      const endpoint = `${apiUrl}api/main-image?platform=${selectedPlatform}&backgroundColor=${bgColorParam}`;
+
+      const response = await fetch(endpoint, { method: "POST", body: formData });
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -139,7 +137,6 @@ export default function EditImageScreen() {
 
       const blob = await response.blob();
       const reader = new FileReader();
-      
       reader.onload = () => {
         const base64data = reader.result as string;
         navigation.replace("Result", {
@@ -148,125 +145,37 @@ export default function EditImageScreen() {
           backgroundColor: state.selectedBackgroundColor,
         });
       };
-      
-      reader.onerror = () => {
-        throw new Error("Failed to read processed image");
-      };
-      
       reader.readAsDataURL(blob);
     } catch (err) {
-      let errorMessage = "An unexpected error occurred";
-      
-      if (err instanceof Error) {
-        if (err.name === "AbortError") {
-          errorMessage = "Request timed out. Please try again.";
-        } else if (err.message.includes("Network request failed") || err.message.includes("TypeError")) {
-          errorMessage = "Unable to connect to server. Please check your connection and try again.";
-        } else {
-          errorMessage = err.message;
-        }
-      }
-      
-      setError(errorMessage);
-      
-      if (Platform.OS !== "web") {
-        Alert.alert("Processing Failed", errorMessage);
-      }
+      const errorMessage =
+        err instanceof Error ? err.message : "An unexpected error occurred";
+      showNotification(errorMessage, "error");
     } finally {
       setIsProcessing(false);
     }
   };
 
+  // NEW: Client-side rendering for non-AI edits
   const handleDone = async () => {
+    if (!imageRef.current) {
+      showNotification("An unexpected error occurred. Please try again.", "error");
+      return;
+    }
+
     setIsProcessing(true);
-    setError(null);
-
     try {
-      const formData = new FormData();
-      formData.append("file", {
-        uri: imageUri,
-        name: "image-to-edit.jpg",
-        type: "image/jpeg",
-      } as unknown as Blob);
+      // 1. Take snapshot using the component's method
+      const base64data = await imageRef.current.snapshot();
 
-      const apiUrl = getApiUrl();
-      const params = new URLSearchParams({
-        brightness: state.brightness.toString(),
-        contrast: state.contrast.toString(),
-        saturation: state.saturation.toString(),
-        rotation: state.rotation.toString(),
-        exposure: state.exposure.toString(),
-        highlights: state.highlights.toString(),
-        shadows: state.shadows.toString(),
-        warmth: state.warmth.toString(),
-        flipHorizontal: state.flipHorizontal.toString(),
-        flipVertical: state.flipVertical.toString(),
+      // 2. Navigate to result screen with the new image data
+      navigation.replace("Result", {
+        resultUri: base64data,
+        originalUri: route.params.originalUri || imageUri,
       });
-
-      // Add crop params if crop is set
-      if (state.crop) {
-        params.append("cropX", state.crop.x.toString());
-        params.append("cropY", state.crop.y.toString());
-        params.append("cropWidth", state.crop.width.toString());
-        params.append("cropHeight", state.crop.height.toString());
-      }
-
-      const endpoint = `${apiUrl}api/edit-image?${params.toString()}`;
-
-      console.log("[EditImageScreen] Applying edits:", state);
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 seconds
-
-      let response: Response;
-      try {
-        response = await fetch(endpoint, {
-          method: "POST",
-          body: formData,
-          signal: controller.signal,
-        });
-      } finally {
-        clearTimeout(timeoutId);
-      }
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "Failed to edit image");
-      }
-
-      const blob = await response.blob();
-      const reader = new FileReader();
-
-      reader.onload = () => {
-        const base64data = reader.result as string;
-        // Navigate back to Result screen with edited image
-        navigation.replace("Result", {
-          resultUri: base64data,
-          originalUri: route.params.originalUri || imageUri,
-        });
-      };
-
-      reader.onerror = () => {
-        throw new Error("Failed to read edited image");
-      };
-
-      reader.readAsDataURL(blob);
     } catch (err) {
-      let errorMessage = "Failed to edit image";
-
-      if (err instanceof Error) {
-        if (err.name === "AbortError") {
-          errorMessage = "Request timed out. Please try again.";
-        } else {
-          errorMessage = err.message;
-        }
-      }
-
-      setError(errorMessage);
-
-      if (Platform.OS !== "web") {
-        Alert.alert("Edit Failed", errorMessage);
-      }
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to save image";
+      showNotification(errorMessage, "error");
     } finally {
       setIsProcessing(false);
     }
@@ -277,9 +186,13 @@ export default function EditImageScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.content, { paddingTop: Spacing.xs }]}>
+      <Animated.View
+        entering={FadeIn.duration(400)}
+        style={[styles.content, { paddingTop: Spacing.xs }]}
+      >
         {/* Image Preview with Real-time Skia Filters */}
         <SkiaEditableImage
+          ref={imageRef}
           originalUri={imageUri}
           adjustments={{
             brightness: state.brightness,
@@ -299,13 +212,6 @@ export default function EditImageScreen() {
           onCropChange={(crop) => updateAdjustment("crop", crop)}
         />
 
-        {/* Error Display */}
-        {error && (
-          <View style={styles.errorContainer}>
-            <ThemedText style={styles.errorText}>{error}</ThemedText>
-          </View>
-        )}
-
         {/* Processing Overlay */}
         {isProcessing && (
           <View style={styles.processingOverlay}>
@@ -315,12 +221,38 @@ export default function EditImageScreen() {
                 Processing your image...
               </ThemedText>
               <ThemedText style={styles.processingHint}>
-                This may take up to 30 seconds
+                This may take a moment
               </ThemedText>
             </View>
           </View>
         )}
-      </View>
+      </Animated.View>
+
+      {/* Platform Selection */}
+      <Animated.View entering={FadeIn.delay(500).duration(400)} style={styles.platformSelectionContainer}>
+        <ThemedText style={styles.platformSelectionTitle}>Target Platform</ThemedText>
+        <View style={styles.platformChipsContainer}>
+          {["amazon", "shopify", "etsy"].map((platform) => (
+            <Pressable
+              key={platform}
+              style={[
+                styles.platformChip,
+                selectedPlatform === platform && styles.platformChipSelected,
+              ]}
+              onPress={() => setSelectedPlatform(platform)}
+            >
+              <ThemedText
+                style={[
+                  styles.platformChipText,
+                  selectedPlatform === platform && styles.platformChipTextSelected,
+                ]}
+              >
+                {platform.charAt(0).toUpperCase() + platform.slice(1)}
+              </ThemedText>
+            </Pressable>
+          ))}
+        </View>
+      </Animated.View>
 
       {/* Dial Toolbar */}
       <DialToolbar
@@ -330,7 +262,7 @@ export default function EditImageScreen() {
         onRotateCCW={rotateCCW}
         onToggleFlipHorizontal={toggleFlipHorizontal}
         onToggleFlipVertical={toggleFlipVertical}
-        onGenerate={handleGenerateAmazonMain}
+        onGenerate={handleGenerateMainImage} // Updated function name
         isProcessing={isProcessing}
       />
 
@@ -349,15 +281,14 @@ export default function EditImageScreen() {
           Reset
         </Button>
 
-        <Button
-          onPress={handleDone}
-          disabled={isProcessing}
-          variant="primary"
-        >
+
+        <Button onPress={handleDone} disabled={isProcessing} variant="primary">
           {isProcessing ? (
             <View style={styles.loadingContent}>
               <ActivityIndicator color={Colors.light.buttonText} size="small" />
-              <ThemedText style={styles.doneButtonText}>Processing...</ThemedText>
+              <ThemedText style={styles.doneButtonText}>
+                Saving...
+              </ThemedText>
             </View>
           ) : (
             "Done"
@@ -380,6 +311,12 @@ export default function EditImageScreen() {
           warmth: state.warmth,
         }}
         backgroundColor={state.selectedBackgroundColor}
+        aiSettings={{ // Pass AI-related settings
+          environment: state.aiEnvironment,
+          isCustom: state.aiIsCustom,
+          productDescription: state.aiProductDescription,
+          shadowControl: state.aiShadowControl,
+        }}
         isSaving={isSaving}
       />
     </View>
@@ -412,18 +349,6 @@ const styles = StyleSheet.create({
   },
   bookmarkButton: {
     padding: Spacing.xs,
-  },
-  errorContainer: {
-    marginTop: Spacing.md,
-    marginHorizontal: Spacing.xl,
-    padding: Spacing.md,
-    backgroundColor: Colors.light.error + "15",
-    borderRadius: 8,
-  },
-  errorText: {
-    color: Colors.light.error,
-    textAlign: "center",
-    fontSize: 14,
   },
   processingOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -469,5 +394,44 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: Spacing.sm,
     justifyContent: "center",
+  },
+  platformSelectionContainer: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    backgroundColor: Colors.light.backgroundRoot,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.border,
+    alignItems: "center",
+  },
+  platformSelectionTitle: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: Colors.light.textSecondary,
+    marginBottom: Spacing.sm,
+  },
+  platformChipsContainer: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+  },
+  platformChip: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.light.backgroundSecondary,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  platformChipSelected: {
+    borderColor: Colors.light.primary,
+    backgroundColor: Colors.light.primary,
+  },
+  platformChipText: {
+    fontSize: 14,
+    color: Colors.light.textSecondary,
+    fontWeight: "500",
+  },
+  platformChipTextSelected: {
+    color: Colors.light.buttonText,
+    fontWeight: "600",
   },
 });
