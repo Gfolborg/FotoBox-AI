@@ -288,38 +288,32 @@ export default function MockupSelectionScreen() {
                 key={item.id}
                 onPress={() => handleItemSelect(item)}
                 style={[
-                  styles.itemCard,
+                  styles.itemCardWithImage,
                   selectedItem?.id === item.id && styles.itemCardSelected,
                 ]}
               >
-                <View style={styles.itemIconContainer}>
-                  <Feather
-                    name="package"
-                    size={32}
-                    color={
-                      selectedItem?.id === item.id
-                        ? Colors.light.white
-                        : Colors.light.primary
-                    }
+                {item.image && (
+                  <Image
+                    source={item.image}
+                    style={styles.itemPreviewImage}
+                    resizeMode="cover"
                   />
+                )}
+                <View style={styles.itemCardOverlay}>
+                  <ThemedText
+                    style={[
+                      styles.itemLabel,
+                      selectedItem?.id === item.id && styles.itemLabelSelected,
+                    ]}
+                  >
+                    {item.label}
+                  </ThemedText>
                 </View>
-                <ThemedText
-                  style={[
-                    styles.itemLabel,
-                    selectedItem?.id === item.id && styles.itemLabelSelected,
-                  ]}
-                >
-                  {item.label}
-                </ThemedText>
-                <ThemedText
-                  style={[
-                    styles.itemDescription,
-                    selectedItem?.id === item.id && styles.itemDescriptionSelected,
-                  ]}
-                  numberOfLines={2}
-                >
-                  {item.description}
-                </ThemedText>
+                {selectedItem?.id === item.id && (
+                  <View style={styles.selectedCheckmark}>
+                    <Feather name="check" size={16} color={Colors.light.white} />
+                  </View>
+                )}
               </Pressable>
             ))}
           </ScrollView>
@@ -372,38 +366,32 @@ export default function MockupSelectionScreen() {
             key={vibe.id}
             onPress={() => handleVibeSelect(vibe)}
             style={[
-              styles.vibeCard,
+              styles.vibeCardWithImage,
               selectedVibe.id === vibe.id && styles.vibeCardSelected,
             ]}
           >
-            <View style={styles.vibeIconContainer}>
-              <Feather
-                name={vibe.icon as any}
-                size={24}
-                color={
-                  selectedVibe.id === vibe.id
-                    ? Colors.light.white
-                    : Colors.light.primary
-                }
+            {vibe.image && (
+              <Image
+                source={vibe.image}
+                style={styles.vibePreviewImage}
+                resizeMode="cover"
               />
+            )}
+            <View style={styles.vibeCardOverlay}>
+              <ThemedText
+                style={[
+                  styles.vibeLabel,
+                  selectedVibe.id === vibe.id && styles.vibeLabelSelected,
+                ]}
+              >
+                {vibe.label}
+              </ThemedText>
             </View>
-            <ThemedText
-              style={[
-                styles.vibeLabel,
-                selectedVibe.id === vibe.id && styles.vibeLabelSelected,
-              ]}
-            >
-              {vibe.label}
-            </ThemedText>
-            <ThemedText
-              style={[
-                styles.vibeDescription,
-                selectedVibe.id === vibe.id && styles.vibeDescriptionSelected,
-              ]}
-              numberOfLines={3}
-            >
-              {vibe.description}
-            </ThemedText>
+            {selectedVibe.id === vibe.id && (
+              <View style={styles.selectedCheckmark}>
+                <Feather name="check" size={16} color={Colors.light.white} />
+              </View>
+            )}
           </Pressable>
         ))}
       </View>
@@ -441,35 +429,32 @@ export default function MockupSelectionScreen() {
             key={camera.id}
             onPress={() => handleCameraSelect(camera)}
             style={[
-              styles.cameraCard,
+              styles.cameraCardWithImage,
               selectedCamera.id === camera.id && styles.cameraCardSelected,
             ]}
           >
-            <Feather
-              name={camera.icon as any}
-              size={28}
-              color={
-                selectedCamera.id === camera.id
-                  ? Colors.light.white
-                  : Colors.light.primary
-              }
-            />
-            <ThemedText
-              style={[
-                styles.cameraLabel,
-                selectedCamera.id === camera.id && styles.cameraLabelSelected,
-              ]}
-            >
-              {camera.label}
-            </ThemedText>
-            <ThemedText
-              style={[
-                styles.cameraDescription,
-                selectedCamera.id === camera.id && styles.cameraDescriptionSelected,
-              ]}
-            >
-              {camera.description}
-            </ThemedText>
+            {camera.image && (
+              <Image
+                source={camera.image}
+                style={styles.cameraPreviewImage}
+                resizeMode="cover"
+              />
+            )}
+            <View style={styles.cameraCardOverlay}>
+              <ThemedText
+                style={[
+                  styles.cameraLabel,
+                  selectedCamera.id === camera.id && styles.cameraLabelSelected,
+                ]}
+              >
+                {camera.label}
+              </ThemedText>
+            </View>
+            {selectedCamera.id === camera.id && (
+              <View style={styles.selectedCheckmark}>
+                <Feather name="check" size={16} color={Colors.light.white} />
+              </View>
+            )}
           </Pressable>
         ))}
       </View>
@@ -738,19 +723,49 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "transparent",
   },
+  itemCardWithImage: {
+    width: 100,
+    height: 120,
+    borderRadius: BorderRadius.lg,
+    overflow: "hidden",
+    borderWidth: 3,
+    borderColor: "transparent",
+  },
+  itemPreviewImage: {
+    width: "100%",
+    height: "100%",
+  },
+  itemCardOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.xs,
+  },
   itemCardSelected: {
-    backgroundColor: Colors.light.primary,
     borderColor: Colors.light.primary,
+  },
+  selectedCheckmark: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.light.primary,
+    alignItems: "center",
+    justifyContent: "center",
   },
   itemIconContainer: {
     marginBottom: Spacing.xs,
   },
   itemLabel: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
-    color: Colors.light.text,
+    color: Colors.light.white,
     textAlign: "center",
-    marginBottom: 2,
   },
   itemLabelSelected: {
     color: Colors.light.white,
@@ -804,18 +819,38 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "transparent",
   },
+  vibeCardWithImage: {
+    width: "48%",
+    height: 100,
+    borderRadius: BorderRadius.lg,
+    overflow: "hidden",
+    borderWidth: 3,
+    borderColor: "transparent",
+  },
+  vibePreviewImage: {
+    width: "100%",
+    height: "100%",
+  },
+  vibeCardOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
+  },
   vibeCardSelected: {
-    backgroundColor: Colors.light.primary,
     borderColor: Colors.light.primary,
   },
   vibeIconContainer: {
     marginBottom: Spacing.xs,
   },
   vibeLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
-    color: Colors.light.text,
-    marginBottom: 2,
+    color: Colors.light.white,
+    textAlign: "center",
   },
   vibeLabelSelected: {
     color: Colors.light.white,
@@ -852,17 +887,35 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "transparent",
   },
+  cameraCardWithImage: {
+    width: "31%",
+    height: 90,
+    borderRadius: BorderRadius.lg,
+    overflow: "hidden",
+    borderWidth: 3,
+    borderColor: "transparent",
+  },
+  cameraPreviewImage: {
+    width: "100%",
+    height: "100%",
+  },
+  cameraCardOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+  },
   cameraCardSelected: {
-    backgroundColor: Colors.light.primary,
     borderColor: Colors.light.primary,
   },
   cameraLabel: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: "600",
-    color: Colors.light.text,
+    color: Colors.light.white,
     textAlign: "center",
-    marginTop: Spacing.xs,
-    marginBottom: 2,
   },
   cameraLabelSelected: {
     color: Colors.light.white,

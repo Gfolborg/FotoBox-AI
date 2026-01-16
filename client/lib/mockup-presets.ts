@@ -1,3 +1,28 @@
+const tshirtImage = require("@assets/images/mockups/white_t-shirt_mockup_preview.png");
+const hoodieImage = require("@assets/images/mockups/black_hoodie_mockup_preview.png");
+const tankTopImage = require("@assets/images/mockups/white_tank_top_mockup_preview.png");
+const mugImage = require("@assets/images/mockups/white_ceramic_mug_mockup_preview.png");
+const tumblerImage = require("@assets/images/mockups/steel_tumbler_mockup_preview.png");
+const phoneCaseImage = require("@assets/images/mockups/phone_case_mockup_preview.png");
+const laptopSleeveImage = require("@assets/images/mockups/laptop_sleeve_mockup_preview.png");
+const posterImage = require("@assets/images/mockups/framed_poster_mockup_preview.png");
+const canvasImage = require("@assets/images/mockups/canvas_print_mockup_preview.png");
+const toteBagImage = require("@assets/images/mockups/tote_bag_mockup_preview.png");
+const capImage = require("@assets/images/mockups/baseball_cap_mockup_preview.png");
+
+const dynamicVibeImage = require("@assets/images/mockups/dynamic_vibe_style_preview.png");
+const professionalVibeImage = require("@assets/images/mockups/professional_vibe_style_preview.png");
+const casualVibeImage = require("@assets/images/mockups/casual_vibe_style_preview.png");
+const premiumVibeImage = require("@assets/images/mockups/premium_vibe_style_preview.png");
+const funVibeImage = require("@assets/images/mockups/fun_vibe_style_preview.png");
+
+const closeupCameraImage = require("@assets/images/mockups/close-up_camera_angle_preview.png");
+const mediumCameraImage = require("@assets/images/mockups/medium_camera_angle_preview.png");
+const wideCameraImage = require("@assets/images/mockups/wide_camera_angle_preview.png");
+const flatlayCameraImage = require("@assets/images/mockups/flat_lay_camera_angle_preview.png");
+const actionCameraImage = require("@assets/images/mockups/action_camera_angle_preview.png");
+const handheldCameraImage = require("@assets/images/mockups/in-use_camera_angle_preview.png");
+
 export interface MockupCategory {
   id: string;
   label: string;
@@ -27,6 +52,7 @@ export interface CameraOption {
   label: string;
   description: string;
   icon: string;
+  image: any;
 }
 
 export const MOCKUP_CATEGORIES: MockupCategory[] = [
@@ -41,7 +67,7 @@ export const MOCKUP_CATEGORIES: MockupCategory[] = [
         description: "Classic crew neck t-shirt",
         hasColorPicker: true,
         defaultColors: ["#FFFFFF", "#000000", "#1F2937", "#DC2626", "#2563EB", "#059669"],
-        image: null,
+        image: tshirtImage,
       },
       {
         id: "hoodie",
@@ -49,7 +75,7 @@ export const MOCKUP_CATEGORIES: MockupCategory[] = [
         description: "Pullover hoodie with front pocket",
         hasColorPicker: true,
         defaultColors: ["#FFFFFF", "#000000", "#1F2937", "#6B7280", "#1E40AF"],
-        image: null,
+        image: hoodieImage,
       },
       {
         id: "tanktop",
@@ -57,7 +83,7 @@ export const MOCKUP_CATEGORIES: MockupCategory[] = [
         description: "Athletic tank top",
         hasColorPicker: true,
         defaultColors: ["#FFFFFF", "#000000", "#DC2626", "#2563EB"],
-        image: null,
+        image: tankTopImage,
       },
     ],
   },
@@ -72,7 +98,7 @@ export const MOCKUP_CATEGORIES: MockupCategory[] = [
         description: "Classic ceramic mug",
         hasColorPicker: true,
         defaultColors: ["#FFFFFF", "#000000", "#1F2937"],
-        image: null,
+        image: mugImage,
       },
       {
         id: "tumbler",
@@ -80,7 +106,7 @@ export const MOCKUP_CATEGORIES: MockupCategory[] = [
         description: "Insulated travel tumbler",
         hasColorPicker: true,
         defaultColors: ["#FFFFFF", "#000000", "#1F2937", "#0EA5E9"],
-        image: null,
+        image: tumblerImage,
       },
       {
         id: "waterbottle",
@@ -88,14 +114,14 @@ export const MOCKUP_CATEGORIES: MockupCategory[] = [
         description: "Stainless steel water bottle",
         hasColorPicker: true,
         defaultColors: ["#FFFFFF", "#000000", "#0EA5E9", "#10B981"],
-        image: null,
+        image: tumblerImage,
       },
       {
         id: "can",
         label: "Beverage Can",
         description: "Aluminum beverage can",
         hasColorPicker: false,
-        image: null,
+        image: tumblerImage,
       },
     ],
   },
@@ -110,7 +136,7 @@ export const MOCKUP_CATEGORIES: MockupCategory[] = [
         description: "Smartphone protective case",
         hasColorPicker: true,
         defaultColors: ["#FFFFFF", "#000000", "#F97316"],
-        image: null,
+        image: phoneCaseImage,
       },
       {
         id: "laptopsleeve",
@@ -118,7 +144,7 @@ export const MOCKUP_CATEGORIES: MockupCategory[] = [
         description: "Padded laptop sleeve",
         hasColorPicker: true,
         defaultColors: ["#1F2937", "#000000", "#6B7280"],
-        image: null,
+        image: laptopSleeveImage,
       },
       {
         id: "airpodscase",
@@ -126,7 +152,7 @@ export const MOCKUP_CATEGORIES: MockupCategory[] = [
         description: "Wireless earbuds case",
         hasColorPicker: true,
         defaultColors: ["#FFFFFF", "#000000", "#F97316"],
-        image: null,
+        image: phoneCaseImage,
       },
     ],
   },
@@ -140,14 +166,14 @@ export const MOCKUP_CATEGORIES: MockupCategory[] = [
         label: "Poster",
         description: "Wall art poster print",
         hasColorPicker: false,
-        image: null,
+        image: posterImage,
       },
       {
         id: "canvas",
         label: "Canvas",
         description: "Gallery wrapped canvas",
         hasColorPicker: false,
-        image: null,
+        image: canvasImage,
       },
       {
         id: "framedart",
@@ -155,14 +181,14 @@ export const MOCKUP_CATEGORIES: MockupCategory[] = [
         description: "Art in elegant frame",
         hasColorPicker: true,
         defaultColors: ["#000000", "#FFFFFF", "#8B4513"],
-        image: null,
+        image: posterImage,
       },
       {
         id: "billboard",
         label: "Billboard",
         description: "Large outdoor billboard",
         hasColorPicker: false,
-        image: null,
+        image: posterImage,
       },
     ],
   },
@@ -177,7 +203,7 @@ export const MOCKUP_CATEGORIES: MockupCategory[] = [
         description: "Canvas tote bag",
         hasColorPicker: true,
         defaultColors: ["#FFFFFF", "#000000", "#F5F5DC"],
-        image: null,
+        image: toteBagImage,
       },
       {
         id: "hat",
@@ -185,7 +211,7 @@ export const MOCKUP_CATEGORIES: MockupCategory[] = [
         description: "Baseball cap",
         hasColorPicker: true,
         defaultColors: ["#FFFFFF", "#000000", "#1F2937", "#DC2626", "#2563EB"],
-        image: null,
+        image: capImage,
       },
       {
         id: "pillow",
@@ -193,14 +219,14 @@ export const MOCKUP_CATEGORIES: MockupCategory[] = [
         description: "Decorative throw pillow",
         hasColorPicker: true,
         defaultColors: ["#FFFFFF", "#000000", "#F5F5DC"],
-        image: null,
+        image: toteBagImage,
       },
       {
         id: "sticker",
         label: "Sticker",
         description: "Die-cut vinyl sticker",
         hasColorPicker: false,
-        image: null,
+        image: posterImage,
       },
     ],
   },
@@ -212,35 +238,35 @@ export const SCENE_VIBES: SceneVibe[] = [
     label: "Dynamic",
     description: "Action, sports, outdoor adventure - perfect for energy drinks, fitness gear",
     icon: "zap",
-    image: null,
+    image: dynamicVibeImage,
   },
   {
     id: "professional",
     label: "Professional",
     description: "Office, business meeting, clean desk - great for corporate products",
     icon: "briefcase",
-    image: null,
+    image: professionalVibeImage,
   },
   {
     id: "casual",
     label: "Casual",
     description: "Coffee shop, home, urban street - ideal for lifestyle products",
     icon: "home",
-    image: null,
+    image: casualVibeImage,
   },
   {
     id: "premium",
     label: "Premium",
     description: "Studio lighting, marble surfaces, luxury aesthetic",
     icon: "star",
-    image: null,
+    image: premiumVibeImage,
   },
   {
     id: "fun",
     label: "Fun",
     description: "Bright colors, party scenes, beach vibes - great for playful brands",
     icon: "sun",
-    image: null,
+    image: funVibeImage,
   },
 ];
 
@@ -250,36 +276,42 @@ export const CAMERA_OPTIONS: CameraOption[] = [
     label: "Close-up",
     description: "Detailed product focus",
     icon: "zoom-in",
+    image: closeupCameraImage,
   },
   {
     id: "medium",
     label: "Medium",
     description: "Balanced view with context",
     icon: "maximize",
+    image: mediumCameraImage,
   },
   {
     id: "wide",
     label: "Wide",
     description: "Full environmental shot",
     icon: "maximize-2",
+    image: wideCameraImage,
   },
   {
     id: "flatlay",
     label: "Flat Lay",
     description: "Top-down perspective",
     icon: "grid",
+    image: flatlayCameraImage,
   },
   {
     id: "action",
     label: "Action",
     description: "Motion blur, dynamic angle",
     icon: "activity",
+    image: actionCameraImage,
   },
   {
     id: "handheld",
     label: "In-Use",
     description: "Product being used/held",
     icon: "user",
+    image: handheldCameraImage,
   },
 ];
 
