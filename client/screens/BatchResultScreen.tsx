@@ -73,7 +73,7 @@ export default function BatchResultScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (lastEditedUri && !hasShownApplyAllPopup && uneditedCount > 0) {
+      if (lastEditedUri && !hasShownApplyAllPopup && successfulResults.length > 1 && uneditedCount > 0) {
         setEditedImages(prev => new Set([...prev, lastEditedUri]));
         setShowApplyAllModal(true);
         setHasShownApplyAllPopup(true);
@@ -155,7 +155,7 @@ export default function BatchResultScreen() {
   const allSaved = savedUris.size === successfulResults.length;
 
   return (
-    <GradientBackground variant="warm">
+    <GradientBackground theme="home">
       <StatusBar style="dark" />
 
       {/* Header */}
