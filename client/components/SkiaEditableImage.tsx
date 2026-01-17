@@ -3,8 +3,9 @@ import React, {
   useRef,
   useImperativeHandle,
   forwardRef,
+  useEffect,
 } from "react";
-import { View, StyleSheet, Dimensions } from "react-native";
+import { View, StyleSheet, Dimensions, Platform } from "react-native";
 import {
   Canvas,
   Image,
@@ -14,7 +15,9 @@ import {
   Skia,
   isRect,
   rect,
+  SkImage,
 } from "@shopify/react-native-skia";
+import * as FileSystem from "expo-file-system/legacy";
 
 import { Colors } from "@/constants/theme";
 import { CropOverlay } from "./CropOverlay";
@@ -139,43 +142,63 @@ export const SkiaEditableImage = forwardRef<
       height: IMAGE_SIZE,
     });
 
-    const [base64Data, setBase64Data] = useState<string | null>(null);
+    const [skiaImage, setSkiaImage] = useState<SkImage | null>(null);
     const canvasRef = useRef<any>(null);
 
-    // Load image as base64 for reliable Skia loading on Android
-    React.useEffect(() => {
+    // Load image using Skia's native decoding
+    useEffect(() => {
       let cancelled = false;
 
       const loadImage = async () => {
         try {
           console.log("[SkiaEditableImage] Loading URI:", originalUri);
 
+          let base64String: string;
+
           if (originalUri.startsWith("data:")) {
-            // Already base64
-            setBase64Data(originalUri);
-            console.log("[SkiaEditableImage] Using data URI directly");
+            // Extract base64 from data URI
+            base64String = originalUri.split(",")[1];
+            console.log("[SkiaEditableImage] Extracted base64 from data URI");
           } else {
             // Load file as base64
-            const FileSystem = require("expo-file-system/legacy");
-
             let fileUri = originalUri;
             if (!fileUri.startsWith("file://") && fileUri.startsWith("/")) {
               fileUri = `file://${fileUri}`;
             }
 
-            const base64 = await FileSystem.readAsStringAsync(fileUri, {
+            base64String = await FileSystem.readAsStringAsync(fileUri, {
               encoding: FileSystem.EncodingType.Base64,
             });
+            console.log("[SkiaEditableImage] Loaded file as base64, length:", base64String.length);
+          }
 
-            if (!cancelled) {
-              const dataUri = `data:image/jpeg;base64,${base64}`;
-              setBase64Data(dataUri);
-              console.log("[SkiaEditableImage] Loaded as base64, length:", dataUri.length);
+          if (cancelled) return;
+
+          // Decode base64 to Uint8Array
+          const binaryString = atob(base64String);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+
+          // Create Skia Data and decode image
+          const skData = Skia.Data.fromBytes(bytes);
+          const decodedImage = Skia.Image.MakeImageFromEncoded(skData);
+
+          if (!cancelled) {
+            if (decodedImage) {
+              console.log("[SkiaEditableImage] Image decoded successfully:", decodedImage.width(), "x", decodedImage.height());
+              setSkiaImage(decodedImage);
+            } else {
+              console.error("[SkiaEditableImage] Failed to decode image from bytes");
+              setSkiaImage(null);
             }
           }
         } catch (error) {
           console.error("[SkiaEditableImage] Failed to load image:", error);
-          setBase64Data(null);
+          if (!cancelled) {
+            setSkiaImage(null);
+          }
         }
       };
 
@@ -186,19 +209,7 @@ export const SkiaEditableImage = forwardRef<
       };
     }, [originalUri]);
 
-    const image = useImage(base64Data);
-
-    // Debug: Check if image loads from base64
-    React.useEffect(() => {
-      if (base64Data) {
-        console.log("[SkiaEditableImage] useImage input ready, waiting for image object...");
-        if (image) {
-          console.log("[SkiaEditableImage] Image loaded successfully:", image.width(), "x", image.height());
-        } else {
-          console.log("[SkiaEditableImage] Image object is null despite base64Data being available");
-        }
-      }
-    }, [image, base64Data]);
+    const image = skiaImage;
 
     useImperativeHandle(ref, () => ({
       snapshot: async () => {
