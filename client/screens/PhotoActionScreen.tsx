@@ -108,14 +108,16 @@ export default function PhotoActionScreen() {
       >
         <BlurView intensity={40} tint="light" style={styles.headerBlur} />
         <View style={styles.headerContent}>
-          <IconButton
-            icon="chevron-left"
-            onPress={() => navigation.goBack()}
-            size={44}
-            iconSize={24}
-            variant="ghost"
-            color={Colors.editing.text}
-          />
+          <Pressable
+            style={styles.headerButton}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              navigation.goBack();
+            }}
+          >
+            <Feather name="camera" size={18} color={Colors.editing.text} />
+            <ThemedText style={styles.headerButtonText}>Retake</ThemedText>
+          </Pressable>
 
           <GlassPill>
             <Feather name="check-circle" size={16} color={Colors.editing.primary} />
@@ -178,21 +180,7 @@ export default function PhotoActionScreen() {
           </View>
         </View>
 
-        <Animated.View
-          entering={FadeInUp.delay(700).duration(400)}
-          style={styles.retakeContainer}
-        >
-          <Pressable
-            style={styles.retakeButton}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              navigation.goBack();
-            }}
-          >
-            <Feather name="camera" size={18} color={Colors.editing.textSecondary} />
-            <ThemedText style={styles.retakeText}>Retake Photo</ThemedText>
-          </Pressable>
-        </Animated.View>
+        <View style={styles.retakeContainer} />
       </View>
     </GradientBackground>
   );
@@ -218,6 +206,18 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
+  },
+  headerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  headerButtonText: {
+    color: Colors.editing.text,
+    fontSize: 16,
+    fontWeight: '600',
   },
   headerTitle: {
     color: Colors.editing.text,
@@ -307,23 +307,6 @@ const styles = StyleSheet.create({
     right: Spacing.md,
   },
   retakeContainer: {
-    alignItems: "center",
-    paddingTop: Spacing.xl,
-  },
-  retakeButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    backgroundColor: Colors.editing.backgroundSecondary,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    borderColor: Colors.editing.border,
-  },
-  retakeText: {
-    color: Colors.editing.textSecondary,
-    fontSize: 15,
-    fontWeight: "500",
+    height: 60,
   },
 });
