@@ -79,7 +79,7 @@ export default function PhotoActionScreen() {
         await FileSystem.writeAsStringAsync(fileUri, base64Data, {
           encoding: FileSystem.EncodingType.Base64,
         });
-      } else if (imageUri.startsWith("content:")) {
+      } else if (imageUri.startsWith("content:") || imageUri.startsWith("ph:")) {
         const filename = `edit_temp_${Date.now()}.jpg`;
         fileUri = FileSystem.documentDirectory + filename;
         await FileSystem.copyAsync({ from: imageUri, to: fileUri });

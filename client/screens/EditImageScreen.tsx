@@ -225,7 +225,7 @@ export default function EditImageScreen() {
 
   return (
     <GestureHandlerRootView style={styles.container}>
-      <GradientBackground variant="warm" style={styles.container}>
+      <GradientBackground theme="editing" style={styles.container}>
       <StatusBar style="dark" />
 
       <Animated.View
