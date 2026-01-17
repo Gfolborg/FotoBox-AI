@@ -226,7 +226,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'space-between',
     paddingTop: 100,
     paddingHorizontal: Spacing.lg,
   },
@@ -262,6 +261,8 @@ const styles = StyleSheet.create({
   },
   actionsContainer: {
     gap: Spacing.md,
+    flexGrow: 1,
+    justifyContent: 'center',
   },
   cardRow: {
     flexDirection: 'row',
@@ -276,8 +277,7 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     borderWidth: 1,
     borderColor: Colors.editing.border,
-    flex: 1,
-    minHeight: 160,
+    minHeight: 140,
   },
   actionIconContainer: {
     width: 48,
