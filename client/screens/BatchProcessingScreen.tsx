@@ -175,7 +175,7 @@ export default function BatchProcessingScreen() {
   }));
 
   return (
-    <GradientBackground variant="warm">
+    <GradientBackground theme="processing">
       <StatusBar style="dark" />
 
       {/* Header */}

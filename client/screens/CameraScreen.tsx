@@ -113,7 +113,7 @@ export default function CameraScreen() {
       quality: 1,
     });
 
-    if (!result.canceled) {
+    if (!result.canceled && result.assets[0]) {
       navigation.navigate("PhotoAction", { imageUri: result.assets[0].uri });
     }
   };
@@ -121,7 +121,7 @@ export default function CameraScreen() {
   
   if (!permission) {
     return (
-      <GradientBackground variant="warm" style={styles.centered}>
+      <GradientBackground theme="home" style={styles.centered}>
         <ActivityIndicator size="large" color={Colors.editing.primary} />
       </GradientBackground>
     );
@@ -129,7 +129,7 @@ export default function CameraScreen() {
 
   if (!permission.granted) {
     return (
-      <GradientBackground variant="warm" style={[styles.centered, styles.permissionContainer]}>
+      <GradientBackground theme="home" style={[styles.centered, styles.permissionContainer]}>
         <StatusBar style="dark" />
         <Animated.View entering={FadeIn.duration(500)} style={styles.permissionContent}>
           <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.permissionIconContainer}>
@@ -176,7 +176,7 @@ export default function CameraScreen() {
   }
 
   return (
-    <GradientBackground variant="warm">
+    <GradientBackground theme="home">
       <StatusBar style="light" />
       <CameraView ref={cameraRef} style={styles.camera} facing="back">
         {/* Grid overlay */}

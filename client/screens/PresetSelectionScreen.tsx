@@ -131,7 +131,7 @@ export default function PresetSelectionScreen() {
 
   if (isLoading) {
     return (
-      <GradientBackground variant="warm" style={styles.loadingContainer}>
+      <GradientBackground theme="editing" style={styles.loadingContainer}>
         <StatusBar style="dark" />
         <ProgressRing
           progress={0.7}
@@ -148,7 +148,7 @@ export default function PresetSelectionScreen() {
   }
 
   return (
-    <GradientBackground variant="warm">
+    <GradientBackground theme="editing">
       <StatusBar style="dark" />
 
       {/* Header */}

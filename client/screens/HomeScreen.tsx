@@ -41,7 +41,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <GradientBackground variant="warm">
+    <GradientBackground theme="home">
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[

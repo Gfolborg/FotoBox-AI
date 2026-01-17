@@ -313,7 +313,7 @@ export default function EnvironmentSelectionScreen() {
   ];
 
   return (
-    <GradientBackground variant="warm">
+    <GradientBackground theme="home">
       <StatusBar style="dark" />
 
       {/* Header */}

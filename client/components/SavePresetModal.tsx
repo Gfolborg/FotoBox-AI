@@ -12,7 +12,7 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { ThemedText } from "./ThemedText";
 import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
-import { PresetAdjustments } from "@/types/preset";
+import { PresetAdjustments, EditingPreset } from "@/types/preset";
 
 interface SavePresetModalProps {
   visible: boolean;

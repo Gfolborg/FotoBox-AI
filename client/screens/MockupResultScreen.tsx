@@ -133,7 +133,7 @@ export default function MockupResultScreen() {
   };
 
   return (
-    <GradientBackground variant="warm">
+    <GradientBackground theme="home">
       {showSuccess && <SuccessAnimation />}
       
       <ScrollView

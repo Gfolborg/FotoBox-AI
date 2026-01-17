@@ -120,7 +120,7 @@ export default function BatchMockupResultScreen() {
   };
 
   return (
-    <GradientBackground variant="warm">
+    <GradientBackground theme="home">
       {showSuccess && <SuccessAnimation />}
 
       <ScrollView

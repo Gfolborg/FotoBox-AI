@@ -138,8 +138,67 @@ export const SkiaEditableImage = forwardRef<
       width: IMAGE_SIZE,
       height: IMAGE_SIZE,
     });
-    const image = useImage(originalUri);
+
+    const [base64Data, setBase64Data] = useState<string | null>(null);
     const canvasRef = useRef<any>(null);
+
+    // Load image as base64 for reliable Skia loading on Android
+    React.useEffect(() => {
+      let cancelled = false;
+
+      const loadImage = async () => {
+        try {
+          console.log("[SkiaEditableImage] Loading URI:", originalUri);
+
+          if (originalUri.startsWith("data:")) {
+            // Already base64
+            setBase64Data(originalUri);
+            console.log("[SkiaEditableImage] Using data URI directly");
+          } else {
+            // Load file as base64
+            const FileSystem = require("expo-file-system/legacy");
+
+            let fileUri = originalUri;
+            if (!fileUri.startsWith("file://") && fileUri.startsWith("/")) {
+              fileUri = `file://${fileUri}`;
+            }
+
+            const base64 = await FileSystem.readAsStringAsync(fileUri, {
+              encoding: FileSystem.EncodingType.Base64,
+            });
+
+            if (!cancelled) {
+              const dataUri = `data:image/jpeg;base64,${base64}`;
+              setBase64Data(dataUri);
+              console.log("[SkiaEditableImage] Loaded as base64, length:", dataUri.length);
+            }
+          }
+        } catch (error) {
+          console.error("[SkiaEditableImage] Failed to load image:", error);
+          setBase64Data(null);
+        }
+      };
+
+      loadImage();
+
+      return () => {
+        cancelled = true;
+      };
+    }, [originalUri]);
+
+    const image = useImage(base64Data);
+
+    // Debug: Check if image loads from base64
+    React.useEffect(() => {
+      if (base64Data) {
+        console.log("[SkiaEditableImage] useImage input ready, waiting for image object...");
+        if (image) {
+          console.log("[SkiaEditableImage] Image loaded successfully:", image.width(), "x", image.height());
+        } else {
+          console.log("[SkiaEditableImage] Image object is null despite base64Data being available");
+        }
+      }
+    }, [image, base64Data]);
 
     useImperativeHandle(ref, () => ({
       snapshot: async () => {

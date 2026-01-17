@@ -75,7 +75,7 @@ export default function BatchActionSelectionScreen() {
   };
 
   return (
-    <GradientBackground variant="warm">
+    <GradientBackground theme="home">
       <StatusBar style="dark" />
 
       <Animated.View

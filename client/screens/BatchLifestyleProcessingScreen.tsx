@@ -146,7 +146,7 @@ export default function BatchLifestyleProcessingScreen() {
 
   return (
     <GradientBackground
-      variant="warm"
+      theme="processing"
       style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
     >
       <StatusBar style="dark" />

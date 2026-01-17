@@ -56,7 +56,7 @@ export default function BackgroundColorSelectionScreen() {
   };
 
   return (
-    <GradientBackground variant="warm">
+    <GradientBackground theme="home">
       <StatusBar style="dark" />
 
       <Animated.View

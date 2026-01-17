@@ -102,7 +102,7 @@ export default function BatchPreviewScreen() {
   }, [navigation]);
 
   return (
-    <GradientBackground variant="warm">
+    <GradientBackground theme="home">
       <StatusBar style="dark" />
 
       {/* Header */}

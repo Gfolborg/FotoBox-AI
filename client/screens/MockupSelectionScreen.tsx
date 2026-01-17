@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   StyleSheet,
   View,
@@ -69,6 +69,33 @@ export default function MockupSelectionScreen() {
   const [selectedModel, setSelectedModel] = useState<ModelOption>(MODEL_OPTIONS[0]);
   const [customDescription, setCustomDescription] = useState("");
   const [customProductName, setCustomProductName] = useState("");
+  // Track visited tabs for lazy rendering - only render tabs that have been visited
+  const [visitedTabs, setVisitedTabs] = useState<Set<TabType>>(new Set(["product"]));
+
+  // Prefetch all preset images on mount for faster loading
+  useEffect(() => {
+    const prefetchImages = async () => {
+      const allImages = [
+        // Prefetch vibe images
+        ...SCENE_VIBES.map((vibe) => vibe.image),
+        // Prefetch camera images
+        ...CAMERA_OPTIONS.map((camera) => camera.image),
+        // Prefetch model images
+        ...MODEL_OPTIONS.map((model) => model.image),
+        // Prefetch product images from all categories
+        ...MOCKUP_CATEGORIES.flatMap((category) =>
+          category.items.map((item) => item.image)
+        ),
+      ].filter(Boolean);
+
+      // Prefetch all images in parallel
+      await Promise.all(
+        allImages.map((image) => Image.prefetch(image))
+      );
+    };
+
+    prefetchImages();
+  }, []);
 
   const handleSelectImages = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -138,6 +165,10 @@ export default function MockupSelectionScreen() {
   const handleTabChange = (tab: TabType) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setActiveTab(tab);
+    // Mark tab as visited for lazy rendering
+    if (!visitedTabs.has(tab)) {
+      setVisitedTabs((prev) => new Set([...prev, tab]));
+    }
   };
 
   const handleGenerate = () => {
@@ -307,7 +338,10 @@ export default function MockupSelectionScreen() {
                   <Image
                     source={item.image}
                     style={styles.itemPreviewImage}
-                    resizeMode="cover"
+                    contentFit="cover"
+                    transition={200}
+                    cachePolicy="memory-disk"
+                    placeholder={{ blurhash: item.blurhash }}
                   />
                 )}
                 <View style={styles.itemCardOverlay}>
@@ -385,7 +419,10 @@ export default function MockupSelectionScreen() {
               <Image
                 source={vibe.image}
                 style={styles.vibePreviewImage}
-                resizeMode="cover"
+                contentFit="cover"
+                transition={200}
+                cachePolicy="memory-disk"
+                placeholder={{ blurhash: vibe.blurhash }}
               />
             )}
             <View style={styles.vibeCardOverlay}>
@@ -448,7 +485,10 @@ export default function MockupSelectionScreen() {
               <Image
                 source={camera.image}
                 style={styles.cameraPreviewImage}
-                resizeMode="cover"
+                contentFit="cover"
+                transition={200}
+                cachePolicy="memory-disk"
+                placeholder={{ blurhash: camera.blurhash }}
               />
             )}
             <View style={styles.cameraCardOverlay}>
@@ -496,6 +536,9 @@ export default function MockupSelectionScreen() {
               source={model.image}
               style={styles.modelPreviewImage}
               contentFit="cover"
+              transition={200}
+              cachePolicy="memory-disk"
+              placeholder={{ blurhash: model.blurhash }}
             />
             <View style={styles.modelCardOverlay}>
               <ThemedText style={styles.modelLabel}>
@@ -514,7 +557,7 @@ export default function MockupSelectionScreen() {
   );
 
   return (
-    <GradientBackground variant="warm">
+    <GradientBackground theme="home">
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
@@ -539,7 +582,12 @@ export default function MockupSelectionScreen() {
               entering={FadeInDown.delay(index * 50).duration(300)}
               style={styles.imageContainer}
             >
-              <Image source={{ uri }} style={styles.thumbnail} />
+              <Image
+                source={{ uri }}
+                style={styles.thumbnail}
+                transition={150}
+                cachePolicy="memory-disk"
+              />
               <Pressable
                 onPress={() => handleRemoveImage(index)}
                 style={styles.removeButton}
@@ -604,10 +652,27 @@ export default function MockupSelectionScreen() {
         </View>
 
         <View style={styles.tabContent}>
-          {activeTab === "product" && renderProductTab()}
-          {activeTab === "style" && renderStyleTab()}
-          {activeTab === "camera" && renderCameraTab()}
-          {activeTab === "model" && renderModelTab()}
+          {/* Lazy render tabs - only render if visited, hide if not active */}
+          {visitedTabs.has("product") && (
+            <View style={activeTab !== "product" && styles.hiddenTab}>
+              {activeTab === "product" && renderProductTab()}
+            </View>
+          )}
+          {visitedTabs.has("style") && (
+            <View style={activeTab !== "style" && styles.hiddenTab}>
+              {activeTab === "style" && renderStyleTab()}
+            </View>
+          )}
+          {visitedTabs.has("camera") && (
+            <View style={activeTab !== "camera" && styles.hiddenTab}>
+              {activeTab === "camera" && renderCameraTab()}
+            </View>
+          )}
+          {visitedTabs.has("model") && (
+            <View style={activeTab !== "model" && styles.hiddenTab}>
+              {activeTab === "model" && renderModelTab()}
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -735,6 +800,9 @@ const styles = StyleSheet.create({
   },
   tabContent: {
     minHeight: 300,
+  },
+  hiddenTab: {
+    display: "none",
   },
   categoryScroll: {
     gap: Spacing.sm,

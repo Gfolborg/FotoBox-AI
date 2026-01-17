@@ -181,7 +181,7 @@ export default function ResultScreen() {
   };
 
   return (
-    <GradientBackground variant="warm">
+    <GradientBackground theme="home">
       <StatusBar style="dark" />
 
       {/* Header */}

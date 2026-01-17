@@ -128,7 +128,7 @@ export default function LifestyleResultScreen() {
   const environmentLabel = ENVIRONMENT_LABELS[environment] || "Lifestyle Scene";
 
   return (
-    <GradientBackground variant="warm">
+    <GradientBackground theme="home">
       <StatusBar style="dark" />
 
       {/* Header */}

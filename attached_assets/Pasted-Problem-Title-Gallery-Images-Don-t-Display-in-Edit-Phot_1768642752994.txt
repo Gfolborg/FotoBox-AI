@@ -1,0 +1,17 @@
+Problem Title: Gallery Images Don't Display in Edit Photo Screen                                                                                                       
+                                                                                                                                                                         
+  Description:                                                                                                                                                           
+  When a user selects an image from the gallery and attempts to edit it by tapping "Edit Photo", no image preview is displayed in the EditImageScreen. However, this     
+  feature works correctly when using the camera to take a photo.                                                                                                         
+                                                                                                                                                                         
+  Affected Flow:                                                                                                                                                         
+  - Generate Product Shot → Take photo → Select Edit Photo ✓ (Works)                                                                                                     
+  - Generate Product Shot → Select Gallery Image → Edit Photo ✗ (Broken)                                                                                                 
+                                                                                                                                                                         
+  Current Behavior:                                                                                                                                                      
+  1. Gallery image is successfully selected and shown in PhotoActionScreen preview                                                                                       
+  2. User taps "Edit Photo"                                                                                                                                              
+  3. File is successfully copied to documents directory                                                                                                                  
+  4. Base64 data is successfully converted (2.7MB)                                                                                                                       
+  5. EditImageScreen loads but displays empty placeholder                                                                                                                
+  6. Skia's useImage hook fails to create an image object from the base64 data URI  

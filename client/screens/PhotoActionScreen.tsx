@@ -8,7 +8,8 @@ import { StatusBar } from "expo-status-bar";
 import { BlurView } from "expo-blur";
 import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
+import * as ImageManipulator from "expo-image-manipulator";
 
 import { ThemedText } from "@/components/ThemedText";
 import { IconButton } from "@/components/IconButton";
@@ -71,22 +72,39 @@ export default function PhotoActionScreen() {
 
   const handleEditPhoto = async () => {
     try {
-      let fileUri = imageUri;
-      if (imageUri.startsWith("data:")) {
-        const filename = `edit_temp_${Date.now()}.jpg`;
-        fileUri = FileSystem.documentDirectory + filename;
-        const base64Data = imageUri.split(",")[1];
-        await FileSystem.writeAsStringAsync(fileUri, base64Data, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-      } else if (imageUri.startsWith("content:") || imageUri.startsWith("ph:")) {
-        const filename = `edit_temp_${Date.now()}.jpg`;
-        fileUri = FileSystem.documentDirectory + filename;
-        await FileSystem.copyAsync({ from: imageUri, to: fileUri });
-      }
-      navigation.navigate("EditImage", { imageUri: fileUri, originalUri: fileUri });
+      console.log("[PhotoAction] Original imageUri:", imageUri);
+
+      // Use ImageManipulator to convert any image format to JPEG
+      // This handles HEIC, PNG, and other formats from gallery
+      const manipResult = await ImageManipulator.manipulateAsync(
+        imageUri,
+        [], // No transformations needed
+        { compress: 0.95, format: ImageManipulator.SaveFormat.JPEG }
+      );
+
+      console.log("[PhotoAction] Converted to JPEG:", manipResult.uri);
+
+      // Copy to documents directory for reliable access
+      const filename = `edit_temp_${Date.now()}.jpg`;
+      const tempUri = `${FileSystem.documentDirectory}${filename}`;
+      
+      await FileSystem.copyAsync({
+        from: manipResult.uri,
+        to: tempUri,
+      });
+
+      // Verify file exists
+      const fileInfo = await FileSystem.getInfoAsync(tempUri);
+      console.log("[PhotoAction] File saved:", fileInfo);
+
+      // Pass without file:// prefix for Android Skia compatibility
+      const skiaUri = tempUri.replace("file://", "");
+      console.log("[PhotoAction] Skia URI:", skiaUri);
+
+      navigation.navigate("EditImage", { imageUri: skiaUri, originalUri: skiaUri });
     } catch (error) {
-      console.error("Failed to prepare image for editing:", error);
+      console.error("[PhotoAction] Failed to prepare image for editing:", error);
+      console.error("[PhotoAction] Error details:", JSON.stringify(error, null, 2));
     }
   };
 

@@ -109,7 +109,7 @@ export default function MockupProcessingScreen() {
   };
 
   return (
-    <GradientBackground variant="warm">
+    <GradientBackground theme="processing">
       <View
         style={[
           styles.container,
