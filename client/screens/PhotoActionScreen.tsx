@@ -124,7 +124,15 @@ export default function PhotoActionScreen() {
             <ThemedText style={styles.headerTitle}>Photo Ready</ThemedText>
           </GlassPill>
 
-          <View style={{ width: 44 }} />
+          <Pressable
+            style={styles.headerButton}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              navigation.goBack();
+            }}
+          >
+            <ThemedText style={styles.headerButtonText}>Done</ThemedText>
+          </Pressable>
         </View>
       </Animated.View>
 
