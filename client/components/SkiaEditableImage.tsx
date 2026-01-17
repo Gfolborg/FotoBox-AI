@@ -13,6 +13,7 @@ import {
   Fill,
   Skia,
   rect,
+  ImageFormat,
   type SkImage,
 } from "@shopify/react-native-skia";
 import * as FileSystem from "expo-file-system/legacy";
@@ -332,11 +333,9 @@ export const SkiaEditableImage = forwardRef<
             snapshot.height(),
           );
 
-          // Encode to base64 - use encodeToBase64 with format and quality
-          const base64 = snapshot.encodeToBase64(
-            Platform.OS === "web" ? "png" : "jpeg",
-            95,
-          );
+          // Encode to base64 using ImageFormat enum
+          const format = Platform.OS === "web" ? ImageFormat.PNG : ImageFormat.JPEG;
+          const base64 = snapshot.encodeToBase64(format, 95);
           
           if (!base64) {
             console.error("[SkiaEditableImage] Failed to encode snapshot to base64");
