@@ -34,7 +34,7 @@ interface ActionCardProps {
 
 function ActionCard({ icon, title, description, color, onPress, delay }: ActionCardProps) {
   return (
-    <Animated.View entering={FadeInDown.delay(delay).duration(400).springify()}>
+    <Animated.View entering={FadeInDown.delay(delay).duration(400).springify()} style={styles.cardWrapper}>
       <Pressable
         style={styles.actionCard}
         onPress={() => {
@@ -47,9 +47,11 @@ function ActionCard({ icon, title, description, color, onPress, delay }: ActionC
         </View>
         <View style={styles.actionTextContainer}>
           <ThemedText style={styles.actionTitle}>{title}</ThemedText>
-          <ThemedText style={styles.actionDescription}>{description}</ThemedText>
+          <ThemedText style={styles.actionDescription} numberOfLines={2}>{description}</ThemedText>
         </View>
-        <Feather name="chevron-right" size={20} color={Colors.editing.textTertiary} />
+        <View style={styles.arrowContainer}>
+          <Feather name="chevron-right" size={20} color={Colors.editing.textTertiary} />
+        </View>
       </Pressable>
     </Animated.View>
   );
@@ -124,11 +126,7 @@ export default function PhotoActionScreen() {
         </View>
       </Animated.View>
 
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + Spacing.xl }]}
-        showsVerticalScrollIndicator={false}
-      >
+      <View style={[styles.content, { paddingBottom: insets.bottom + Spacing.xl }]}>
         <Animated.View
           entering={FadeIn.delay(100).duration(400)}
           style={styles.imagePreviewContainer}
@@ -142,41 +140,42 @@ export default function PhotoActionScreen() {
         </Animated.View>
 
         <View style={styles.actionsContainer}>
-          <ActionCard
-            icon="sliders"
-            title="Edit Photo"
-            description="Adjust brightness, contrast, and colors"
-            color={Colors.editing.secondary}
-            onPress={handleEditPhoto}
-            delay={300}
-          />
-
-          <ActionCard
-            icon="scissors"
-            title="Remove Background"
-            description="AI-powered background removal with custom colors"
-            color={Colors.editing.primary}
-            onPress={handleRemoveBackground}
-            delay={400}
-          />
-
-          <ActionCard
-            icon="image"
-            title="Create Lifestyle Scene"
-            description="Place product in AI-generated environments"
-            color="#10B981"
-            onPress={handleCreateLifestyle}
-            delay={500}
-          />
-
-          <ActionCard
-            icon="figma"
-            title="Create Mockup"
-            description="Generate realistic mockups for your products"
-            color="#A78BFA"
-            onPress={handleCreateMockup}
-            delay={600}
-          />
+          <View style={styles.cardRow}>
+            <ActionCard
+              icon="sliders"
+              title="Edit Photo"
+              description="Adjust brightness, contrast, and colors"
+              color={Colors.editing.secondary}
+              onPress={handleEditPhoto}
+              delay={300}
+            />
+            <ActionCard
+              icon="scissors"
+              title="Remove Background"
+              description="AI-powered background removal"
+              color={Colors.editing.primary}
+              onPress={handleRemoveBackground}
+              delay={400}
+            />
+          </View>
+          <View style={styles.cardRow}>
+            <ActionCard
+              icon="image"
+              title="Create Lifestyle Scene"
+              description="Place in AI-generated environments"
+              color="#10B981"
+              onPress={handleCreateLifestyle}
+              delay={500}
+            />
+            <ActionCard
+              icon="figma"
+              title="Create Mockup"
+              description="Generate realistic product mockups"
+              color="#A78BFA"
+              onPress={handleCreateMockup}
+              delay={600}
+            />
+          </View>
         </View>
 
         <Animated.View
@@ -194,7 +193,7 @@ export default function PhotoActionScreen() {
             <ThemedText style={styles.retakeText}>Retake Photo</ThemedText>
           </Pressable>
         </Animated.View>
-      </ScrollView>
+      </View>
     </GradientBackground>
   );
 }
@@ -225,10 +224,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
   },
-  scrollView: {
-    flex: 1,
-  },
   content: {
+    flex: 1,
+    justifyContent: 'space-between',
     paddingTop: 100,
     paddingHorizontal: Spacing.lg,
   },
@@ -265,15 +263,21 @@ const styles = StyleSheet.create({
   actionsContainer: {
     gap: Spacing.md,
   },
+  cardRow: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+  },
+  cardWrapper: {
+    flex: 1,
+  },
   actionCard: {
-    flexDirection: "row",
-    alignItems: "center",
     backgroundColor: Colors.editing.backgroundSecondary,
     borderRadius: BorderRadius.lg,
     padding: Spacing.md,
     borderWidth: 1,
     borderColor: Colors.editing.border,
-    gap: Spacing.md,
+    flex: 1,
+    minHeight: 160,
   },
   actionIconContainer: {
     width: 48,
@@ -281,6 +285,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
+    marginBottom: Spacing.md,
   },
   actionTextContainer: {
     flex: 1,
@@ -295,6 +300,11 @@ const styles = StyleSheet.create({
     color: Colors.editing.textSecondary,
     fontSize: 13,
     lineHeight: 18,
+  },
+  arrowContainer: {
+    position: 'absolute',
+    bottom: Spacing.md,
+    right: Spacing.md,
   },
   retakeContainer: {
     alignItems: "center",
