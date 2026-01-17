@@ -204,9 +204,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: Spacing.md,
+    paddingHorizontal: 100,
     paddingVertical: Spacing.sm,
-    height: 44,
   },
   leftHeaderItem: {
     position: 'absolute',
