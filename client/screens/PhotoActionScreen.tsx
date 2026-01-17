@@ -8,6 +8,7 @@ import { StatusBar } from "expo-status-bar";
 import { BlurView } from "expo-blur";
 import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
+import * as FileSystem from "expo-file-system";
 
 import { ThemedText } from "@/components/ThemedText";
 import { IconButton } from "@/components/IconButton";
@@ -66,8 +67,21 @@ export default function PhotoActionScreen() {
     });
   }, [navigation]);
 
-  const handleEditPhoto = () => {
-    navigation.navigate("EditImage", { imageUri, originalUri: imageUri });
+  const handleEditPhoto = async () => {
+    try {
+      let fileUri = imageUri;
+      if (imageUri.startsWith("data:")) {
+        const filename = `edit_temp_${Date.now()}.jpg`;
+        fileUri = FileSystem.documentDirectory + filename;
+        const base64Data = imageUri.split(",")[1];
+        await FileSystem.writeAsStringAsync(fileUri, base64Data, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+      }
+      navigation.navigate("EditImage", { imageUri: fileUri, originalUri: fileUri });
+    } catch (error) {
+      console.error("Failed to prepare image for editing:", error);
+    }
   };
 
   const handleRemoveBackground = () => {
@@ -78,8 +92,12 @@ export default function PhotoActionScreen() {
     navigation.navigate("EnvironmentSelection", { imageUri });
   };
 
+  const handleCreateMockup = () => {
+    navigation.navigate("MockupSelection", { imageUri });
+  };
+
   return (
-    <GradientBackground variant="warm">
+    <GradientBackground theme="home">
       <StatusBar style="dark" />
 
       <Animated.View
@@ -150,10 +168,19 @@ export default function PhotoActionScreen() {
             onPress={handleCreateLifestyle}
             delay={500}
           />
+
+          <ActionCard
+            icon="figma"
+            title="Create Mockup"
+            description="Generate realistic mockups for your products"
+            color="#A78BFA"
+            onPress={handleCreateMockup}
+            delay={600}
+          />
         </View>
 
         <Animated.View
-          entering={FadeInUp.delay(600).duration(400)}
+          entering={FadeInUp.delay(700).duration(400)}
           style={styles.retakeContainer}
         >
           <Pressable
