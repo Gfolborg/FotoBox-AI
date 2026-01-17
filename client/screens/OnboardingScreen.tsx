@@ -38,6 +38,13 @@ const onboardingSlides = [
   },
   {
     id: '3',
+    icon: 'figma',
+    title: 'Create Realistic Mockups',
+    description: 'Instantly generate professional mockups for your products. Showcase your designs on t-shirts, mugs, and more.',
+    gradient: ['#FEF2F2', '#F5F5F4'] as [string, string],
+  },
+  {
+    id: '4',
     icon: 'layers',
     title: 'Batch Edit Like a Pro',
     description: 'Save time by processing multiple images at once. Edit and enhance your entire product line in minutes.',
@@ -111,7 +118,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
   };
 
   return (
-    <GradientBackground variant="warm">
+    <GradientBackground theme="home">
       <FlatList
         ref={flatListRef}
         data={onboardingSlides}
