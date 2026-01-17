@@ -6,10 +6,15 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import { BlurView } from "expo-blur";
-import { GestureHandlerRootView, Gesture, GestureDetector } from "react-native-gesture-handler";
+import {
+  GestureHandlerRootView,
+  Gesture,
+  GestureDetector,
+} from "react-native-gesture-handler";
 import Animated, {
   FadeIn,
   FadeInUp,
+  FadeOut,
   useSharedValue,
   useAnimatedStyle,
   withSpring,
@@ -24,7 +29,11 @@ import { GradientButton } from "@/components/GradientButton";
 import { IconButton } from "@/components/IconButton";
 import { GlassPill } from "@/components/GlassPill";
 import { ProgressRing } from "@/components/ProgressRing";
-import { CompactToolbar, ADJUSTMENT_TOOLS, ToolConfig } from "@/components/CompactToolbar";
+import {
+  CompactToolbar,
+  ADJUSTMENT_TOOLS,
+  ToolConfig,
+} from "@/components/CompactToolbar";
 import { SavePresetModal } from "@/components/SavePresetModal";
 import {
   SkiaEditableImage,
@@ -42,7 +51,10 @@ import { useNotification } from "@/context/NotificationContext";
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const DRAG_SENSITIVITY = 0.004;
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList, "EditImage">;
+type NavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  "EditImage"
+>;
 type EditImageRouteProp = RouteProp<RootStackParamList, "EditImage">;
 
 type ToolKey =
@@ -67,8 +79,15 @@ export default function EditImageScreen() {
   const imageRef = useRef<SkiaEditableImageRef>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSavePresetModal, setShowSavePresetModal] = useState(false);
-  const [selectedTool, setSelectedTool] = useState<ToolKey | null>("brightness");
+  const [selectedTool, setSelectedTool] = useState<ToolKey | null>(
+    "brightness",
+  );
+  const [cropSnapshot, setCropSnapshot] = useState<{
+    crop: any;
+    aspectRatio: any;
+  } | null>(null);
   const [isToolbarHidden, setIsToolbarHidden] = useState(false);
+  const [currentImageUri, setCurrentImageUri] = useState(imageUri); // Track current image (original or cropped)
 
   const {
     state,
@@ -100,6 +119,16 @@ export default function EditImageScreen() {
     }
   }, [presetId]);
 
+  useEffect(() => {
+    // Save crop state when entering crop mode
+    if (selectedTool === "crop" && !cropSnapshot) {
+      setCropSnapshot({
+        crop: state.crop,
+        aspectRatio: state.aspectRatio,
+      });
+    }
+  }, [selectedTool, cropSnapshot]);
+
   const handleSavePreset = async (name: string) => {
     try {
       await saveCurrentAsPreset(name, state);
@@ -119,9 +148,12 @@ export default function EditImageScreen() {
     setIsProcessing(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
+      // Use currentImageUri which already has crop applied if user clicked Apply
+      const imageToSend = currentImageUri;
+
       const formData = new FormData();
       formData.append("file", {
-        uri: imageUri,
+        uri: imageToSend,
         name: "product_photo.jpg",
         type: "image/jpeg",
       } as unknown as Blob);
@@ -130,7 +162,10 @@ export default function EditImageScreen() {
       const bgColorParam = encodeURIComponent(state.selectedBackgroundColor);
       const endpoint = `${apiUrl}api/main-image?backgroundColor=${bgColorParam}`;
 
-      const response = await fetch(endpoint, { method: "POST", body: formData });
+      const response = await fetch(endpoint, {
+        method: "POST",
+        body: formData,
+      });
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -143,7 +178,7 @@ export default function EditImageScreen() {
         const base64data = reader.result as string;
         navigation.replace("Result", {
           resultUri: base64data,
-          originalUri: imageUri,
+          originalUri: imageToSend,
           backgroundColor: state.selectedBackgroundColor,
         });
       };
@@ -182,7 +217,10 @@ export default function EditImageScreen() {
 
   const updateValue = (newValue: number) => {
     if (activeToolConfig) {
-      updateAdjustment(activeToolConfig.key as keyof typeof state, newValue as never);
+      updateAdjustment(
+        activeToolConfig.key as keyof typeof state,
+        newValue as never,
+      );
     }
   };
 
@@ -199,11 +237,12 @@ export default function EditImageScreen() {
     .onUpdate((event) => {
       if (!activeToolConfig) return;
 
-      const delta = event.translationX * DRAG_SENSITIVITY;
+      // Negative translation means dragging up (increase value), positive means dragging down (decrease value)
+      const delta = -event.translationY * DRAG_SENSITIVITY;
       const range = activeToolConfig.max! - activeToolConfig.min!;
       const newValue = Math.max(
         activeToolConfig.min!,
-        Math.min(activeToolConfig.max!, dragStartValue.value + delta * range)
+        Math.min(activeToolConfig.max!, dragStartValue.value + delta * range),
       );
 
       const steppedValue =
@@ -225,163 +264,441 @@ export default function EditImageScreen() {
 
   return (
     <GestureHandlerRootView style={styles.container}>
-      <GradientBackground theme="home" style={styles.container}>
-      <StatusBar style="dark" />
-
-      <Animated.View
-        entering={FadeIn.duration(300)}
-        style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}
+      <GradientBackground
+        theme="home"
+        style={[
+          styles.container,
+          selectedTool === "crop" && styles.cropModeTransparent,
+        ]}
       >
-        <BlurView intensity={40} tint="light" style={styles.headerBlur} />
-        <View style={styles.headerContent}>
-          <Pressable style={styles.headerButton} onPress={() => navigation.goBack()}>
-            <ThemedText style={styles.headerButtonText}>Cancel</ThemedText>
-          </Pressable>
+        <StatusBar style="dark" />
 
-          <GlassPill>
-            <ThemedText style={styles.headerTitle}>Edit</ThemedText>
-          </GlassPill>
-
-          <View style={styles.headerRight}>
+        <Animated.View
+          entering={FadeIn.duration(300)}
+          style={[
+            styles.header,
+            { paddingTop: Spacing.md },
+            selectedTool === "crop" && { opacity: 0 },
+          ]}
+        >
+          <BlurView intensity={0} tint="light" style={styles.headerBlur} />
+          <View style={styles.headerContent}>
             <Pressable
-              onPressIn={toggleBeforeAfter}
-              onPressOut={toggleBeforeAfter}
-              style={styles.compareButton}
+              style={styles.headerButton}
+              onPress={() => navigation.goBack()}
             >
-              <Feather name="eye" size={18} color={Colors.editing.text} />
+              <ThemedText style={styles.headerButtonText}>Cancel</ThemedText>
             </Pressable>
-            <IconButton
-              icon="bookmark"
-              onPress={() => setShowSavePresetModal(true)}
-              size={40}
-              iconSize={20}
-              variant="ghost"
-              color={Colors.editing.primary}
-            />
+
+            <GlassPill>
+              <ThemedText style={styles.headerTitle}>Edit</ThemedText>
+            </GlassPill>
+
+            <View style={styles.headerRight}>
+              <Pressable
+                onPressIn={toggleBeforeAfter}
+                onPressOut={toggleBeforeAfter}
+                style={styles.compareButton}
+              >
+                <Feather name="eye" size={18} color={Colors.editing.text} />
+              </Pressable>
+              <IconButton
+                icon="bookmark"
+                onPress={() => setShowSavePresetModal(true)}
+                size={40}
+                iconSize={20}
+                variant="ghost"
+                color={Colors.editing.primary}
+              />
+            </View>
           </View>
-        </View>
-      </Animated.View>
+        </Animated.View>
 
-      <GestureDetector gesture={panGesture}>
-        <Animated.View entering={FadeIn.duration(400)} style={styles.imageContainer}>
-          <SkiaEditableImage
-            ref={imageRef}
-            originalUri={imageUri}
-            adjustments={{
-              brightness: state.brightness,
-              contrast: state.contrast,
-              saturation: state.saturation,
-              exposure: state.exposure,
-              highlights: state.highlights,
-              shadows: state.shadows,
-              warmth: state.warmth,
-              rotation: state.rotation,
-              flipHorizontal: state.flipHorizontal,
-              flipVertical: state.flipVertical,
-            }}
-            showOriginal={state.showBeforeAfter}
-            showCropOverlay={selectedTool === "crop"}
-            crop={state.crop}
-            onCropChange={(crop) => updateAdjustment("crop", crop)}
-          />
+        <GestureDetector gesture={panGesture}>
+          <Animated.View
+            entering={FadeIn.duration(400)}
+            style={styles.imageContainer}
+          >
+            <SkiaEditableImage
+              ref={imageRef}
+              originalUri={currentImageUri}
+              adjustments={{
+                brightness: state.brightness,
+                contrast: state.contrast,
+                saturation: state.saturation,
+                exposure: state.exposure,
+                highlights: state.highlights,
+                shadows: state.shadows,
+                warmth: state.warmth,
+                rotation: state.rotation,
+                flipHorizontal: state.flipHorizontal,
+                flipVertical: state.flipVertical,
+              }}
+              showOriginal={state.showBeforeAfter}
+              showCropOverlay={selectedTool === "crop"}
+              crop={state.crop}
+              aspectRatio={state.aspectRatio}
+              onCropChange={(crop) => updateAdjustment("crop", crop)}
+            />
 
-          <Animated.View style={[styles.valueIndicator, indicatorStyle]} pointerEvents="none">
-            <View style={styles.indicatorContent}>
-              <ThemedText style={styles.indicatorLabel}>
-                {activeToolConfig?.label || ""}
-              </ThemedText>
-              <ThemedText style={styles.indicatorValue}>
-                {activeToolConfig?.format ? activeToolConfig.format(currentValue) : ""}
-              </ThemedText>
-            </View>
-            <View style={styles.dragHint}>
-              <ThemedText style={styles.dragHintText}>← Drag to adjust →</ThemedText>
-            </View>
+            <Animated.View
+              style={[styles.valueIndicator, indicatorStyle]}
+              pointerEvents="none"
+            >
+              <View style={styles.indicatorContent}>
+                <ThemedText style={styles.indicatorLabel}>
+                  {activeToolConfig?.label || ""}
+                </ThemedText>
+                <ThemedText style={styles.indicatorValue}>
+                  {activeToolConfig?.format
+                    ? activeToolConfig.format(currentValue)
+                    : ""}
+                </ThemedText>
+              </View>
+              <View style={styles.dragHint}>
+                <ThemedText style={styles.dragHintText}>
+                  ↑ Drag to adjust ↓
+                </ThemedText>
+              </View>
+            </Animated.View>
+
+            {isProcessing && (
+              <View style={styles.processingOverlay}>
+                <BlurView
+                  intensity={60}
+                  tint="light"
+                  style={styles.processingBlur}
+                />
+                <View style={styles.processingContent}>
+                  <ProgressRing
+                    progress={0.7}
+                    size={72}
+                    strokeWidth={5}
+                    color={Colors.editing.primary}
+                    backgroundColor={Colors.editing.border}
+                  >
+                    <Feather
+                      name="cpu"
+                      size={24}
+                      color={Colors.editing.primary}
+                    />
+                  </ProgressRing>
+                  <ThemedText style={styles.processingText}>
+                    Processing...
+                  </ThemedText>
+                  <ThemedText style={styles.processingHint}>
+                    This may take a moment
+                  </ThemedText>
+                </View>
+              </View>
+            )}
           </Animated.View>
+        </GestureDetector>
 
-          {isProcessing && (
-            <View style={styles.processingOverlay}>
-              <BlurView intensity={60} tint="light" style={styles.processingBlur} />
-              <View style={styles.processingContent}>
-                <ProgressRing
-                  progress={0.7}
-                  size={72}
-                  strokeWidth={5}
-                  color={Colors.editing.primary}
-                  backgroundColor={Colors.editing.border}
+        {selectedTool === "crop" ? (
+          <Animated.View
+            entering={FadeInUp.duration(200)}
+            exiting={FadeOut.duration(150)}
+            style={styles.cropControlBar}
+          >
+            <View style={styles.cropControlContent}>
+              <View style={styles.aspectRatioRow}>
+                <Pressable
+                  onPress={() => {
+                    updateAdjustment("aspectRatio", "free");
+                    // Reset crop to full image for free aspect
+                    updateAdjustment("crop", {
+                      x: 0,
+                      y: 0,
+                      width: 1,
+                      height: 1,
+                    });
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }}
+                  style={[
+                    styles.cropOption,
+                    state.aspectRatio === "free" || state.aspectRatio === null
+                      ? styles.cropOptionActive
+                      : {},
+                  ]}
                 >
-                  <Feather name="cpu" size={24} color={Colors.editing.primary} />
-                </ProgressRing>
-                <ThemedText style={styles.processingText}>Processing...</ThemedText>
-                <ThemedText style={styles.processingHint}>This may take a moment</ThemedText>
+                  <ThemedText
+                    style={[
+                      styles.cropOptionText,
+                      state.aspectRatio === "free" || state.aspectRatio === null
+                        ? styles.cropOptionTextActive
+                        : {},
+                    ]}
+                  >
+                    Free
+                  </ThemedText>
+                </Pressable>
+                <Pressable
+                  onPress={() => {
+                    updateAdjustment("aspectRatio", "square");
+                    // Adjust crop to 1:1 centered
+                    const size = Math.min(1, 1);
+                    const x = (1 - size) / 2;
+                    const y = (1 - size) / 2;
+                    updateAdjustment("crop", {
+                      x,
+                      y,
+                      width: size,
+                      height: size,
+                    });
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }}
+                  style={[
+                    styles.cropOption,
+                    state.aspectRatio === "square"
+                      ? styles.cropOptionActive
+                      : {},
+                  ]}
+                >
+                  <ThemedText
+                    style={[
+                      styles.cropOptionText,
+                      state.aspectRatio === "square"
+                        ? styles.cropOptionTextActive
+                        : {},
+                    ]}
+                  >
+                    1:1
+                  </ThemedText>
+                </Pressable>
+                <Pressable
+                  onPress={() => {
+                    updateAdjustment("aspectRatio", "4:3");
+                    // Adjust crop to 4:3 centered
+                    const targetRatio = 4 / 3;
+                    const imageRatio = 1; // Assuming square for now
+                    let width = 1;
+                    let height = width / targetRatio;
+                    if (height > 1) {
+                      height = 1;
+                      width = height * targetRatio;
+                    }
+                    const x = (1 - width) / 2;
+                    const y = (1 - height) / 2;
+                    updateAdjustment("crop", { x, y, width, height });
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }}
+                  style={[
+                    styles.cropOption,
+                    state.aspectRatio === "4:3" ? styles.cropOptionActive : {},
+                  ]}
+                >
+                  <ThemedText
+                    style={[
+                      styles.cropOptionText,
+                      state.aspectRatio === "4:3"
+                        ? styles.cropOptionTextActive
+                        : {},
+                    ]}
+                  >
+                    4:3
+                  </ThemedText>
+                </Pressable>
+                <Pressable
+                  onPress={() => {
+                    updateAdjustment("aspectRatio", "16:9");
+                    // Adjust crop to 16:9 centered
+                    const targetRatio = 16 / 9;
+                    const imageRatio = 1; // Assuming square for now
+                    let width = 1;
+                    let height = width / targetRatio;
+                    if (height > 1) {
+                      height = 1;
+                      width = height * targetRatio;
+                    }
+                    const x = (1 - width) / 2;
+                    const y = (1 - height) / 2;
+                    updateAdjustment("crop", { x, y, width, height });
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }}
+                  style={[
+                    styles.cropOption,
+                    state.aspectRatio === "16:9" ? styles.cropOptionActive : {},
+                  ]}
+                >
+                  <ThemedText
+                    style={[
+                      styles.cropOptionText,
+                      state.aspectRatio === "16:9"
+                        ? styles.cropOptionTextActive
+                        : {},
+                    ]}
+                  >
+                    16:9
+                  </ThemedText>
+                </Pressable>
+              </View>
+
+              <View style={styles.cropButtonRow}>
+                <Pressable
+                  onPress={() => {
+                    // Revert to saved crop state
+                    if (cropSnapshot) {
+                      updateAdjustment("crop", cropSnapshot.crop);
+                      updateAdjustment("aspectRatio", cropSnapshot.aspectRatio);
+                    }
+                    setSelectedTool(null);
+                    setCropSnapshot(null);
+                  }}
+                  style={styles.cropCancelButton}
+                >
+                  <ThemedText style={styles.cropCancelText}>Cancel</ThemedText>
+                </Pressable>
+                <Pressable
+                  onPress={async () => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+                    if (!imageRef.current) {
+                      console.error("[EditImage] Image ref not available");
+                      showNotification(
+                        "Image not ready. Please try again.",
+                        "error",
+                      );
+                      return;
+                    }
+
+                    if (!state.crop) {
+                      console.error("[EditImage] No crop state available");
+                      showNotification("No crop area defined.", "error");
+                      return;
+                    }
+
+                    console.log(
+                      "[EditImage] Taking crop snapshot...",
+                      state.crop,
+                    );
+
+                    const croppedImageUri = await imageRef.current.snapshot();
+
+                    if (
+                      !croppedImageUri ||
+                      !croppedImageUri.startsWith("data:image/")
+                    ) {
+                      console.error(
+                        "[EditImage] Failed to get a valid crop snapshot.",
+                      );
+                      showNotification(
+                        "Failed to apply crop. The image may be too complex.",
+                        "error",
+                      );
+                      return;
+                    }
+
+                    console.log(
+                      "[EditImage] Crop snapshot taken successfully, length:",
+                      croppedImageUri.length,
+                    );
+
+                    setCurrentImageUri(croppedImageUri);
+                    updateAdjustment("crop", {
+                      x: 0,
+                      y: 0,
+                      width: 1,
+                      height: 1,
+                    });
+                    updateAdjustment("aspectRatio", "free");
+
+                    setSelectedTool(null);
+                    setCropSnapshot(null);
+
+                    showNotification("Crop applied successfully", "success");
+                  }}
+                  style={styles.cropApplyButton}
+                >
+                  <ThemedText style={styles.cropApplyText}>Apply</ThemedText>
+                </Pressable>
               </View>
             </View>
-          )}
-        </Animated.View>
-      </GestureDetector>
+          </Animated.View>
+        ) : (
+          <CompactToolbar
+            state={state}
+            selectedTool={selectedTool}
+            onSelectTool={setSelectedTool}
+            onUpdateAdjustment={updateAdjustment}
+            onRotateCW={rotateCW}
+            onRotateCCW={rotateCCW}
+            onToggleFlipHorizontal={toggleFlipHorizontal}
+            onToggleFlipVertical={toggleFlipVertical}
+            isHidden={isToolbarHidden}
+          />
+        )}
 
-      <CompactToolbar
-        state={state}
-        selectedTool={selectedTool}
-        onSelectTool={setSelectedTool}
-        onUpdateAdjustment={updateAdjustment}
-        onRotateCW={rotateCW}
-        onRotateCCW={rotateCCW}
-        onToggleFlipHorizontal={toggleFlipHorizontal}
-        onToggleFlipVertical={toggleFlipVertical}
-        isHidden={isToolbarHidden}
-      />
+        <Animated.View
+          entering={FadeInUp.delay(200).duration(400)}
+          style={[
+            styles.bottomActionBar,
+            { paddingBottom: insets.bottom + Spacing.md },
+            selectedTool === "crop" && styles.hidden,
+          ]}
+        >
+          <BlurView intensity={40} tint="light" style={styles.buttonBlur} />
+          <View style={styles.actionBarContent}>
+            <View style={styles.buttonRow}>
+              {selectedTool !== "crop" && (
+                <Pressable
+                  onPress={resetAll}
+                  disabled={isProcessing || !hasChanges()}
+                  style={[
+                    styles.resetIconButton,
+                    (isProcessing || !hasChanges()) &&
+                      styles.resetIconButtonDisabled,
+                  ]}
+                >
+                  <Feather
+                    name="rotate-ccw"
+                    size={20}
+                    color={
+                      isProcessing || !hasChanges()
+                        ? Colors.editing.textTertiary
+                        : Colors.editing.text
+                    }
+                  />
+                </Pressable>
+              )}
 
-      <Animated.View
-        entering={FadeInUp.delay(200).duration(400)}
-        style={[styles.bottomActionBar, { paddingBottom: insets.bottom + Spacing.md }]}
-      >
-        <BlurView intensity={40} tint="light" style={styles.buttonBlur} />
-        <View style={styles.actionBarContent}>
-          <View style={styles.buttonRow}>
-            <Button
-              onPress={resetAll}
-              variant="outline"
-              disabled={isProcessing || !hasChanges()}
-              style={styles.resetButton}
-            >
-              Reset
-            </Button>
-
-            <GradientButton
-              title={isProcessing ? "Processing..." : "Generate"}
-              onPress={handleGenerateMainImage}
-              disabled={isProcessing}
-              loading={isProcessing}
-              icon="zap"
-              style={styles.generateButton}
-            />
+              <GradientButton
+                title={isProcessing ? "Processing..." : "Generate"}
+                onPress={handleGenerateMainImage}
+                disabled={isProcessing}
+                loading={isProcessing}
+                icon="zap"
+                style={[
+                  styles.generateButton,
+                  selectedTool === "crop" && styles.generateButtonExpanded,
+                ]}
+              />
+            </View>
           </View>
-        </View>
-      </Animated.View>
+        </Animated.View>
 
-      <SavePresetModal
-        visible={showSavePresetModal}
-        onClose={() => setShowSavePresetModal(false)}
-        onSave={handleSavePreset}
-        adjustments={{
-          brightness: state.brightness,
-          contrast: state.contrast,
-          saturation: state.saturation,
-          exposure: state.exposure,
-          highlights: state.highlights,
-          shadows: state.shadows,
-          warmth: state.warmth,
-        }}
-        backgroundColor={state.selectedBackgroundColor}
-        aiSettings={{
-          environment: state.aiEnvironment,
-          isCustom: state.aiIsCustom,
-          productDescription: state.aiProductDescription,
-          shadowControl: state.aiShadowControl,
-        }}
-        isSaving={isSaving}
-      />
+        <SavePresetModal
+          visible={showSavePresetModal}
+          onClose={() => setShowSavePresetModal(false)}
+          onSave={handleSavePreset}
+          adjustments={{
+            brightness: state.brightness,
+            contrast: state.contrast,
+            saturation: state.saturation,
+            exposure: state.exposure,
+            highlights: state.highlights,
+            shadows: state.shadows,
+            warmth: state.warmth,
+          }}
+          backgroundColor={state.selectedBackgroundColor}
+          aiSettings={{
+            environment: state.aiEnvironment,
+            isCustom: state.aiIsCustom,
+            productDescription: state.aiProductDescription,
+            shadowControl: state.aiShadowControl,
+          }}
+          isSaving={isSaving}
+        />
       </GradientBackground>
     </GestureHandlerRootView>
   );
@@ -390,6 +707,76 @@ export default function EditImageScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  cropModeTransparent: {
+    backgroundColor: "rgba(0, 0, 0, 0.9)",
+  },
+  hidden: {
+    display: "none",
+  },
+  cropControlBar: {
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(0, 0, 0, 0.08)",
+    paddingVertical: Spacing.md,
+  },
+  cropControlContent: {
+    paddingHorizontal: Spacing.md,
+    gap: Spacing.md,
+  },
+  aspectRatioRow: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+    justifyContent: "center",
+  },
+  cropOption: {
+    paddingVertical: 8,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.full,
+    backgroundColor: "rgba(0, 0, 0, 0.05)",
+    borderWidth: 1,
+    borderColor: "rgba(0, 0, 0, 0.08)",
+  },
+  cropOptionActive: {
+    backgroundColor: Colors.editing.primary,
+    borderColor: Colors.editing.primary,
+  },
+  cropOptionText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: Colors.editing.textSecondary,
+  },
+  cropOptionTextActive: {
+    color: Colors.editing.buttonText,
+  },
+  cropButtonRow: {
+    flexDirection: "row",
+    gap: Spacing.md,
+  },
+  cropCancelButton: {
+    flex: 1,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1.5,
+    borderColor: Colors.editing.textSecondary,
+    alignItems: "center",
+  },
+  cropCancelText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.editing.text,
+  },
+  cropApplyButton: {
+    flex: 1,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.editing.primary,
+    alignItems: "center",
+  },
+  cropApplyText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.editing.buttonText,
   },
   header: {
     position: "absolute",
@@ -435,9 +822,9 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     flex: 1,
-    marginTop: 80,
     justifyContent: "center",
     alignItems: "center",
+    marginTop: Spacing.lg,
   },
   valueIndicator: {
     position: "absolute",
@@ -448,39 +835,41 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   indicatorContent: {
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
+    backgroundColor: "rgba(255, 255, 255, 0.98)",
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.lg,
     borderRadius: BorderRadius.xl,
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: Colors.editing.border,
+    borderWidth: 2,
+    borderColor: Colors.editing.primary,
     ...Shadows.lg,
   },
   indicatorLabel: {
     color: Colors.editing.textSecondary,
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "600",
     textTransform: "uppercase",
     letterSpacing: 0.5,
-    marginBottom: 4,
+    marginBottom: 6,
   },
   indicatorValue: {
     color: Colors.editing.text,
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: "700",
   },
   dragHint: {
-    marginTop: Spacing.xs,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 4,
-    backgroundColor: "rgba(255, 107, 107, 0.2)",
+    marginTop: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    backgroundColor: "rgba(255, 107, 107, 0.85)",
     borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    borderColor: Colors.editing.primary,
   },
   dragHintText: {
-    color: Colors.editing.primary,
-    fontSize: 11,
-    fontWeight: "500",
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "600",
   },
   processingOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -522,11 +911,25 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: "row",
     gap: Spacing.md,
+    alignItems: "center",
   },
-  resetButton: {
-    flex: 1,
+  resetIconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(0, 0, 0, 0.05)",
+    borderWidth: 1,
+    borderColor: Colors.editing.border,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  resetIconButtonDisabled: {
+    opacity: 0.5,
   },
   generateButton: {
-    flex: 2,
+    flex: 1,
+  },
+  generateButtonExpanded: {
+    flex: 1,
   },
 });

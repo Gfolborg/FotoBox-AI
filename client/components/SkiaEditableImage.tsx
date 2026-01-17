@@ -9,13 +9,11 @@ import { View, StyleSheet, Dimensions, Platform } from "react-native";
 import {
   Canvas,
   Image,
-  useImage,
   ColorMatrix,
   Fill,
   Skia,
-  isRect,
   rect,
-  SkImage,
+  type SkImage,
 } from "@shopify/react-native-skia";
 import * as FileSystem from "expo-file-system/legacy";
 
@@ -24,10 +22,10 @@ import { CropOverlay } from "./CropOverlay";
 import type { ImageEditingState } from "@/hooks/useImageEditing";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const IMAGE_SIZE = SCREEN_WIDTH * 0.85;
+const IMAGE_SIZE = SCREEN_WIDTH * 0.75;
 
 export interface SkiaEditableImageRef {
-  snapshot: () => Promise<string>;
+  snapshot: () => Promise<string | null>;
 }
 
 interface SkiaEditableImageProps {
@@ -47,6 +45,7 @@ interface SkiaEditableImageProps {
   showOriginal?: boolean;
   showCropOverlay?: boolean;
   crop: ImageEditingState["crop"];
+  aspectRatio?: ImageEditingState["aspectRatio"];
   onCropChange: (crop: ImageEditingState["crop"]) => void;
 }
 
@@ -59,7 +58,26 @@ function contrastMatrix(value: number): number[] {
   const c = value;
   const offset = (1 - c) / 2;
   return [
-    c, 0, 0, 0, offset, 0, c, 0, 0, offset, 0, 0, c, 0, offset, 0, 0, 0, 1, 0,
+    c,
+    0,
+    0,
+    0,
+    offset,
+    0,
+    c,
+    0,
+    0,
+    offset,
+    0,
+    0,
+    c,
+    0,
+    offset,
+    0,
+    0,
+    0,
+    1,
+    0,
   ];
 }
 function saturationMatrix(value: number): number[] {
@@ -71,7 +89,26 @@ function saturationMatrix(value: number): number[] {
   const sg = (1 - s) * lumG;
   const sb = (1 - s) * lumB;
   return [
-    sr + s, sg, sb, 0, 0, sr, sg + s, sb, 0, 0, sr, sg, sb + s, 0, 0, 0, 0, 0, 1, 0,
+    sr + s,
+    sg,
+    sb,
+    0,
+    0,
+    sr,
+    sg + s,
+    sb,
+    0,
+    0,
+    sr,
+    sg,
+    sb + s,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
   ];
 }
 function exposureMatrix(value: number): number[] {
@@ -105,16 +142,28 @@ function createCombinedMatrix(
     1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0,
   ];
   if (adjustments.exposure !== 0) {
-    matrix = multiplyColorMatrices(exposureMatrix(adjustments.exposure), matrix);
+    matrix = multiplyColorMatrices(
+      exposureMatrix(adjustments.exposure),
+      matrix,
+    );
   }
   if (adjustments.brightness !== 0) {
-    matrix = multiplyColorMatrices(brightnessMatrix(adjustments.brightness), matrix);
+    matrix = multiplyColorMatrices(
+      brightnessMatrix(adjustments.brightness),
+      matrix,
+    );
   }
   if (adjustments.contrast !== 1) {
-    matrix = multiplyColorMatrices(contrastMatrix(adjustments.contrast), matrix);
+    matrix = multiplyColorMatrices(
+      contrastMatrix(adjustments.contrast),
+      matrix,
+    );
   }
   if (adjustments.saturation !== 1) {
-    matrix = multiplyColorMatrices(saturationMatrix(adjustments.saturation), matrix);
+    matrix = multiplyColorMatrices(
+      saturationMatrix(adjustments.saturation),
+      matrix,
+    );
   }
   if (adjustments.warmth !== 0) {
     matrix = multiplyColorMatrices(warmthMatrix(adjustments.warmth), matrix);
@@ -133,6 +182,7 @@ export const SkiaEditableImage = forwardRef<
       showOriginal = false,
       showCropOverlay = false,
       crop,
+      aspectRatio,
       onCropChange,
     },
     ref,
@@ -169,7 +219,10 @@ export const SkiaEditableImage = forwardRef<
             base64String = await FileSystem.readAsStringAsync(fileUri, {
               encoding: FileSystem.EncodingType.Base64,
             });
-            console.log("[SkiaEditableImage] Loaded file as base64, length:", base64String.length);
+            console.log(
+              "[SkiaEditableImage] Loaded file as base64, length:",
+              base64String.length,
+            );
           }
 
           if (cancelled) return;
@@ -187,10 +240,17 @@ export const SkiaEditableImage = forwardRef<
 
           if (!cancelled) {
             if (decodedImage) {
-              console.log("[SkiaEditableImage] Image decoded successfully:", decodedImage.width(), "x", decodedImage.height());
+              console.log(
+                "[SkiaEditableImage] Image decoded successfully:",
+                decodedImage.width(),
+                "x",
+                decodedImage.height(),
+              );
               setSkiaImage(decodedImage);
             } else {
-              console.error("[SkiaEditableImage] Failed to decode image from bytes");
+              console.error(
+                "[SkiaEditableImage] Failed to decode image from bytes",
+              );
               setSkiaImage(null);
             }
           }
@@ -212,22 +272,83 @@ export const SkiaEditableImage = forwardRef<
     const image = skiaImage;
 
     useImperativeHandle(ref, () => ({
-      snapshot: async () => {
+      snapshot: async (): Promise<string | null> => {
         if (!canvasRef.current || !image) {
-          throw new Error("Canvas is not ready or image not loaded.");
+          console.error(
+            "[SkiaEditableImage] Snapshot failed: Canvas is not ready or image not loaded.",
+          );
+          return null;
         }
 
-        const cropArea = crop || { x: 0, y: 0, width: 1, height: 1 };
-        const cropRect = rect(
-          cropArea.x * image.width(),
-          cropArea.y * image.height(),
-          cropArea.width * image.width(),
-          cropArea.height * image.height(),
-        );
+        try {
+          // Calculate the crop rect based on displayed image area
+          const cropArea = crop || { x: 0, y: 0, width: 1, height: 1 };
+          
+          // Calculate where the image is actually drawn on the canvas
+          const imageAspect = image.width() / image.height();
+          const containerAspect = IMAGE_SIZE / IMAGE_SIZE;
+          
+          let drawWidth = IMAGE_SIZE;
+          let drawHeight = IMAGE_SIZE;
+          let drawX = 0;
+          let drawY = 0;
 
-        const skiaImage = canvasRef.current.makeImageSnapshot(cropRect);
-        const base64 = skiaImage.encodeToBase64("jpeg", 95);
-        return `data:image/jpeg;base64,${base64}`;
+          if (imageAspect > containerAspect) {
+            drawWidth = IMAGE_SIZE;
+            drawHeight = IMAGE_SIZE / imageAspect;
+            drawY = (IMAGE_SIZE - drawHeight) / 2;
+          } else {
+            drawHeight = IMAGE_SIZE;
+            drawWidth = IMAGE_SIZE * imageAspect;
+            drawX = (IMAGE_SIZE - drawWidth) / 2;
+          }
+
+          // Convert normalized crop coords to canvas pixel coords
+          const cropX = drawX + cropArea.x * drawWidth;
+          const cropY = drawY + cropArea.y * drawHeight;
+          const cropW = cropArea.width * drawWidth;
+          const cropH = cropArea.height * drawHeight;
+
+          console.log("[SkiaEditableImage] Taking snapshot with crop:", {
+            cropArea,
+            canvasCrop: { x: cropX, y: cropY, w: cropW, h: cropH },
+          });
+
+          // Take snapshot of the crop region
+          const cropRect = rect(cropX, cropY, cropW, cropH);
+          const snapshot = canvasRef.current.makeImageSnapshot(cropRect);
+          
+          if (!snapshot) {
+            console.error(
+              "[SkiaEditableImage] Snapshot failed: makeImageSnapshot() returned null.",
+            );
+            return null;
+          }
+
+          console.log(
+            "[SkiaEditableImage] Snapshot dimensions:",
+            snapshot.width(),
+            "x",
+            snapshot.height(),
+          );
+
+          // Encode to base64 - use encodeToBase64 with format and quality
+          const base64 = snapshot.encodeToBase64(
+            Platform.OS === "web" ? "png" : "jpeg",
+            95,
+          );
+          
+          if (!base64) {
+            console.error("[SkiaEditableImage] Failed to encode snapshot to base64");
+            return null;
+          }
+          
+          const mimeType = Platform.OS === "web" ? "png" : "jpeg";
+          return `data:image/${mimeType};base64,${base64}`;
+        } catch (error) {
+          console.error("[SkiaEditableImage] Snapshot error:", error);
+          return null;
+        }
       },
     }));
 
@@ -302,20 +423,23 @@ export const SkiaEditableImage = forwardRef<
               <ColorMatrix matrix={colorMatrix} />
             </Image>
           </Canvas>
-
-          {showCropOverlay && imageLayout.width > 0 && (
-            <CropOverlay
-              imageWidth={imageLayout.width}
-              imageHeight={imageLayout.height}
-              crop={crop}
-              onCropChange={onCropChange}
-            />
-          )}
         </View>
+
+        {showCropOverlay && imageLayout.width > 0 && (
+          <CropOverlay
+            imageWidth={imageLayout.width}
+            imageHeight={imageLayout.height}
+            crop={crop}
+            aspectRatio={aspectRatio}
+            onCropChange={onCropChange}
+          />
+        )}
       </View>
     );
   },
 );
+
+SkiaEditableImage.displayName = "SkiaEditableImage";
 
 const styles = StyleSheet.create({
   container: {

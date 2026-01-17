@@ -21,6 +21,7 @@ interface CropOverlayProps {
     width: number; // 0-1 (percentage)
     height: number; // 0-1 (percentage)
   } | null;
+  aspectRatio?: "free" | "square" | "4:3" | "16:9" | null;
   onCropChange: (crop: {
     x: number;
     y: number;
@@ -33,6 +34,7 @@ export function CropOverlay({
   imageWidth,
   imageHeight,
   crop,
+  aspectRatio,
   onCropChange,
 }: CropOverlayProps) {
   // Initialize crop to full image if not set
@@ -61,6 +63,32 @@ export function CropOverlay({
   const startY = useSharedValue(0);
   const startWidth = useSharedValue(0);
   const startHeight = useSharedValue(0);
+
+  // Get aspect ratio value
+  const getAspectRatioValue = (): number | null => {
+    if (aspectRatio === "square") return 1;
+    if (aspectRatio === "4:3") return 4 / 3;
+    if (aspectRatio === "16:9") return 16 / 9;
+    return null; // free aspect ratio
+  };
+
+  const aspectRatioValue = getAspectRatioValue();
+
+  // Apply aspect ratio constraint
+  const constrainToAspectRatio = (w: number, h: number): { width: number; height: number } => {
+    if (!aspectRatioValue) return { width: w, height: h };
+
+    const currentRatio = w / h;
+    const targetRatio = aspectRatioValue;
+
+    if (currentRatio > targetRatio) {
+      // Width is too wide, adjust height
+      return { width: w, height: w / targetRatio };
+    } else {
+      // Height is too tall, adjust width
+      return { width: h * targetRatio, height: h };
+    }
+  };
 
   // Helper to report crop change (must use runOnJS from worklet)
   const reportCropChange = (
@@ -315,19 +343,27 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   handleTopLeft: {
-    top: -HANDLE_SIZE / 2,
-    left: -HANDLE_SIZE / 2,
+    top: 0,
+    left: 0,
+    marginTop: -HANDLE_SIZE / 2,
+    marginLeft: -HANDLE_SIZE / 2,
   },
   handleTopRight: {
-    top: -HANDLE_SIZE / 2,
-    right: -HANDLE_SIZE / 2,
+    top: 0,
+    right: 0,
+    marginTop: -HANDLE_SIZE / 2,
+    marginRight: -HANDLE_SIZE / 2,
   },
   handleBottomLeft: {
-    bottom: -HANDLE_SIZE / 2,
-    left: -HANDLE_SIZE / 2,
+    bottom: 0,
+    left: 0,
+    marginBottom: -HANDLE_SIZE / 2,
+    marginLeft: -HANDLE_SIZE / 2,
   },
   handleBottomRight: {
-    bottom: -HANDLE_SIZE / 2,
-    right: -HANDLE_SIZE / 2,
+    bottom: 0,
+    right: 0,
+    marginBottom: -HANDLE_SIZE / 2,
+    marginRight: -HANDLE_SIZE / 2,
   },
 });

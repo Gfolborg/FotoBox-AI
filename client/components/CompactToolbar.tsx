@@ -199,45 +199,12 @@ export function CompactToolbar({
 
   return (
     <Animated.View style={[styles.container, containerStyle]}>
-      <View style={styles.sectionHeader}>
-        <Feather name="sliders" size={14} color={Colors.editing.textSecondary} />
-        <ThemedText style={styles.sectionLabel}>Adjustments</ThemedText>
-        <ThemedText style={styles.dragHint}>Tap then drag on image</ThemedText>
-      </View>
-
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.toolsScroll}
       >
-        {adjustTools.map((tool) => {
-          const isActive = selectedTool === tool.key;
-          const isModified = getToolModified(tool);
-
-          return (
-            <ToolChip
-              key={tool.key}
-              label={tool.label}
-              icon={tool.icon}
-              active={isActive}
-              modified={isModified}
-              onPress={() => handleToolPress(tool)}
-            />
-          );
-        })}
-      </ScrollView>
-
-      <View style={styles.sectionHeader}>
-        <Feather name="move" size={14} color={Colors.editing.textSecondary} />
-        <ThemedText style={styles.sectionLabel}>Transform</ThemedText>
-      </View>
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.toolsScroll}
-      >
-        {transformTools.map((tool) => {
+        {ADJUSTMENT_TOOLS.map((tool) => {
           const isActive = selectedTool === tool.key;
           const isModified = getToolModified(tool);
 
@@ -288,34 +255,28 @@ export function CompactToolbar({
       )}
 
       {selectedTool === "crop" && (
-        <Animated.View entering={FadeIn.duration(150)} exiting={FadeOut.duration(100)} style={styles.transformContent}>
-          <View style={styles.cropControls}>
-            <ThemedText style={styles.cropLabel}>Aspect Ratio</ThemedText>
-            <View style={styles.aspectRatioButtons}>
-              <AspectRatioButton
-                label="Free"
-                active={state.aspectRatio === "free" || state.aspectRatio === null}
-                onPress={() => onUpdateAdjustment("aspectRatio", "free")}
-              />
-              <AspectRatioButton
-                label="1:1"
-                active={state.aspectRatio === "square"}
-                onPress={() => onUpdateAdjustment("aspectRatio", "square")}
-              />
-              <AspectRatioButton
-                label="4:3"
-                active={state.aspectRatio === "4:3"}
-                onPress={() => onUpdateAdjustment("aspectRatio", "4:3")}
-              />
-              <AspectRatioButton
-                label="16:9"
-                active={state.aspectRatio === "16:9"}
-                onPress={() => onUpdateAdjustment("aspectRatio", "16:9")}
-              />
-            </View>
-            <ThemedText style={styles.cropHintText}>
-              Drag corners to adjust crop area
-            </ThemedText>
+        <Animated.View entering={FadeIn.duration(150)} exiting={FadeOut.duration(100)} style={styles.cropContentCompact}>
+          <View style={styles.aspectRatioButtonsRow}>
+            <AspectRatioButton
+              label="Free"
+              active={state.aspectRatio === "free" || state.aspectRatio === null}
+              onPress={() => onUpdateAdjustment("aspectRatio", "free")}
+            />
+            <AspectRatioButton
+              label="1:1"
+              active={state.aspectRatio === "square"}
+              onPress={() => onUpdateAdjustment("aspectRatio", "square")}
+            />
+            <AspectRatioButton
+              label="4:3"
+              active={state.aspectRatio === "4:3"}
+              onPress={() => onUpdateAdjustment("aspectRatio", "4:3")}
+            />
+            <AspectRatioButton
+              label="16:9"
+              active={state.aspectRatio === "16:9"}
+              onPress={() => onUpdateAdjustment("aspectRatio", "16:9")}
+            />
           </View>
         </Animated.View>
       )}
@@ -407,8 +368,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderTopWidth: 1,
     borderTopColor: "rgba(0, 0, 0, 0.08)",
-    paddingTop: Spacing.sm,
-    paddingBottom: Spacing.sm,
+    paddingVertical: 6,
   },
   sectionHeader: {
     flexDirection: "row",
@@ -433,12 +393,12 @@ const styles = StyleSheet.create({
   },
   toolsScroll: {
     paddingHorizontal: Spacing.md,
-    gap: Spacing.xs,
-    paddingVertical: Spacing.xs,
+    gap: 6,
+    paddingVertical: 0,
   },
   chip: {
-    paddingVertical: 8,
-    paddingHorizontal: Spacing.md,
+    paddingVertical: 6,
+    paddingHorizontal: Spacing.sm,
     borderRadius: BorderRadius.full,
     backgroundColor: "rgba(0, 0, 0, 0.05)",
     borderWidth: 1,
@@ -454,7 +414,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   chipText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
     color: Colors.editing.textSecondary,
   },
@@ -470,11 +430,11 @@ const styles = StyleSheet.create({
   },
   transformContent: {
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+    paddingVertical: 6,
   },
   transformButtons: {
     flexDirection: "row",
-    gap: Spacing.sm,
+    gap: 6,
     alignItems: "center",
   },
   transformBtn: {
@@ -483,7 +443,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    paddingVertical: Spacing.sm,
+    paddingVertical: 6,
     borderRadius: BorderRadius.md,
     borderWidth: 1.5,
     borderColor: Colors.editing.primary,
@@ -493,7 +453,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.editing.primary,
   },
   transformBtnText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
     color: Colors.editing.primary,
   },
@@ -529,20 +489,32 @@ const styles = StyleSheet.create({
     color: Colors.editing.textSecondary,
   },
   cropControls: {
-    gap: Spacing.sm,
+    gap: Spacing.md,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
   },
   cropLabel: {
     fontSize: 12,
     fontWeight: "600",
     color: Colors.editing.textSecondary,
+    marginBottom: Spacing.xs,
+  },
+  cropContentCompact: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 4,
+  },
+  aspectRatioButtonsRow: {
+    flexDirection: "row",
+    gap: 6,
+    justifyContent: "center",
   },
   aspectRatioButtons: {
     flexDirection: "row",
     gap: Spacing.xs,
   },
   aspectBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: Spacing.md,
+    paddingVertical: 6,
+    paddingHorizontal: Spacing.sm,
     borderRadius: BorderRadius.full,
     backgroundColor: "rgba(0, 0, 0, 0.05)",
     borderWidth: 1,
@@ -553,7 +525,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.editing.primary,
   },
   aspectBtnText: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: "600",
     color: Colors.editing.textSecondary,
   },
