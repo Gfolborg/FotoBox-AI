@@ -108,31 +108,23 @@ export default function PhotoActionScreen() {
       >
         <BlurView intensity={40} tint="light" style={styles.headerBlur} />
         <View style={styles.headerContent}>
-          <Pressable
-            style={styles.headerButton}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              navigation.goBack();
-            }}
-          >
-            <Feather name="camera" size={18} color={Colors.editing.text} />
-            <ThemedText style={styles.headerButtonText}>Retake</ThemedText>
-          </Pressable>
+          <View style={styles.leftHeaderItem}>
+            <Pressable
+              style={styles.headerButton}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                navigation.goBack();
+              }}
+            >
+              <Feather name="camera" size={18} color={Colors.editing.text} />
+              <ThemedText style={styles.headerButtonText}>Retake</ThemedText>
+            </Pressable>
+          </View>
 
           <GlassPill>
             <Feather name="check-circle" size={16} color={Colors.editing.primary} />
             <ThemedText style={styles.headerTitle}>Photo Ready</ThemedText>
           </GlassPill>
-
-          <Pressable
-            style={styles.headerButton}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              navigation.goBack();
-            }}
-          >
-            <ThemedText style={styles.headerButtonText}>Done</ThemedText>
-          </Pressable>
         </View>
       </Animated.View>
 
@@ -211,16 +203,23 @@ const styles = StyleSheet.create({
   headerContent: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "center",
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
+    height: 44,
+  },
+  leftHeaderItem: {
+    position: 'absolute',
+    left: Spacing.md,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    zIndex: 1,
   },
   headerButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
   },
   headerButtonText: {
     color: Colors.editing.text,
