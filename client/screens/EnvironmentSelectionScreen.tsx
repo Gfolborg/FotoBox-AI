@@ -18,7 +18,6 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import * as ImagePicker from "expo-image-picker";
 import { Feather } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
-import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated, {
@@ -30,9 +29,9 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 
+import { ThemedHeader } from "@/components/ThemedHeader";
 import { ThemedText } from "@/components/ThemedText";
 import { GlassCard } from "@/components/GlassCard";
-import { GlassPill } from "@/components/GlassPill";
 import { GradientButton } from "@/components/GradientButton";
 import { ProgressRing } from "@/components/ProgressRing";
 import { ScrollIndicator } from "@/components/ScrollIndicator";
@@ -315,35 +314,9 @@ export default function EnvironmentSelectionScreen() {
   return (
     <GradientBackground theme="home">
       <StatusBar style="dark" />
-
-      {/* Header */}
-      <Animated.View
-        entering={FadeIn.duration(300)}
-        style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}
-      >
-        <BlurView intensity={40} tint="light" style={styles.headerBlur} />
-        <View style={styles.headerContent}>
-          <Pressable
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Feather
-              name="chevron-left"
-              size={24}
-              color={Colors.editing.text}
-            />
-          </Pressable>
-
-          <GlassPill>
-            <Feather name="layers" size={16} color={Colors.editing.primary} />
-            <ThemedText style={styles.headerTitle}>Lifestyle Scene</ThemedText>
-          </GlassPill>
-
-          <View style={{ width: 44 }} />
-        </View>
-      </Animated.View>
-
-      <ScrollView
+      <ThemedHeader title="Lifestyle Scene" />
+      <View style={[styles.container, { paddingTop: insets.top + 54 }]}>
+        <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,
@@ -577,7 +550,6 @@ export default function EnvironmentSelectionScreen() {
         entering={FadeInUp.delay(500).duration(400)}
         style={[styles.bottomBar, { paddingBottom: insets.bottom + Spacing.md }]}
       >
-        <BlurView intensity={60} tint="light" style={styles.bottomBlur} />
         <View style={styles.bottomContent}>
           {showSceneError && (
             <View style={styles.errorMessage}>
@@ -635,6 +607,7 @@ export default function EnvironmentSelectionScreen() {
           </GlassCard>
         </Animated.View>
       )}
+      </View>
     </GradientBackground>
   );
 }
@@ -643,37 +616,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 100,
-  },
-  headerBlur: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  headerContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-  },
-  backButton: {
-    width: 44,
-    height: 44,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  headerTitle: {
-    color: Colors.editing.text,
-    fontSize: 15,
-    fontWeight: "600",
-  },
   scrollView: {
     flex: 1,
-    marginTop: 100,
   },
   scrollContent: {
     padding: Spacing.lg,
@@ -954,9 +898,7 @@ const styles = StyleSheet.create({
     right: 0,
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
-  },
-  bottomBlur: {
-    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
   },
   bottomContent: {
     position: "relative",

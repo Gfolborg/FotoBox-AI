@@ -208,14 +208,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   title: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: "700",
     color: Colors.light.text,
     marginBottom: Spacing.xs,
     letterSpacing: -0.2,
   },
   description: {
-    fontSize: 13,
+    fontSize: 12,
     color: Colors.light.textSecondary,
     lineHeight: 18,
     flex: 1,

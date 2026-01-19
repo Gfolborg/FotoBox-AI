@@ -96,7 +96,7 @@ export default function CameraScreen() {
       });
 
       if (photo?.uri) {
-        navigation.navigate("PhotoAction", { imageUri: photo.uri });
+        navigation.navigate("QuickFix", { imageUri: photo.uri });
       }
     } catch (error) {
       console.error("Failed to capture photo:", error);
@@ -114,7 +114,7 @@ export default function CameraScreen() {
     });
 
     if (!result.canceled && result.assets[0]) {
-      navigation.navigate("PhotoAction", { imageUri: result.assets[0].uri });
+      navigation.navigate("QuickFix", { imageUri: result.assets[0].uri });
     }
   };
 
@@ -200,47 +200,7 @@ export default function CameraScreen() {
           </View>
         )}
 
-        {/* Top controls */}
-        <Animated.View
-          entering={FadeInDown.delay(100).duration(400)}
-          style={[styles.topControls, { paddingTop: insets.top + Spacing.md }]}
-        >
-          <IconButton
-            icon="chevron-left"
-            onPress={() => navigation.goBack()}
-            size={44}
-            iconSize={26}
-            variant="glassDark"
-            color="#FFFFFF"
-          />
-
-          <GlassPill variant="dark">
-            <Feather name="camera" size={16} color="#FFFFFF" />
-            <ThemedText style={styles.headerTitle}>Product Shot</ThemedText>
-          </GlassPill>
-
-          <View style={styles.topRightButtons}>
-            <IconButton
-              icon="grid"
-              onPress={() => {
-                setShowGrid(!showGrid);
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              }}
-              size={44}
-              iconSize={20}
-              variant="glassDark"
-              color={showGrid ? Colors.editing.primary : "#FFFFFF"}
-            />
-            <IconButton
-              icon="help-circle"
-              onPress={() => setShowTips(true)}
-              size={44}
-              iconSize={20}
-              variant="glassDark"
-              color="#FFFFFF"
-            />
-          </View>
-        </Animated.View>
+        <ThemedHeader title="Product Shot" />
 
         {/* Bottom controls */}
         <Animated.View

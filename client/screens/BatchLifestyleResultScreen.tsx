@@ -1,12 +1,10 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   View,
   StyleSheet,
   Image,
   FlatList,
   Pressable,
-  Alert,
-  Platform,
   Dimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -14,16 +12,12 @@ import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
 import { Feather } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
-import * as MediaLibrary from "expo-media-library";
-import * as FileSystem from "expo-file-system/legacy";
 import * as Haptics from "expo-haptics";
 import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
 
 import { ThemedText } from "@/components/ThemedText";
 import { GlassCard } from "@/components/GlassCard";
 import { GradientButton } from "@/components/GradientButton";
-import { SuccessAnimation } from "@/components/SuccessAnimation";
 import { GradientBackground } from "@/components/GradientBackground";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
@@ -43,55 +37,21 @@ export default function BatchLifestyleResultScreen() {
   const route = useRoute<RouteProps>();
   const { results, environment } = route.params;
 
-  const [isSaving, setIsSaving] = useState(false);
-  const [savedCount, setSavedCount] = useState(0);
-  const [showSuccess, setShowSuccess] = useState(false);
-
   const successfulResults = results.filter((r) => r.status === "completed" && r.resultUri);
   const failedResults = results.filter((r) => r.status === "failed");
 
-  const handleSaveAll = async () => {
-    if (isSaving) return;
-
-    const { status } = await MediaLibrary.requestPermissionsAsync();
-    if (status !== "granted") {
-      if (Platform.OS !== "web") {
-        Alert.alert(
-          "Permission Required",
-          "Please grant permission to save images to your gallery."
-        );
-      }
-      return;
-    }
-
-    setIsSaving(true);
+  const handleExportAll = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    let saved = 0;
 
-    for (const result of successfulResults) {
-      if (!result.resultUri) continue;
+    // Prepare results for batch platform selection
+    const exportableResults = successfulResults
+      .filter(r => r.resultUri)
+      .map(r => ({
+        originalUri: r.originalUri,
+        resultUri: r.resultUri!,
+      }));
 
-      try {
-        const base64Data = result.resultUri.split(",")[1];
-        const filename = `${FileSystem.cacheDirectory}lifestyle_${Date.now()}_${saved}.jpg`;
-        await FileSystem.writeAsStringAsync(filename, base64Data, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-        await MediaLibrary.saveToLibraryAsync(filename);
-        saved++;
-        setSavedCount(saved);
-      } catch (error) {
-        console.error("Failed to save image:", error);
-      }
-    }
-
-    setIsSaving(false);
-    setShowSuccess(true);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-    setTimeout(() => {
-      setShowSuccess(false);
-    }, 2000);
+    navigation.navigate("BatchPlatformSelection", { results: exportableResults });
   };
 
   const handleDone = () => {
@@ -136,28 +96,28 @@ export default function BatchLifestyleResultScreen() {
     <GradientBackground theme="home">
       <StatusBar style="dark" />
 
-      {/* Header */}
-      <Animated.View
-        entering={FadeIn.duration(300)}
-        style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}
-      >
-        <BlurView intensity={40} tint="light" style={styles.headerBlur} />
-        <View style={styles.headerContent}>
-          <View style={{ width: 44 }} />
-          <View style={styles.headerCenter}>
-            <ThemedText style={styles.headerTitle}>Lifestyle Results</ThemedText>
-            <ThemedText style={styles.headerSubtitle}>
-              {successfulResults.length} of {results.length} successful
-            </ThemedText>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        {/* Header */}
+        <Animated.View
+          entering={FadeIn.duration(300)}
+          style={styles.header}
+        >
+          <View style={styles.headerContent}>
+            <View style={{ width: 44 }} />
+            <View style={styles.headerCenter}>
+              <ThemedText style={styles.headerTitle}>Lifestyle Results</ThemedText>
+              <ThemedText style={styles.headerSubtitle}>
+                {successfulResults.length} of {results.length} successful
+              </ThemedText>
+            </View>
+            <Pressable style={styles.closeButton} onPress={handleDone}>
+              <Feather name="x" size={24} color={Colors.editing.text} />
+            </Pressable>
           </View>
-          <Pressable style={styles.closeButton} onPress={handleDone}>
-            <Feather name="x" size={24} color={Colors.editing.text} />
-          </Pressable>
-        </View>
-      </Animated.View>
+        </Animated.View>
 
-      {/* Results Grid */}
-      <FlatList
+        {/* Results Grid */}
+        <FlatList
         data={results}
         renderItem={renderResultItem}
         keyExtractor={(_, index) => index.toString()}
@@ -171,61 +131,38 @@ export default function BatchLifestyleResultScreen() {
         style={styles.grid}
       />
 
-      {/* Bottom Action Bar */}
-      <Animated.View
-        entering={FadeInUp.delay(400).duration(400)}
-        style={[styles.bottomBar, { paddingBottom: insets.bottom + Spacing.md }]}
-      >
-        <BlurView intensity={60} tint="light" style={styles.bottomBlur} />
-        <GlassCard theme="light" padding="md" borderRadius="xl">
-          <View style={styles.bottomContent}>
-            {failedResults.length > 0 && (
-              <View style={styles.warningRow}>
-                <Feather
-                  name="alert-circle"
-                  size={16}
-                  color={Colors.editing.error}
-                />
-                <ThemedText style={styles.warningText}>
-                  {failedResults.length} image{failedResults.length > 1 ? "s" : ""} failed
-                </ThemedText>
-              </View>
-            )}
-            <View style={styles.buttonRow}>
-              <GradientButton
-                title={
-                  isSaving
-                    ? `Saving ${savedCount}/${successfulResults.length}...`
-                    : `Save ${successfulResults.length} Images`
-                }
-                onPress={handleSaveAll}
-                disabled={isSaving || successfulResults.length === 0}
-                loading={isSaving}
-                icon="download"
-                fullWidth
-              />
-            </View>
-          </View>
-        </GlassCard>
-      </Animated.View>
-
-      {/* Success Overlay */}
-      {showSuccess && (
+        {/* Bottom Action Bar */}
         <Animated.View
-          entering={FadeIn.duration(200)}
-          style={styles.successOverlay}
+          entering={FadeInUp.delay(400).duration(400)}
+          style={[styles.bottomBar, { paddingBottom: insets.bottom + Spacing.md }]}
         >
-          <GlassCard theme="light" padding="xl" borderRadius="2xl">
-            <SuccessAnimation />
-            <ThemedText style={styles.successTitle}>
-              {savedCount} Images Saved!
-            </ThemedText>
-            <ThemedText style={styles.successSubtitle}>
-              Find them in your photo gallery
-            </ThemedText>
+          <GlassCard theme="light" padding="sm" borderRadius="lg">
+            <View style={styles.bottomContent}>
+              {failedResults.length > 0 && (
+                <View style={styles.warningRow}>
+                  <Feather
+                    name="alert-circle"
+                    size={16}
+                    color={Colors.editing.error}
+                  />
+                  <ThemedText style={styles.warningText}>
+                    {failedResults.length} image{failedResults.length > 1 ? "s" : ""} failed
+                  </ThemedText>
+                </View>
+              )}
+              <View style={styles.buttonRow}>
+                <GradientButton
+                  title={`Save All (${successfulResults.length})`}
+                  onPress={handleExportAll}
+                  disabled={successfulResults.length === 0}
+                  icon="download"
+                  fullWidth
+                />
+              </View>
+            </View>
           </GlassCard>
         </Animated.View>
-      )}
+      </View>
     </GradientBackground>
   );
 }
@@ -235,14 +172,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 100,
-  },
-  headerBlur: {
-    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
   },
   headerContent: {
     flexDirection: "row",
@@ -272,7 +202,6 @@ const styles = StyleSheet.create({
   },
   grid: {
     flex: 1,
-    marginTop: 100,
   },
   gridContent: {
     padding: GRID_PADDING,
@@ -328,9 +257,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
   },
-  bottomBlur: {
-    ...StyleSheet.absoluteFillObject,
-  },
   bottomContent: {
     gap: Spacing.md,
   },
@@ -347,26 +273,5 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: "row",
     gap: Spacing.md,
-  },
-  successOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.8)",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1000,
-    padding: Spacing.xl,
-  },
-  successTitle: {
-    color: Colors.editing.text,
-    fontSize: 20,
-    fontWeight: "700",
-    textAlign: "center",
-    marginTop: Spacing.lg,
-  },
-  successSubtitle: {
-    color: Colors.editing.textSecondary,
-    fontSize: 14,
-    textAlign: "center",
-    marginTop: Spacing.xs,
   },
 });

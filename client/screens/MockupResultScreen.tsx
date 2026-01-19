@@ -1,19 +1,7 @@
-import React, { useState } from "react";
-import { StyleSheet, View, Image, ScrollView, Share, Platform } from "react-native";
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useHeaderHeight } from "@react-navigation/elements";
-import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
-import * as Haptics from "expo-haptics";
-import * as MediaLibrary from "expo-media-library";
-import * as FileSystem from "expo-file-system/legacy";
-
+import { ThemedHeader } from "@/components/ThemedHeader";
 import { ThemedText } from "@/components/ThemedText";
 import { GlassCard } from "@/components/GlassCard";
 import { GradientButton } from "@/components/GradientButton";
-import { IconButton } from "@/components/IconButton";
-import { SuccessAnimation } from "@/components/SuccessAnimation";
 import { GradientBackground } from "@/components/GradientBackground";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
@@ -32,49 +20,30 @@ export default function MockupResultScreen() {
   const navigation = useNavigation<MockupResultScreenNavigationProp>();
   const route = useRoute<MockupResultScreenRouteProp>();
   const insets = useSafeAreaInsets();
-  const headerHeight = useHeaderHeight();
 
   const { resultUri, originalUri, mockupType } = route.params;
 
-  const [saved, setSaved] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-
-  const handleSave = async () => {
-    if (saving || saved) return;
-    
+  const handleContinue = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setSaving(true);
 
     try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== "granted") {
-        throw new Error("Permission required to save images");
-      }
+      let imageUri = resultUri;
 
-      let fileUri = resultUri;
-      
       if (resultUri.startsWith("data:")) {
         const base64Data = resultUri.split(",")[1];
-        const filename = `mockup_${Date.now()}.jpg`;
-        fileUri = FileSystem.documentDirectory + filename;
-        await FileSystem.writeAsStringAsync(fileUri, base64Data, {
+        const filename = `platform_temp_${Date.now()}.jpg`;
+        imageUri = FileSystem.documentDirectory + filename;
+        await FileSystem.writeAsStringAsync(imageUri, base64Data, {
           encoding: FileSystem.EncodingType.Base64,
         });
       }
 
-      await MediaLibrary.saveToLibraryAsync(fileUri);
-      
-      setSaved(true);
-      setShowSuccess(true);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      
-      setTimeout(() => setShowSuccess(false), 2000);
+      navigation.navigate("PlatformSelection", {
+        imageUri,
+        originalUri,
+      });
     } catch (error) {
-      console.error("Save error:", error);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    } finally {
-      setSaving(false);
+      console.error("Failed to prepare image for platform selection:", error);
     }
   };
 
@@ -134,14 +103,13 @@ export default function MockupResultScreen() {
 
   return (
     <GradientBackground theme="home">
-      {showSuccess && <SuccessAnimation />}
-      
+      <ThemedHeader title="Mockup Result" />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,
           {
-            paddingTop: headerHeight + Spacing.md,
+            paddingTop: insets.top + 54,
             paddingBottom: insets.bottom + Spacing.xl,
           },
         ]}
@@ -170,20 +138,16 @@ export default function MockupResultScreen() {
           entering={FadeInDown.delay(300).duration(400)}
           style={styles.actionRow}
         >
-          <IconButton
-            icon="share-2"
-            onPress={handleShare}
-            style={styles.iconButton}
-          />
-          <IconButton
-            icon="edit-2"
-            onPress={handleEditImage}
-            style={styles.iconButton}
-          />
+          <Pressable style={styles.textButton} onPress={handleShare}>
+            <ThemedText style={styles.textButtonLabel}>Share</ThemedText>
+          </Pressable>
+          <Pressable style={styles.textButton} onPress={handleEditImage}>
+            <ThemedText style={styles.textButtonLabel}>Edit</ThemedText>
+          </Pressable>
           <GradientButton
-            title={saved ? "Saved!" : saving ? "Saving..." : "Save to Gallery"}
-            onPress={handleSave}
-            disabled={saving || saved}
+            title="Continue"
+            onPress={handleContinue}
+            icon="arrow-right"
             style={styles.saveButton}
           />
         </Animated.View>
@@ -250,8 +214,20 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
     marginBottom: Spacing.lg,
   },
-  iconButton: {
-    flex: 0,
+  textButton: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    backgroundColor: Colors.light.backgroundSecondary,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  textButtonLabel: {
+    color: Colors.light.text,
+    fontSize: 15,
+    fontWeight: "600",
   },
   saveButton: {
     flex: 1,

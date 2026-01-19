@@ -15,13 +15,17 @@ const MIN_CROP_SIZE = 50;
 interface CropOverlayProps {
   imageWidth: number;
   imageHeight: number;
+  offsetX?: number;
+  offsetY?: number;
+  containerWidth?: number;
+  containerHeight?: number;
   crop: {
     x: number; // 0-1 (percentage)
     y: number; // 0-1 (percentage)
     width: number; // 0-1 (percentage)
     height: number; // 0-1 (percentage)
   } | null;
-  aspectRatio?: "free" | "square" | "4:3" | "16:9" | null;
+  aspectRatio?: "free" | "square" | "4:3" | "16:9" | "2:3" | null;
   onCropChange: (crop: {
     x: number;
     y: number;
@@ -33,30 +37,37 @@ interface CropOverlayProps {
 export function CropOverlay({
   imageWidth,
   imageHeight,
+  offsetX = 0,
+  offsetY = 0,
+  containerWidth,
+  containerHeight,
   crop,
   aspectRatio,
   onCropChange,
 }: CropOverlayProps) {
+  // Use container dimensions if provided, otherwise default to image dimensions
+  const canvasWidth = containerWidth || imageWidth;
+  const canvasHeight = containerHeight || imageHeight;
   // Initialize crop to full image if not set
   const initialCrop = crop || { x: 0, y: 0, width: 1, height: 1 };
 
-  // Convert percentages to pixels for internal state
-  const x = useSharedValue(initialCrop.x * imageWidth);
-  const y = useSharedValue(initialCrop.y * imageHeight);
+  // Convert percentages to pixels for internal state, accounting for offset
+  const x = useSharedValue(offsetX + initialCrop.x * imageWidth);
+  const y = useSharedValue(offsetY + initialCrop.y * imageHeight);
   const width = useSharedValue(initialCrop.width * imageWidth);
   const height = useSharedValue(initialCrop.height * imageHeight);
 
   // Update shared values when crop prop changes (e.g., aspect ratio selection)
   useEffect(() => {
     if (crop) {
-      x.value = crop.x * imageWidth;
-      y.value = crop.y * imageHeight;
+      x.value = offsetX + crop.x * imageWidth;
+      y.value = offsetY + crop.y * imageHeight;
       width.value = crop.width * imageWidth;
       height.value = crop.height * imageHeight;
     }
     // Shared values are stable refs and shouldn't trigger re-runs
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [crop, imageWidth, imageHeight]);
+  }, [crop, imageWidth, imageHeight, offsetX, offsetY]);
 
   // Context for tracking gesture start position
   const startX = useSharedValue(0);
@@ -69,6 +80,7 @@ export function CropOverlay({
     if (aspectRatio === "square") return 1;
     if (aspectRatio === "4:3") return 4 / 3;
     if (aspectRatio === "16:9") return 16 / 9;
+    if (aspectRatio === "2:3") return 2 / 3;
     return null; // free aspect ratio
   };
 
@@ -97,9 +109,13 @@ export function CropOverlay({
     cropW: number,
     cropH: number,
   ) => {
+    // Subtract offset to get position relative to image, not canvas
+    const relX = cropX - offsetX;
+    const relY = cropY - offsetY;
+
     onCropChange({
-      x: cropX / imageWidth,
-      y: cropY / imageHeight,
+      x: relX / imageWidth,
+      y: relY / imageHeight,
       width: cropW / imageWidth,
       height: cropH / imageHeight,
     });
@@ -116,9 +132,9 @@ export function CropOverlay({
       const newX = startX.value + e.translationX;
       const newY = startY.value + e.translationY;
 
-      // Constrain to image bounds
-      x.value = Math.max(0, Math.min(newX, imageWidth - width.value));
-      y.value = Math.max(0, Math.min(newY, imageHeight - height.value));
+      // Constrain to image bounds (accounting for offset)
+      x.value = Math.max(offsetX, Math.min(newX, offsetX + imageWidth - width.value));
+      y.value = Math.max(offsetY, Math.min(newY, offsetY + imageHeight - height.value));
     })
     .onEnd(() => {
       // Report back as percentages using runOnJS
@@ -138,8 +154,8 @@ export function CropOverlay({
       .onUpdate((e) => {
         if (corner === "tl") {
           // Top-left: adjust x, y, width, height
-          const newX = Math.max(0, startX.value + e.translationX);
-          const newY = Math.max(0, startY.value + e.translationY);
+          const newX = Math.max(offsetX, startX.value + e.translationX);
+          const newY = Math.max(offsetY, startY.value + e.translationY);
           const newWidth = startWidth.value - (newX - startX.value);
           const newHeight = startHeight.value - (newY - startY.value);
 
@@ -151,12 +167,12 @@ export function CropOverlay({
           }
         } else if (corner === "tr") {
           // Top-right: adjust y, width, height
-          const newY = Math.max(0, startY.value + e.translationY);
+          const newY = Math.max(offsetY, startY.value + e.translationY);
           const newWidth = Math.max(
             MIN_CROP_SIZE,
             Math.min(
               startWidth.value + e.translationX,
-              imageWidth - startX.value,
+              offsetX + imageWidth - (startX.value - offsetX),
             ),
           );
           const newHeight = startHeight.value - (newY - startY.value);
@@ -168,13 +184,13 @@ export function CropOverlay({
           }
         } else if (corner === "bl") {
           // Bottom-left: adjust x, width, height
-          const newX = Math.max(0, startX.value + e.translationX);
+          const newX = Math.max(offsetX, startX.value + e.translationX);
           const newWidth = startWidth.value - (newX - startX.value);
           const newHeight = Math.max(
             MIN_CROP_SIZE,
             Math.min(
               startHeight.value + e.translationY,
-              imageHeight - startY.value,
+              offsetY + imageHeight - (startY.value - offsetY),
             ),
           );
 
@@ -189,14 +205,14 @@ export function CropOverlay({
             MIN_CROP_SIZE,
             Math.min(
               startWidth.value + e.translationX,
-              imageWidth - startX.value,
+              offsetX + imageWidth - (startX.value - offsetX),
             ),
           );
           height.value = Math.max(
             MIN_CROP_SIZE,
             Math.min(
               startHeight.value + e.translationY,
-              imageHeight - startY.value,
+              offsetY + imageHeight - (startY.value - offsetY),
             ),
           );
         }
@@ -228,18 +244,18 @@ export function CropOverlay({
   const rightOverlayStyle = useAnimatedStyle(() => ({
     top: y.value,
     left: x.value + width.value,
-    width: imageWidth - (x.value + width.value),
+    width: canvasWidth - (x.value + width.value),
     height: height.value,
   }));
 
   const bottomOverlayStyle = useAnimatedStyle(() => ({
     top: y.value + height.value,
-    height: imageHeight - (y.value + height.value),
+    height: canvasHeight - (y.value + height.value),
   }));
 
   return (
     <View
-      style={[styles.container, { width: imageWidth, height: imageHeight }]}
+      style={[styles.container, { width: canvasWidth, height: canvasHeight }]}
     >
       {/* Dark overlays outside crop area */}
       <Animated.View style={[styles.overlay, topOverlayStyle]} />

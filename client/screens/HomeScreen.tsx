@@ -24,19 +24,18 @@ export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const insets = useSafeAreaInsets();
 
-  const handleBatchEdit = async () => {
+  const handleImportPhoto = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsMultipleSelection: true,
+      allowsMultipleSelection: false,
       quality: 1,
-      selectionLimit: 10,
     });
 
     if (!result.canceled && result.assets.length > 0) {
-      const imageUris = result.assets.map((asset) => asset.uri);
-      navigation.navigate("BatchActionSelection", { imageUris });
+      const imageUri = result.assets[0].uri;
+      navigation.navigate("QuickFix", { imageUri });
     }
   };
 
@@ -61,18 +60,17 @@ export default function HomeScreen() {
           </ThemedText>
         </Animated.View>
 
-        {/* Staggered Card Grid */}
+        {/* Card Grid */}
         <View style={styles.cardGrid}>
           <View style={styles.cardRow}>
             <Animated.View
               entering={FadeInDown.delay(100).duration(500).springify()}
               style={styles.cardWrapper}
-              
             >
               <WorkflowCard
                 icon="camera"
-                title="Generate Product Shot"
-                description="Remove backgrounds and create listing-ready images"
+                title="Capture Product Photo"
+                description="Take a photo and enhance it"
                 onPress={() => navigation.navigate("Camera")}
                 variant="primary"
               />
@@ -83,36 +81,9 @@ export default function HomeScreen() {
             >
               <WorkflowCard
                 icon="image"
-                title="Create Lifestyle Scene"
-                description="Place products in AI-generated environments"
-                onPress={() => navigation.navigate("EnvironmentSelection", {})}
-                badge="AI"
-              />
-            </Animated.View>
-          </View>
-
-          <View style={styles.cardRow}>
-            <Animated.View
-              entering={FadeInDown.delay(300).duration(500).springify()}
-              style={styles.cardWrapper}
-            >
-              <WorkflowCard
-                icon="box"
-                title="Create Mockup"
-                description="Place products on apparel, mugs, posters & more"
-                onPress={() => navigation.navigate("MockupSelection", {})}
-                badge="AI"
-              />
-            </Animated.View>
-            <Animated.View
-              entering={FadeInDown.delay(400).duration(500).springify()}
-              style={styles.cardWrapper}
-            >
-              <WorkflowCard
-                icon="layers"
-                title="Batch Edit Photos"
-                description="Process multiple images at once"
-                onPress={handleBatchEdit}
+                title="Import Photos"
+                description="Select from your library"
+                onPress={handleImportPhoto}
               />
             </Animated.View>
           </View>
@@ -139,7 +110,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: Spacing.lg,
+    justifyContent: "center",
   },
   header: {
     marginBottom: Spacing.xl,

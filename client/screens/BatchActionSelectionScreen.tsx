@@ -5,7 +5,6 @@ import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
-import { BlurView } from "expo-blur";
 import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 
@@ -78,12 +77,12 @@ export default function BatchActionSelectionScreen() {
     <GradientBackground theme="home">
       <StatusBar style="dark" />
 
-      <Animated.View
-        entering={FadeIn.duration(300)}
-        style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}
-      >
-        <BlurView intensity={40} tint="light" style={styles.headerBlur} />
-        <View style={styles.headerContent}>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <Animated.View
+          entering={FadeIn.duration(300)}
+          style={styles.header}
+        >
+          <View style={styles.headerContent}>
           <IconButton
             icon="chevron-left"
             onPress={() => navigation.goBack()}
@@ -150,6 +149,7 @@ export default function BatchActionSelectionScreen() {
           />
         </View>
       </ScrollView>
+      </View>
     </GradientBackground>
   );
 }
@@ -159,14 +159,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 100,
-  },
-  headerBlur: {
-    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
   },
   headerContent: {
     flexDirection: "row",
@@ -184,7 +177,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingTop: 100,
+    paddingTop: Spacing.lg,
     paddingHorizontal: Spacing.lg,
   },
   previewContainer: {

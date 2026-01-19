@@ -5,13 +5,11 @@ import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
-import { BlurView } from "expo-blur";
 import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 
+import { ThemedHeader } from "@/components/ThemedHeader";
 import { ThemedText } from "@/components/ThemedText";
-import { IconButton } from "@/components/IconButton";
-import { GlassPill } from "@/components/GlassPill";
 import { GradientButton } from "@/components/GradientButton";
 import { GradientBackground } from "@/components/GradientBackground";
 import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
@@ -58,32 +56,9 @@ export default function BackgroundColorSelectionScreen() {
   return (
     <GradientBackground theme="home">
       <StatusBar style="dark" />
-
-      <Animated.View
-        entering={FadeIn.duration(300)}
-        style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}
-      >
-        <BlurView intensity={40} tint="light" style={styles.headerBlur} />
-        <View style={styles.headerContent}>
-          <IconButton
-            icon="chevron-left"
-            onPress={() => navigation.goBack()}
-            size={44}
-            iconSize={24}
-            variant="ghost"
-            color={Colors.editing.text}
-          />
-
-          <GlassPill>
-            <Feather name="droplet" size={16} color={Colors.editing.primary} />
-            <ThemedText style={styles.headerTitle}>Background Color</ThemedText>
-          </GlassPill>
-
-          <View style={{ width: 44 }} />
-        </View>
-      </Animated.View>
-
-      <View style={[styles.content, { paddingTop: insets.top + 80 }]}>
+      <ThemedHeader title="Background Color" />
+      <View style={[styles.container, { paddingTop: insets.top + 54 }]}>
+        <View style={styles.content}>
         <Animated.View
           entering={FadeIn.delay(100).duration(400)}
           style={[styles.imagePreviewContainer, { backgroundColor: BACKGROUND_COLORS.find(c => c.id === selectedColor)?.color }]}
@@ -138,6 +113,7 @@ export default function BackgroundColorSelectionScreen() {
           fullWidth
         />
       </Animated.View>
+      </View>
     </GradientBackground>
   );
 }
@@ -145,28 +121,6 @@ export default function BackgroundColorSelectionScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 100,
-  },
-  headerBlur: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  headerContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-  },
-  headerTitle: {
-    color: Colors.editing.text,
-    fontSize: 15,
-    fontWeight: "600",
   },
   content: {
     flex: 1,

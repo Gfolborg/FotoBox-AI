@@ -35,6 +35,7 @@ import {
   ToolConfig,
 } from "@/components/CompactToolbar";
 import { SavePresetModal } from "@/components/SavePresetModal";
+import { SaveOrEnhanceModal } from "@/components/SaveOrEnhanceModal";
 import {
   SkiaEditableImage,
   SkiaEditableImageRef,
@@ -47,6 +48,8 @@ import { useImageEditing } from "@/hooks/useImageEditing";
 import { usePresets } from "@/hooks/usePresets";
 import { getPresetById } from "@/lib/preset-storage";
 import { useNotification } from "@/context/NotificationContext";
+import { saveToFotoBoxAlbum } from "@/lib/save-to-album";
+import * as FileSystem from "expo-file-system/legacy";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const DRAG_SENSITIVITY = 0.004;
@@ -79,6 +82,9 @@ export default function EditImageScreen() {
   const imageRef = useRef<SkiaEditableImageRef>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSavePresetModal, setShowSavePresetModal] = useState(false);
+  const [showSaveOrEnhanceModal, setShowSaveOrEnhanceModal] = useState(false);
+  const [editedImageUri, setEditedImageUri] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [selectedTool, setSelectedTool] = useState<ToolKey | null>(
     "brightness",
   );
@@ -101,7 +107,7 @@ export default function EditImageScreen() {
     hasChanges,
   } = useImageEditing();
 
-  const { saveCurrentAsPreset, applyPresetToState, isSaving } = usePresets();
+  const { saveCurrentAsPreset, applyPresetToState, isSaving: isPresetSaving } = usePresets();
 
   const isDragging = useSharedValue(false);
   const dragStartValue = useSharedValue(0);
@@ -144,51 +150,118 @@ export default function EditImageScreen() {
     });
   }, [navigation]);
 
-  const handleGenerateMainImage = async () => {
+  const handleDone = async () => {
     setIsProcessing(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      // Use currentImageUri which already has crop applied if user clicked Apply
-      const imageToSend = currentImageUri;
-
-      const formData = new FormData();
-      formData.append("file", {
-        uri: imageToSend,
-        name: "product_photo.jpg",
-        type: "image/jpeg",
-      } as unknown as Blob);
-
-      const apiUrl = getApiUrl();
-      const bgColorParam = encodeURIComponent(state.selectedBackgroundColor);
-      const endpoint = `${apiUrl}api/main-image?backgroundColor=${bgColorParam}`;
-
-      const response = await fetch(endpoint, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "Failed to process image");
+      if (!imageRef.current) {
+        showNotification("Image not ready. Please try again.", "error");
+        return;
       }
 
-      const blob = await response.blob();
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64data = reader.result as string;
-        navigation.replace("Result", {
-          resultUri: base64data,
-          originalUri: imageToSend,
-          backgroundColor: state.selectedBackgroundColor,
-        });
-      };
-      reader.readAsDataURL(blob);
+      // Take snapshot with all edits applied (no API call)
+      const snapshotUri = await imageRef.current.snapshot();
+
+      if (!snapshotUri || !snapshotUri.startsWith("data:image/")) {
+        showNotification("Failed to process image.", "error");
+        return;
+      }
+
+      // Store the edited image and show the modal
+      setEditedImageUri(snapshotUri);
+      setShowSaveOrEnhanceModal(true);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "An unexpected error occurred";
       showNotification(errorMessage, "error");
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handleSaveToGallery = async () => {
+    if (!editedImageUri) return;
+
+    setIsSaving(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    const result = await saveToFotoBoxAlbum(editedImageUri, "product_image");
+
+    if (result.success) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      showNotification("Image saved to gallery", "success");
+      setShowSaveOrEnhanceModal(false);
+      // Navigate back to home after short delay
+      setTimeout(() => {
+        navigation.popToTop();
+      }, 500);
+    } else {
+      showNotification(result.error || "Failed to save image", "error");
+    }
+
+    setIsSaving(false);
+  };
+
+  const handleRemoveBackground = async () => {
+    if (!editedImageUri) return;
+
+    setShowSaveOrEnhanceModal(false);
+
+    try {
+      const filename = `bg_remove_${Date.now()}.jpg`;
+      const fileUri = FileSystem.documentDirectory + filename;
+
+      const base64Data = editedImageUri.split(",")[1];
+      await FileSystem.writeAsStringAsync(fileUri, base64Data, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      navigation.navigate("BackgroundColorSelection", { imageUri: fileUri });
+    } catch (error) {
+      console.error("Failed to prepare image:", error);
+      showNotification("Failed to prepare image. Please try again.", "error");
+    }
+  };
+
+  const handleCreateLifestyle = async () => {
+    if (!editedImageUri) return;
+
+    setShowSaveOrEnhanceModal(false);
+
+    try {
+      const filename = `lifestyle_${Date.now()}.jpg`;
+      const fileUri = FileSystem.documentDirectory + filename;
+
+      const base64Data = editedImageUri.split(",")[1];
+      await FileSystem.writeAsStringAsync(fileUri, base64Data, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      navigation.navigate("EnvironmentSelection", { imageUri: fileUri });
+    } catch (error) {
+      console.error("Failed to prepare image:", error);
+      showNotification("Failed to prepare image. Please try again.", "error");
+    }
+  };
+
+  const handleCreateMockup = async () => {
+    if (!editedImageUri) return;
+
+    setShowSaveOrEnhanceModal(false);
+
+    try {
+      const filename = `mockup_${Date.now()}.jpg`;
+      const fileUri = FileSystem.documentDirectory + filename;
+
+      const base64Data = editedImageUri.split(",")[1];
+      await FileSystem.writeAsStringAsync(fileUri, base64Data, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      navigation.navigate("MockupSelection", { imageUri: fileUri });
+    } catch (error) {
+      console.error("Failed to prepare image:", error);
+      showNotification("Failed to prepare image. Please try again.", "error");
     }
   };
 
@@ -273,16 +346,15 @@ export default function EditImageScreen() {
       >
         <StatusBar style="dark" />
 
-        <Animated.View
-          entering={FadeIn.duration(300)}
-          style={[
-            styles.header,
-            { paddingTop: Spacing.md },
-            selectedTool === "crop" && { opacity: 0 },
-          ]}
-        >
-          <BlurView intensity={0} tint="light" style={styles.headerBlur} />
-          <View style={styles.headerContent}>
+        <View style={[styles.mainContainer, { paddingTop: insets.top }]}>
+          <Animated.View
+            entering={FadeIn.duration(300)}
+            style={[
+              styles.header,
+              selectedTool === "crop" && { opacity: 0 },
+            ]}
+          >
+            <View style={styles.headerContent}>
             <Pressable
               style={styles.headerButton}
               onPress={() => navigation.goBack()}
@@ -355,11 +427,6 @@ export default function EditImageScreen() {
                     : ""}
                 </ThemedText>
               </View>
-              <View style={styles.dragHint}>
-                <ThemedText style={styles.dragHintText}>
-                  ↑ Drag to adjust ↓
-                </ThemedText>
-              </View>
             </Animated.View>
 
             {isProcessing && (
@@ -394,6 +461,19 @@ export default function EditImageScreen() {
             )}
           </Animated.View>
         </GestureDetector>
+
+        {/* Static Drag Hint - shown when a tool with dragging is active */}
+        {selectedTool !== "crop" && activeToolConfig && (
+          <Animated.View
+            entering={FadeIn.duration(300)}
+            style={styles.staticDragHint}
+          >
+            <Feather name="move" size={14} color={Colors.editing.textTertiary} />
+            <ThemedText style={styles.staticDragHintText}>
+              Drag up/down on image to adjust
+            </ThemedText>
+          </Animated.View>
+        )}
 
         {selectedTool === "crop" ? (
           <Animated.View
@@ -663,11 +743,11 @@ export default function EditImageScreen() {
               )}
 
               <GradientButton
-                title={isProcessing ? "Processing..." : "Generate"}
-                onPress={handleGenerateMainImage}
+                title={isProcessing ? "Processing..." : "Done"}
+                onPress={handleDone}
                 disabled={isProcessing}
                 loading={isProcessing}
-                icon="zap"
+                icon="check"
                 style={[
                   styles.generateButton,
                   selectedTool === "crop" && styles.generateButtonExpanded,
@@ -676,6 +756,7 @@ export default function EditImageScreen() {
             </View>
           </View>
         </Animated.View>
+        </View>
 
         <SavePresetModal
           visible={showSavePresetModal}
@@ -697,6 +778,16 @@ export default function EditImageScreen() {
             productDescription: state.aiProductDescription,
             shadowControl: state.aiShadowControl,
           }}
+          isSaving={isPresetSaving}
+        />
+
+        <SaveOrEnhanceModal
+          visible={showSaveOrEnhanceModal}
+          onClose={() => setShowSaveOrEnhanceModal(false)}
+          onSaveToGallery={handleSaveToGallery}
+          onRemoveBackground={handleRemoveBackground}
+          onCreateLifestyle={handleCreateLifestyle}
+          onCreateMockup={handleCreateMockup}
           isSaving={isSaving}
         />
       </GradientBackground>
@@ -706,6 +797,9 @@ export default function EditImageScreen() {
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  mainContainer: {
     flex: 1,
   },
   cropModeTransparent: {
@@ -857,19 +951,18 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: "700",
   },
-  dragHint: {
-    marginTop: Spacing.md,
-    paddingHorizontal: Spacing.lg,
+  staticDragHint: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.xs,
     paddingVertical: Spacing.sm,
-    backgroundColor: "rgba(255, 107, 107, 0.85)",
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    borderColor: Colors.editing.primary,
+    marginTop: Spacing.md,
   },
-  dragHintText: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "600",
+  staticDragHintText: {
+    color: Colors.editing.textTertiary,
+    fontSize: 13,
+    fontWeight: "500",
   },
   processingOverlay: {
     ...StyleSheet.absoluteFillObject,

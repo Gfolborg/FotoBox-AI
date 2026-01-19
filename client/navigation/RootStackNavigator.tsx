@@ -23,6 +23,9 @@ import MockupProcessingScreen from "@/screens/MockupProcessingScreen";
 import MockupResultScreen from "@/screens/MockupResultScreen";
 import BatchMockupProcessingScreen from "@/screens/BatchMockupProcessingScreen";
 import BatchMockupResultScreen from "@/screens/BatchMockupResultScreen";
+import QuickFixScreen from "@/screens/QuickFixScreen";
+import PlatformSelectionScreen from "@/screens/PlatformSelectionScreen";
+import BatchPlatformSelectionScreen from "@/screens/BatchPlatformSelectionScreen";
 import { MockupItem, SceneVibe, CameraOption, ModelOption } from "@/lib/mockup-presets";
 
 
@@ -30,10 +33,13 @@ import { MockupItem, SceneVibe, CameraOption, ModelOption } from "@/lib/mockup-p
 export type RootStackParamList = {
   Home: undefined;
   Camera: undefined;
+  QuickFix: { imageUri: string };
   PhotoAction: { imageUri: string };
   BackgroundColorSelection: { imageUri: string };
   EditImage: { imageUri: string; originalUri?: string; presetId?: string };
-  Result: { resultUri: string; originalUri: string; backgroundColor?: string };
+  Result: { resultUri: string; originalUri: string; backgroundColor?: string; isEdited?: boolean };
+  PlatformSelection: { imageUri: string; originalUri?: string };
+  BatchPlatformSelection: { results: { originalUri: string; resultUri: string }[] };
 
   // Batch flow
   BatchActionSelection: { imageUris: string[] };
@@ -154,6 +160,11 @@ export default function RootStackNavigator() {
         options={{ headerShown: false }}
       />
       <Stack.Screen
+        name="QuickFix"
+        component={QuickFixScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
         name="PhotoAction"
         component={PhotoActionScreen}
         options={{ headerShown: false }}
@@ -172,6 +183,16 @@ export default function RootStackNavigator() {
         name="Result"
         component={ResultScreen}
         options={{ headerTitle: "Product Ready" }}
+      />
+      <Stack.Screen
+        name="PlatformSelection"
+        component={PlatformSelectionScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="BatchPlatformSelection"
+        component={BatchPlatformSelectionScreen}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="BatchActionSelection"

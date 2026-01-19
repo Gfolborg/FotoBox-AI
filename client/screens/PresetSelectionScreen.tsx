@@ -12,7 +12,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { Feather } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
-import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
@@ -151,13 +150,13 @@ export default function PresetSelectionScreen() {
     <GradientBackground theme="editing">
       <StatusBar style="dark" />
 
-      {/* Header */}
-      <Animated.View
-        entering={FadeIn.duration(300)}
-        style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}
-      >
-        <BlurView intensity={40} tint="light" style={styles.headerBlur} />
-        <View style={styles.headerContent}>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        {/* Header */}
+        <Animated.View
+          entering={FadeIn.duration(300)}
+          style={styles.header}
+        >
+          <View style={styles.headerContent}>
           <Pressable
             style={styles.backButton}
             onPress={() => navigation.goBack()}
@@ -207,7 +206,6 @@ export default function PresetSelectionScreen() {
               entering={FadeInUp.duration(300)}
               style={[styles.bottomAction, { paddingBottom: insets.bottom + Spacing.md }]}
             >
-              <BlurView intensity={40} tint="light" style={styles.bottomBlur} />
               <GlassCard theme="light" padding="md" borderRadius="xl">
                 <View style={styles.bottomContent}>
                   <View style={styles.selectedInfo}>
@@ -229,6 +227,7 @@ export default function PresetSelectionScreen() {
           )}
         </>
       )}
+      </View>
     </GradientBackground>
   );
 }
@@ -247,14 +246,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   header: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 100,
-  },
-  headerBlur: {
-    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
   },
   headerContent: {
     flexDirection: "row",
@@ -289,7 +281,6 @@ const styles = StyleSheet.create({
   },
   list: {
     flex: 1,
-    marginTop: 100,
   },
   listContent: {
     padding: Spacing.lg,
@@ -299,7 +290,6 @@ const styles = StyleSheet.create({
   },
   emptyContainer: {
     flex: 1,
-    marginTop: 100,
   },
   emptyState: {
     flex: 1,
@@ -339,10 +329,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: Spacing.md,
     right: Spacing.md,
-  },
-  bottomBlur: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: BorderRadius.xl,
   },
   bottomContent: {
     gap: Spacing.md,

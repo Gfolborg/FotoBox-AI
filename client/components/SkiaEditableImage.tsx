@@ -193,6 +193,13 @@ export const SkiaEditableImage = forwardRef<
       height: IMAGE_SIZE,
     });
 
+    const [actualImageDimensions, setActualImageDimensions] = useState({
+      width: IMAGE_SIZE,
+      height: IMAGE_SIZE,
+      offsetX: 0,
+      offsetY: 0,
+    });
+
     const [skiaImage, setSkiaImage] = useState<SkImage | null>(null);
     const canvasRef = useRef<any>(null);
 
@@ -272,76 +279,169 @@ export const SkiaEditableImage = forwardRef<
 
     const image = skiaImage;
 
+    // Calculate image dimensions for CropOverlay (must be before conditional returns)
+    useEffect(() => {
+      if (!image) {
+        setActualImageDimensions({
+          width: IMAGE_SIZE,
+          height: IMAGE_SIZE,
+          offsetX: 0,
+          offsetY: 0,
+        });
+        return;
+      }
+
+      const imageAspect = image.width() / image.height();
+      const containerAspect = IMAGE_SIZE / IMAGE_SIZE;
+
+      let drawWidth = IMAGE_SIZE;
+      let drawHeight = IMAGE_SIZE;
+      let drawX = 0;
+      let drawY = 0;
+
+      if (imageAspect > containerAspect) {
+        drawWidth = IMAGE_SIZE;
+        drawHeight = IMAGE_SIZE / imageAspect;
+        drawY = (IMAGE_SIZE - drawHeight) / 2;
+      } else {
+        drawHeight = IMAGE_SIZE;
+        drawWidth = IMAGE_SIZE * imageAspect;
+        drawX = (IMAGE_SIZE - drawWidth) / 2;
+      }
+
+      setActualImageDimensions({
+        width: drawWidth,
+        height: drawHeight,
+        offsetX: drawX,
+        offsetY: drawY,
+      });
+    }, [image]);
+
     useImperativeHandle(ref, () => ({
       snapshot: async (): Promise<string | null> => {
-        if (!canvasRef.current || !image) {
+        if (!image) {
           console.error(
-            "[SkiaEditableImage] Snapshot failed: Canvas is not ready or image not loaded.",
+            "[SkiaEditableImage] Snapshot failed: Image not loaded.",
           );
           return null;
         }
 
         try {
-          // Calculate the crop rect based on displayed image area
           const cropArea = crop || { x: 0, y: 0, width: 1, height: 1 };
-          
-          // Calculate where the image is actually drawn on the canvas
-          const imageAspect = image.width() / image.height();
-          const containerAspect = IMAGE_SIZE / IMAGE_SIZE;
-          
-          let drawWidth = IMAGE_SIZE;
-          let drawHeight = IMAGE_SIZE;
-          let drawX = 0;
-          let drawY = 0;
 
-          if (imageAspect > containerAspect) {
-            drawWidth = IMAGE_SIZE;
-            drawHeight = IMAGE_SIZE / imageAspect;
-            drawY = (IMAGE_SIZE - drawHeight) / 2;
-          } else {
-            drawHeight = IMAGE_SIZE;
-            drawWidth = IMAGE_SIZE * imageAspect;
-            drawX = (IMAGE_SIZE - drawWidth) / 2;
+          const origWidth = image.width();
+          const origHeight = image.height();
+
+          // Determine if we need to apply rotation/flip first
+          const needsTransform = adjustments.rotation !== 0 ||
+                                  adjustments.flipHorizontal ||
+                                  adjustments.flipVertical;
+
+          let workingImage = image;
+          let workingWidth = origWidth;
+          let workingHeight = origHeight;
+
+          // If rotation or flip is applied, create transformed image first
+          if (needsTransform) {
+            console.log("[SkiaEditableImage] Applying transforms before crop");
+
+            // For 90/270 degree rotations, swap width and height
+            const needsSwap = Math.abs(adjustments.rotation % 180) === 90;
+            const transformedWidth = needsSwap ? origHeight : origWidth;
+            const transformedHeight = needsSwap ? origWidth : origHeight;
+
+            const tempSurface = Skia.Surface.Make(transformedWidth, transformedHeight);
+            if (!tempSurface) {
+              console.error("[SkiaEditableImage] Failed to create transform surface");
+              return null;
+            }
+
+            const tempCanvas = tempSurface.getCanvas();
+            const rotationRad = (adjustments.rotation * Math.PI) / 180;
+            const scaleX = adjustments.flipHorizontal ? -1 : 1;
+            const scaleY = adjustments.flipVertical ? -1 : 1;
+
+            // Apply transforms
+            tempCanvas.save();
+            tempCanvas.translate(transformedWidth / 2, transformedHeight / 2);
+            tempCanvas.rotate(rotationRad, 0, 0);
+            tempCanvas.scale(scaleX, scaleY);
+            tempCanvas.translate(-origWidth / 2, -origHeight / 2);
+            tempCanvas.drawImage(image, 0, 0);
+            tempCanvas.restore();
+
+            workingImage = tempSurface.makeImageSnapshot();
+            workingWidth = transformedWidth;
+            workingHeight = transformedHeight;
+
+            if (!workingImage) {
+              console.error("[SkiaEditableImage] Failed to create transformed image");
+              return null;
+            }
           }
 
-          // Convert normalized crop coords to canvas pixel coords
-          const cropX = drawX + cropArea.x * drawWidth;
-          const cropY = drawY + cropArea.y * drawHeight;
-          const cropW = cropArea.width * drawWidth;
-          const cropH = cropArea.height * drawHeight;
+          // Calculate crop in working image coordinates
+          const cropX = Math.round(cropArea.x * workingWidth);
+          const cropY = Math.round(cropArea.y * workingHeight);
+          const cropW = Math.round(cropArea.width * workingWidth);
+          const cropH = Math.round(cropArea.height * workingHeight);
 
-          console.log("[SkiaEditableImage] Taking snapshot with crop:", {
+          console.log("[SkiaEditableImage] Taking HIGH-RES snapshot:", {
+            originalDimensions: { w: origWidth, h: origHeight },
+            workingDimensions: { w: workingWidth, h: workingHeight },
             cropArea,
-            canvasCrop: { x: cropX, y: cropY, w: cropW, h: cropH },
+            cropPixels: { x: cropX, y: cropY, w: cropW, h: cropH },
           });
 
-          // Take snapshot of the crop region
-          const cropRect = rect(cropX, cropY, cropW, cropH);
-          const snapshot = canvasRef.current.makeImageSnapshot(cropRect);
-          
+          // Create a surface at the CROPPED size (high resolution)
+          const surface = Skia.Surface.Make(cropW, cropH);
+          if (!surface) {
+            console.error("[SkiaEditableImage] Failed to create surface");
+            return null;
+          }
+
+          const canvas = surface.getCanvas();
+
+          // Define source rect (the crop region from working image)
+          const srcRect = rect(cropX, cropY, cropW, cropH);
+
+          // Define destination rect (full surface)
+          const dstRect = rect(0, 0, cropW, cropH);
+
+          // Create paint with color adjustments
+          const paint = Skia.Paint();
+          if (!showOriginal) {
+            const colorMatrix = createCombinedMatrix(adjustments);
+            paint.setColorFilter(Skia.ColorFilter.MakeMatrix(colorMatrix));
+          }
+
+          // Draw the cropped portion of the image with adjustments
+          canvas.drawImageRect(workingImage, srcRect, dstRect, paint);
+
+          // Get the snapshot from the surface
+          const snapshot = surface.makeImageSnapshot();
+
           if (!snapshot) {
-            console.error(
-              "[SkiaEditableImage] Snapshot failed: makeImageSnapshot() returned null.",
-            );
+            console.error("[SkiaEditableImage] Failed to create snapshot from surface");
             return null;
           }
 
           console.log(
-            "[SkiaEditableImage] Snapshot dimensions:",
+            "[SkiaEditableImage] HIGH-RES Snapshot dimensions:",
             snapshot.width(),
             "x",
             snapshot.height(),
           );
 
-          // Encode to base64 using ImageFormat enum
+          // Encode to base64
           const format = Platform.OS === "web" ? ImageFormat.PNG : ImageFormat.JPEG;
           const base64 = snapshot.encodeToBase64(format, 95);
-          
+
           if (!base64) {
             console.error("[SkiaEditableImage] Failed to encode snapshot to base64");
             return null;
           }
-          
+
           const mimeType = Platform.OS === "web" ? "png" : "jpeg";
           return `data:image/${mimeType};base64,${base64}`;
         } catch (error) {
@@ -426,8 +526,12 @@ export const SkiaEditableImage = forwardRef<
 
         {showCropOverlay && imageLayout.width > 0 && (
           <CropOverlay
-            imageWidth={imageLayout.width}
-            imageHeight={imageLayout.height}
+            imageWidth={actualImageDimensions.width}
+            imageHeight={actualImageDimensions.height}
+            offsetX={actualImageDimensions.offsetX}
+            offsetY={actualImageDimensions.offsetY}
+            containerWidth={imageLayout.width}
+            containerHeight={imageLayout.height}
             crop={crop}
             aspectRatio={aspectRatio}
             onCropChange={onCropChange}
@@ -452,7 +556,6 @@ const styles = StyleSheet.create({
     height: "100%",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.light.border,
     backgroundColor: Colors.light.backgroundDefault,
     overflow: "hidden",
   },

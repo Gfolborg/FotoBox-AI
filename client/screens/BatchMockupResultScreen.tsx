@@ -5,15 +5,12 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
-import * as MediaLibrary from "expo-media-library";
 import * as FileSystem from "expo-file-system/legacy";
 import { Feather } from "@expo/vector-icons";
 
 import { ThemedText } from "@/components/ThemedText";
 import { GlassCard } from "@/components/GlassCard";
 import { GradientButton } from "@/components/GradientButton";
-import { IconButton } from "@/components/IconButton";
-import { SuccessAnimation } from "@/components/SuccessAnimation";
 import { GradientBackground } from "@/components/GradientBackground";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
@@ -35,54 +32,23 @@ export default function BatchMockupResultScreen() {
 
   const { results, mockupType } = route.params;
 
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const successResults = results.filter((r) => r.status === "completed" && r.resultUri);
   const failedResults = results.filter((r) => r.status === "failed");
 
-  const handleSaveAll = async () => {
-    if (saving || saved || successResults.length === 0) return;
-
+  const handleExportAll = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setSaving(true);
 
-    try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== "granted") {
-        throw new Error("Permission required to save images");
-      }
+    // Prepare results for batch platform selection
+    const exportableResults = successResults
+      .filter(r => r.resultUri)
+      .map(r => ({
+        originalUri: r.originalUri,
+        resultUri: r.resultUri!,
+      }));
 
-      for (const result of successResults) {
-        if (!result.resultUri) continue;
-
-        let fileUri = result.resultUri;
-
-        if (result.resultUri.startsWith("data:")) {
-          const base64Data = result.resultUri.split(",")[1];
-          const filename = `mockup_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.jpg`;
-          fileUri = FileSystem.documentDirectory + filename;
-          await FileSystem.writeAsStringAsync(fileUri, base64Data, {
-            encoding: FileSystem.EncodingType.Base64,
-          });
-        }
-
-        await MediaLibrary.saveToLibraryAsync(fileUri);
-      }
-
-      setSaved(true);
-      setShowSuccess(true);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-      setTimeout(() => setShowSuccess(false), 2000);
-    } catch (error) {
-      console.error("Save error:", error);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    } finally {
-      setSaving(false);
-    }
+    navigation.navigate("BatchPlatformSelection", { results: exportableResults });
   };
 
   const currentResult = successResults[selectedIndex];
@@ -121,8 +87,6 @@ export default function BatchMockupResultScreen() {
 
   return (
     <GradientBackground theme="home">
-      {showSuccess && <SuccessAnimation />}
-
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
@@ -212,21 +176,14 @@ export default function BatchMockupResultScreen() {
           style={styles.actions}
         >
           <View style={styles.actionRow}>
-            <IconButton
-              icon="edit-2"
-              onPress={handleEditSelected}
-              style={styles.iconButton}
-            />
+            <Pressable style={styles.editButton} onPress={handleEditSelected}>
+              <ThemedText style={styles.editButtonText}>Edit</ThemedText>
+            </Pressable>
             <GradientButton
-              title={
-                saved
-                  ? "Saved!"
-                  : saving
-                  ? "Saving..."
-                  : `Save All (${successResults.length})`
-              }
-              onPress={handleSaveAll}
-              disabled={saving || saved || successResults.length === 0}
+              title={`Save All (${successResults.length})`}
+              onPress={handleExportAll}
+              disabled={successResults.length === 0}
+              icon="download"
               style={styles.saveButton}
             />
           </View>
@@ -332,8 +289,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: Spacing.md,
   },
-  iconButton: {
-    flex: 0,
+  editButton: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    backgroundColor: Colors.light.backgroundSecondary,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  editButtonText: {
+    color: Colors.light.text,
+    fontSize: 15,
+    fontWeight: "600",
   },
   saveButton: {
     flex: 1,

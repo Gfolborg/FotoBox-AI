@@ -14,7 +14,6 @@ import { useRoute, useNavigation, RouteProp, useFocusEffect } from "@react-navig
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
-import { BlurView } from "expo-blur";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Haptics from "expo-haptics";
 import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
@@ -24,7 +23,6 @@ import { GradientButton } from "@/components/GradientButton";
 import { GlassCard } from "@/components/GlassCard";
 import { GlassPill } from "@/components/GlassPill";
 import { IconButton } from "@/components/IconButton";
-import { SuccessAnimation } from "@/components/SuccessAnimation";
 import { ApplyToAllModal } from "@/components/ApplyToAllModal";
 import { GradientBackground } from "@/components/GradientBackground";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
@@ -49,7 +47,6 @@ export default function BatchResultScreen() {
 
   const [savedUris, setSavedUris] = useState<Set<string>>(new Set());
   const [savingUris, setSavingUris] = useState<Set<string>>(new Set());
-  const [showSuccess, setShowSuccess] = useState(false);
   const [showApplyAllModal, setShowApplyAllModal] = useState(false);
   const [editedImages, setEditedImages] = useState<Set<string>>(new Set());
   const [lastEditedUri, setLastEditedUri] = useState<string | null>(null);
@@ -103,16 +100,6 @@ export default function BatchResultScreen() {
     });
   };
 
-  const handleSaveAll = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    for (const result of successfulResults) {
-      if (result.resultUri && !savedUris.has(result.originalUri)) {
-        await handleSaveImage(result.resultUri, result.originalUri);
-      }
-    }
-    setShowSuccess(true);
-  };
-
   const handleGenerateMore = () => {
     navigation.popToTop();
   };
@@ -152,39 +139,51 @@ export default function BatchResultScreen() {
   const handleSkipApplyAll = () => {
   };
 
-  const allSaved = savedUris.size === successfulResults.length;
+  const handleExportAll = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    // Prepare results for batch platform selection
+    const exportableResults = successfulResults
+      .filter(r => r.resultUri)
+      .map(r => ({
+        originalUri: r.originalUri,
+        resultUri: r.resultUri!,
+      }));
+
+    navigation.navigate("BatchPlatformSelection", { results: exportableResults });
+  };
 
   return (
     <GradientBackground theme="home">
       <StatusBar style="dark" />
 
-      {/* Header */}
-      <Animated.View
-        entering={FadeIn.duration(300)}
-        style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}
-      >
-        <BlurView intensity={40} tint="light" style={styles.headerBlur} />
-        <View style={styles.headerContent}>
-          <IconButton
-            icon="chevron-left"
-            onPress={() => navigation.popToTop()}
-            size={44}
-            iconSize={24}
-            variant="ghost"
-            color={Colors.editing.text}
-          />
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        {/* Header */}
+        <Animated.View
+          entering={FadeIn.duration(300)}
+          style={styles.header}
+        >
+          <View style={styles.headerContent}>
+            <IconButton
+              icon="chevron-left"
+              onPress={() => navigation.popToTop()}
+              size={44}
+              iconSize={24}
+              variant="ghost"
+              color={Colors.editing.text}
+            />
 
-          <GlassPill>
-            <Feather name="check-circle" size={16} color={Colors.editing.success} />
-            <ThemedText style={styles.headerTitle}>Results</ThemedText>
-          </GlassPill>
+            <GlassPill>
+              <Feather name="check-circle" size={16} color={Colors.editing.success} />
+              <ThemedText style={styles.headerTitle}>Results</ThemedText>
+            </GlassPill>
 
-          <View style={{ width: 44 }} />
-        </View>
-      </Animated.View>
+            <View style={{ width: 44 }} />
+          </View>
+        </Animated.View>
 
-      {/* Stats */}
-      <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.statsRow}>
+        {/* Stats */}
+        <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.statsRow}>
         <View style={styles.statItem}>
           <ThemedText style={styles.statNumber}>{successfulResults.length}</ThemedText>
           <ThemedText style={styles.statLabel}>Successful</ThemedText>
@@ -235,7 +234,7 @@ export default function BatchResultScreen() {
                     style={styles.editButton}
                     onPress={() => handleEditImage(item.resultUri!, item.originalUri)}
                   >
-                    <Feather name="edit-2" size={14} color={Colors.editing.text} />
+                    <ThemedText style={styles.buttonText}>Edit</ThemedText>
                   </Pressable>
                   <Pressable
                     style={[
@@ -245,13 +244,16 @@ export default function BatchResultScreen() {
                     onPress={() => handleSaveImage(item.resultUri!, item.originalUri)}
                     disabled={savingUris.has(item.originalUri) || savedUris.has(item.originalUri)}
                   >
-                    {savingUris.has(item.originalUri) ? (
-                      <Feather name="loader" size={14} color={Colors.editing.text} />
-                    ) : savedUris.has(item.originalUri) ? (
-                      <Feather name="check" size={14} color={Colors.editing.success} />
-                    ) : (
-                      <Feather name="download" size={14} color={Colors.editing.text} />
-                    )}
+                    <ThemedText style={[
+                      styles.buttonText,
+                      savedUris.has(item.originalUri) && styles.buttonTextSaved,
+                    ]}>
+                      {savingUris.has(item.originalUri)
+                        ? "Saving..."
+                        : savedUris.has(item.originalUri)
+                        ? "Saved"
+                        : "Save"}
+                    </ThemedText>
                   </Pressable>
                 </View>
               </>
@@ -267,54 +269,40 @@ export default function BatchResultScreen() {
         )}
       />
 
-      {/* Bottom Action Bar */}
-      <Animated.View
-        entering={FadeInUp.delay(400).duration(400)}
-        style={[styles.bottomBar, { paddingBottom: insets.bottom + Spacing.md }]}
-      >
-        <BlurView intensity={40} tint="light" style={styles.bottomBlur} />
-        <GlassCard theme="light" padding="md" borderRadius="xl">
-          <View style={styles.bottomContent}>
-            {successfulResults.length > 0 && (
+        {/* Bottom Action Bar */}
+        <Animated.View
+          entering={FadeInUp.delay(400).duration(400)}
+          style={[styles.bottomBar, { paddingBottom: insets.bottom + Spacing.md }]}
+        >
+          <GlassCard theme="light" padding="xs" borderRadius="lg">
+            <View style={styles.bottomContent}>
+              {successfulResults.length > 0 && (
+                <GradientButton
+                  title={`Save All (${successfulResults.length})`}
+                  onPress={handleExportAll}
+                  icon="download"
+                />
+              )}
+
               <GradientButton
-                title={
-                  allSaved
-                    ? "All Saved"
-                    : `Save All (${successfulResults.length - savedUris.size} remaining)`
-                }
-                onPress={handleSaveAll}
-                disabled={allSaved}
-                icon={allSaved ? "check" : "download"}
-                fullWidth
+                title="New"
+                onPress={handleGenerateMore}
+                variant="glass"
+                icon="plus"
               />
-            )}
+            </View>
+          </GlassCard>
+        </Animated.View>
 
-            <GradientButton
-              title="Generate More"
-              onPress={handleGenerateMore}
-              variant="glass"
-              icon="plus"
-              fullWidth
-            />
-          </View>
-        </GlassCard>
-      </Animated.View>
-
-      {/* Success Animation Overlay */}
-      {showSuccess && (
-        <View style={styles.successOverlay}>
-          <SuccessAnimation onComplete={() => setShowSuccess(false)} size={140} />
-        </View>
-      )}
-
-      {/* Apply to All Modal */}
-      <ApplyToAllModal
-        visible={showApplyAllModal}
-        remainingCount={uneditedCount}
-        onApplyToAll={handleApplyToAll}
-        onSkip={handleSkipApplyAll}
-        onClose={() => setShowApplyAllModal(false)}
-      />
+        {/* Apply to All Modal */}
+        <ApplyToAllModal
+          visible={showApplyAllModal}
+          remainingCount={uneditedCount}
+          onApplyToAll={handleApplyToAll}
+          onSkip={handleSkipApplyAll}
+          onClose={() => setShowApplyAllModal(false)}
+        />
+      </View>
     </GradientBackground>
   );
 }
@@ -324,14 +312,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 100,
-  },
-  headerBlur: {
-    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
   },
   headerContent: {
     flexDirection: "row",
@@ -350,7 +331,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     gap: Spacing.xl,
-    marginTop: 100,
+    marginTop: Spacing.md,
     marginBottom: Spacing.lg,
   },
   statItem: {
@@ -416,28 +397,31 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   editButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    paddingHorizontal: Spacing.md,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.15)",
   },
   saveButton: {
     flex: 1,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.15)",
   },
   saveButtonSaved: {
-    backgroundColor: Colors.editing.successSubtle,
-    borderColor: Colors.editing.success,
+    backgroundColor: Colors.editing.success,
+  },
+  buttonText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  buttonTextSaved: {
+    color: "#FFFFFF",
   },
   failedCard: {
     width: "100%",
@@ -458,18 +442,8 @@ const styles = StyleSheet.create({
     left: Spacing.md,
     right: Spacing.md,
   },
-  bottomBlur: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: BorderRadius.xl,
-  },
   bottomContent: {
-    gap: Spacing.sm,
-  },
-  successOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
-    justifyContent: "center",
     alignItems: "center",
-    zIndex: 1000,
+    gap: Spacing.xs,
   },
 });

@@ -1,19 +1,15 @@
 import React from "react";
-import { View, StyleSheet, Pressable, Image, Dimensions, ScrollView } from "react-native";
+import { View, StyleSheet, Pressable, Image, Dimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
-import { BlurView } from "expo-blur";
 import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
-import * as FileSystem from "expo-file-system/legacy";
-import * as ImageManipulator from "expo-image-manipulator";
 
+import { ThemedHeader } from "@/components/ThemedHeader";
 import { ThemedText } from "@/components/ThemedText";
-import { IconButton } from "@/components/IconButton";
-import { GlassPill } from "@/components/GlassPill";
 import { GradientBackground } from "@/components/GradientBackground";
 import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
@@ -35,7 +31,7 @@ interface ActionCardProps {
 
 function ActionCard({ icon, title, description, color, onPress, delay }: ActionCardProps) {
   return (
-    <Animated.View entering={FadeInDown.delay(delay).duration(400).springify()} style={styles.cardWrapper}>
+    <Animated.View entering={FadeInDown.delay(delay).duration(400)} style={styles.cardWrapper}>
       <Pressable
         style={styles.actionCard}
         onPress={() => {
@@ -43,15 +39,12 @@ function ActionCard({ icon, title, description, color, onPress, delay }: ActionC
           onPress();
         }}
       >
-        <View style={[styles.actionIconContainer, { backgroundColor: color + "20" }]}>
+        <View style={[styles.actionIconContainer, { backgroundColor: color + "15" }]}>
           <Feather name={icon} size={24} color={color} />
         </View>
         <View style={styles.actionTextContainer}>
-          <ThemedText style={styles.actionTitle}>{title}</ThemedText>
+          <ThemedText style={styles.actionTitle} numberOfLines={2}>{title}</ThemedText>
           <ThemedText style={styles.actionDescription} numberOfLines={2}>{description}</ThemedText>
-        </View>
-        <View style={styles.arrowContainer}>
-          <Feather name="chevron-right" size={20} color={Colors.editing.textTertiary} />
         </View>
       </Pressable>
     </Animated.View>
@@ -70,44 +63,6 @@ export default function PhotoActionScreen() {
     });
   }, [navigation]);
 
-  const handleEditPhoto = async () => {
-    try {
-      console.log("[PhotoAction] Original imageUri:", imageUri);
-
-      // Use ImageManipulator to convert any image format to JPEG
-      // This handles HEIC, PNG, and other formats from gallery
-      const manipResult = await ImageManipulator.manipulateAsync(
-        imageUri,
-        [], // No transformations needed
-        { compress: 0.95, format: ImageManipulator.SaveFormat.JPEG }
-      );
-
-      console.log("[PhotoAction] Converted to JPEG:", manipResult.uri);
-
-      // Copy to documents directory for reliable access
-      const filename = `edit_temp_${Date.now()}.jpg`;
-      const tempUri = `${FileSystem.documentDirectory}${filename}`;
-      
-      await FileSystem.copyAsync({
-        from: manipResult.uri,
-        to: tempUri,
-      });
-
-      // Verify file exists
-      const fileInfo = await FileSystem.getInfoAsync(tempUri);
-      console.log("[PhotoAction] File saved:", fileInfo);
-
-      // Pass without file:// prefix for Android Skia compatibility
-      const skiaUri = tempUri.replace("file://", "");
-      console.log("[PhotoAction] Skia URI:", skiaUri);
-
-      navigation.navigate("EditImage", { imageUri: skiaUri, originalUri: skiaUri });
-    } catch (error) {
-      console.error("[PhotoAction] Failed to prepare image for editing:", error);
-      console.error("[PhotoAction] Error details:", JSON.stringify(error, null, 2));
-    }
-  };
-
   const handleRemoveBackground = () => {
     navigation.navigate("BackgroundColorSelection", { imageUri });
   };
@@ -123,34 +78,9 @@ export default function PhotoActionScreen() {
   return (
     <GradientBackground theme="home">
       <StatusBar style="dark" />
-
-      <Animated.View
-        entering={FadeIn.duration(300)}
-        style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}
-      >
-        <BlurView intensity={40} tint="light" style={styles.headerBlur} />
-        <View style={styles.headerContent}>
-          <View style={styles.leftHeaderItem}>
-            <Pressable
-              style={styles.headerButton}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                navigation.goBack();
-              }}
-            >
-              <Feather name="camera" size={18} color={Colors.editing.text} />
-              <ThemedText style={styles.headerButtonText}>Retake</ThemedText>
-            </Pressable>
-          </View>
-
-          <GlassPill>
-            <Feather name="check-circle" size={16} color={Colors.editing.primary} />
-            <ThemedText style={styles.headerTitle}>Photo Ready</ThemedText>
-          </GlassPill>
-        </View>
-      </Animated.View>
-
-      <View style={[styles.content, { paddingBottom: insets.bottom + Spacing.xl }]}>
+      <ThemedHeader title="Choose Enhancement" />
+      <View style={[styles.container, { paddingTop: insets.top + 54 }]}>
+        <View style={[styles.content, { paddingBottom: insets.bottom + Spacing.xl }]}>
         <Animated.View
           entering={FadeIn.delay(100).duration(400)}
           style={styles.imagePreviewContainer}
@@ -160,49 +90,38 @@ export default function PhotoActionScreen() {
         </Animated.View>
 
         <Animated.View entering={FadeInUp.delay(200).duration(400)} style={styles.promptContainer}>
-          <ThemedText style={styles.promptText}>What would you like to do?</ThemedText>
+          <ThemedText style={styles.promptText}>Enhance with AI</ThemedText>
         </Animated.View>
 
         <View style={styles.actionsContainer}>
-          <View style={styles.cardRow}>
-            <ActionCard
-              icon="sliders"
-              title="Edit Photo"
-              description="Adjust brightness, contrast, and colors"
-              color={Colors.editing.secondary}
-              onPress={handleEditPhoto}
-              delay={300}
-            />
-            <ActionCard
-              icon="scissors"
-              title="Remove Background"
-              description="AI-powered background removal"
-              color={Colors.editing.primary}
-              onPress={handleRemoveBackground}
-              delay={400}
-            />
-          </View>
-          <View style={styles.cardRow}>
-            <ActionCard
-              icon="image"
-              title="Create Lifestyle Scene"
-              description="Place in AI-generated environments"
-              color="#10B981"
-              onPress={handleCreateLifestyle}
-              delay={500}
-            />
-            <ActionCard
-              icon="figma"
-              title="Create Mockup"
-              description="Generate realistic product mockups"
-              color="#A78BFA"
-              onPress={handleCreateMockup}
-              delay={600}
-            />
-          </View>
+          <ActionCard
+            icon="scissors"
+            title="Remove Background"
+            description="Clean cutout with transparent bg"
+            color={Colors.editing.primary}
+            onPress={handleRemoveBackground}
+            delay={300}
+          />
+          <ActionCard
+            icon="image"
+            title="Lifestyle Scene"
+            description="Place in AI environments"
+            color="#10B981"
+            onPress={handleCreateLifestyle}
+            delay={400}
+          />
+          <ActionCard
+            icon="box"
+            title="Product Mockup"
+            description="Realistic product displays"
+            color="#A78BFA"
+            onPress={handleCreateMockup}
+            delay={500}
+          />
         </View>
 
-        <View style={styles.retakeContainer} />
+          <View style={styles.retakeContainer} />
+        </View>
       </View>
     </GradientBackground>
   );
@@ -212,49 +131,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 100,
-  },
-  headerBlur: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  headerContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 100,
-    paddingVertical: Spacing.sm,
-  },
-  leftHeaderItem: {
-    position: 'absolute',
-    left: Spacing.md,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    zIndex: 1,
-  },
-  headerButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  headerButtonText: {
-    color: Colors.editing.text,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  headerTitle: {
-    color: Colors.editing.text,
-    fontSize: 15,
-    fontWeight: "600",
-  },
   content: {
     flex: 1,
-    paddingTop: 100,
+    paddingTop: Spacing.lg,
     paddingHorizontal: Spacing.lg,
   },
   imagePreviewContainer: {
@@ -288,51 +167,48 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   actionsContainer: {
-    gap: Spacing.md,
-    flexGrow: 1,
-    justifyContent: 'center',
-  },
-  cardRow: {
     flexDirection: 'row',
-    gap: Spacing.md,
+    gap: Spacing.sm,
   },
   cardWrapper: {
     flex: 1,
   },
   actionCard: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: Colors.editing.backgroundSecondary,
     borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
+    padding: Spacing.sm,
+    paddingVertical: Spacing.lg,
     borderWidth: 1,
     borderColor: Colors.editing.border,
-    minHeight: 140,
+    gap: Spacing.sm,
+    minHeight: 160,
   },
   actionIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: Spacing.md,
   },
   actionTextContainer: {
-    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: 4,
   },
   actionTitle: {
     color: Colors.editing.text,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "600",
-    marginBottom: 2,
+    textAlign: 'center',
+    marginBottom: 3,
   },
   actionDescription: {
     color: Colors.editing.textSecondary,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  arrowContainer: {
-    position: 'absolute',
-    bottom: Spacing.md,
-    right: Spacing.md,
+    fontSize: 11,
+    textAlign: 'center',
+    lineHeight: 14,
   },
   retakeContainer: {
     height: 60,

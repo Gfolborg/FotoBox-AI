@@ -15,21 +15,17 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import * as FileSystem from "expo-file-system/legacy";
 import { Feather } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
-import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import Animated, { FadeIn, FadeInDown, FadeOut, FadeInUp } from "react-native-reanimated";
 
+import { ThemedHeader } from "@/components/ThemedHeader";
 import { ThemedText } from "@/components/ThemedText";
 import { GradientButton } from "@/components/GradientButton";
 import { GlassCard } from "@/components/GlassCard";
-import { GlassPill } from "@/components/GlassPill";
-import { IconButton } from "@/components/IconButton";
-import { SuccessAnimation } from "@/components/SuccessAnimation";
 import { BeforeAfterSlider } from "@/components/BeforeAfterSlider";
 import { GradientBackground } from "@/components/GradientBackground";
 import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
-import { saveToFotoBoxAlbum } from "@/lib/save-to-album";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const IMAGE_SIZE = SCREEN_WIDTH - Spacing.lg * 2;
@@ -69,28 +65,34 @@ export default function LifestyleResultScreen() {
     environment: string;
   };
 
-  const [isSaving, setIsSaving] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
 
-  const handleSaveToGallery = async () => {
-    setIsSaving(true);
+  const handleContinue = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    const result = await saveToFotoBoxAlbum(resultUri, "lifestyle_scene");
+    try {
+      // Save the result to a file for platform selection
+      const filename = `platform_temp_${Date.now()}.jpg`;
+      const fileUri = FileSystem.documentDirectory + filename;
 
-    if (result.success) {
-      setIsSaved(true);
-      setShowSuccess(true);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } else {
+      const base64Data = resultUri.split(",")[1];
+      await FileSystem.writeAsStringAsync(fileUri, base64Data, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      navigation.navigate("PlatformSelection", {
+        imageUri: fileUri,
+        originalUri: originalUri,
+      });
+    } catch (error) {
+      console.error("Failed to prepare image for platform selection:", error);
       if (Platform.OS !== "web") {
-        Alert.alert("Error", result.error || "Failed to save image.");
+        Alert.alert(
+          "Error",
+          "Could not prepare image. Please try again."
+        );
       }
     }
-
-    setIsSaving(false);
   };
 
   const handleTryDifferentEnvironment = () => {
@@ -131,34 +133,14 @@ export default function LifestyleResultScreen() {
     <GradientBackground theme="home">
       <StatusBar style="dark" />
 
-      {/* Header */}
-      <Animated.View
-        entering={FadeInDown.duration(400)}
-        style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}
-      >
-        <BlurView intensity={40} tint="light" style={styles.headerBlur} />
-        <View style={styles.headerContent}>
-          <Pressable
-            style={styles.headerButton}
-            onPress={() => navigation.navigate("Home")}
-          >
-            <ThemedText style={styles.headerButtonText}>Done</ThemedText>
-          </Pressable>
+      <ThemedHeader title="Lifestyle Scene" />
 
-          <GlassPill>
-            <Feather name="image" size={16} color={Colors.editing.success} />
-            <ThemedText style={styles.headerTitle}>Lifestyle Scene</ThemedText>
-          </GlassPill>
-
-          <View style={{ width: 60 }} />
-        </View>
-      </Animated.View>
-
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 240 }]}
-        showsVerticalScrollIndicator={false}
-      >
+      <View style={[styles.container, { paddingTop: insets.top + 54 }]}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 240 }]}
+          showsVerticalScrollIndicator={false}
+        >
         {/* Image Display */}
         {showComparison ? (
           <Animated.View
@@ -224,76 +206,60 @@ export default function LifestyleResultScreen() {
         </Animated.View>
       </ScrollView>
 
-      {/* Bottom Action Bar */}
-      <Animated.View
-        entering={FadeInUp.delay(400).duration(400)}
-        style={[styles.bottomBar, { paddingBottom: insets.bottom + Spacing.md }]}
-      >
-        <BlurView intensity={40} tint="light" style={styles.bottomBlur} />
-        <GlassCard theme="light" padding="lg" borderRadius="xl">
-          <View style={styles.actionButtons}>
-            {/* Primary Save Button */}
-            {isSaved ? (
-              <View style={styles.savedButton}>
-                <Feather name="check-circle" size={20} color={Colors.editing.success} />
-                <ThemedText style={styles.savedText}>Saved to Gallery</ThemedText>
-              </View>
-            ) : (
+        {/* Bottom Action Bar */}
+        <Animated.View
+          entering={FadeInUp.delay(400).duration(400)}
+          style={[styles.bottomBar, { paddingBottom: insets.bottom + Spacing.md }]}
+        >
+          <GlassCard theme="light" padding="sm" borderRadius="lg">
+            <View style={styles.actionButtons}>
+              {/* Primary Continue Button */}
               <GradientButton
-                title={isSaving ? "Saving..." : "Save to Gallery"}
-                onPress={handleSaveToGallery}
-                disabled={isSaving}
-                loading={isSaving}
-                icon="download"
+                title="Continue"
+                onPress={handleContinue}
+                icon="arrow-right"
                 fullWidth
               />
-            )}
 
-            {/* Secondary Actions */}
-            <View style={styles.secondaryActions}>
-              <Pressable style={styles.actionButton} onPress={handleEditImage}>
-                <IconButton
-                  icon="edit-2"
-                  onPress={handleEditImage}
-                  size={48}
-                  iconSize={22}
-                  variant="glass"
-                />
-                <ThemedText style={styles.actionLabel}>Edit</ThemedText>
-              </Pressable>
+              {/* Secondary Actions */}
+              <View style={styles.secondaryActions}>
+                <Pressable style={styles.actionButton} onPress={handleEditImage}>
+                  <IconButton
+                    icon="edit-2"
+                    onPress={handleEditImage}
+                    size={48}
+                    iconSize={22}
+                    variant="glass"
+                  />
+                  <ThemedText style={styles.actionLabel}>Edit</ThemedText>
+                </Pressable>
 
-              <Pressable style={styles.actionButton} onPress={handleTryDifferentEnvironment}>
-                <IconButton
-                  icon="refresh-cw"
-                  onPress={handleTryDifferentEnvironment}
-                  size={48}
-                  iconSize={22}
-                  variant="glass"
-                />
-                <ThemedText style={styles.actionLabel}>Retry</ThemedText>
-              </Pressable>
+                <Pressable style={styles.actionButton} onPress={handleTryDifferentEnvironment}>
+                  <IconButton
+                    icon="refresh-cw"
+                    onPress={handleTryDifferentEnvironment}
+                    size={48}
+                    iconSize={22}
+                    variant="glass"
+                  />
+                  <ThemedText style={styles.actionLabel}>Retry</ThemedText>
+                </Pressable>
 
-              <Pressable style={styles.actionButton} onPress={handleGenerateAnother}>
-                <IconButton
-                  icon="plus"
-                  onPress={handleGenerateAnother}
-                  size={48}
-                  iconSize={22}
-                  variant="glass"
-                />
-                <ThemedText style={styles.actionLabel}>New</ThemedText>
-              </Pressable>
+                <Pressable style={styles.actionButton} onPress={handleGenerateAnother}>
+                  <IconButton
+                    icon="plus"
+                    onPress={handleGenerateAnother}
+                    size={48}
+                    iconSize={22}
+                    variant="glass"
+                  />
+                  <ThemedText style={styles.actionLabel}>New</ThemedText>
+                </Pressable>
+              </View>
             </View>
-          </View>
-        </GlassCard>
-      </Animated.View>
-
-      {/* Success Animation Overlay */}
-      {showSuccess && (
-        <View style={styles.successOverlay}>
-          <SuccessAnimation onComplete={() => setShowSuccess(false)} size={140} />
-        </View>
-      )}
+          </GlassCard>
+        </Animated.View>
+      </View>
     </GradientBackground>
   );
 }
@@ -302,45 +268,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 100,
-  },
-  headerBlur: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  headerContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-  },
-  headerButton: {
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.sm,
-    minWidth: 60,
-  },
-  headerButtonText: {
-    color: Colors.editing.primary,
-    fontWeight: "600",
-    fontSize: 16,
-  },
-  headerTitle: {
-    color: Colors.editing.text,
-    fontSize: 15,
-    fontWeight: "600",
-  },
   scrollView: {
     flex: 1,
   },
   content: {
     alignItems: "center",
     paddingHorizontal: Spacing.lg,
-    paddingTop: 110,
+    paddingTop: Spacing.md,
   },
   imageContainer: {
     width: IMAGE_SIZE,
@@ -395,33 +329,12 @@ const styles = StyleSheet.create({
     left: Spacing.md,
     right: Spacing.md,
   },
-  bottomBlur: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: BorderRadius.xl,
-  },
   actionButtons: {
-    gap: Spacing.lg,
-  },
-  savedButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: Spacing.sm,
-    height: 52,
-    borderRadius: BorderRadius.xl,
-    backgroundColor: Colors.editing.successSubtle,
-    borderWidth: 1,
-    borderColor: Colors.editing.success,
-  },
-  savedText: {
-    color: Colors.editing.success,
-    fontWeight: "600",
-    fontSize: 16,
+    gap: Spacing.md,
   },
   secondaryActions: {
     flexDirection: "row",
     justifyContent: "space-around",
-    paddingTop: Spacing.sm,
   },
   actionButton: {
     alignItems: "center",
@@ -431,12 +344,5 @@ const styles = StyleSheet.create({
     color: Colors.editing.textSecondary,
     fontSize: 12,
     fontWeight: "500",
-  },
-  successOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1000,
   },
 });

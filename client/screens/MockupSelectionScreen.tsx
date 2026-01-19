@@ -18,6 +18,7 @@ import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 
+import { ThemedHeader } from "@/components/ThemedHeader";
 import { ThemedText } from "@/components/ThemedText";
 import { GlassCard } from "@/components/GlassCard";
 import { GradientButton } from "@/components/GradientButton";
@@ -52,7 +53,6 @@ export default function MockupSelectionScreen() {
   const navigation = useNavigation<MockupSelectionScreenNavigationProp>();
   const route = useRoute<MockupSelectionScreenRouteProp>();
   const insets = useSafeAreaInsets();
-  const headerHeight = useHeaderHeight();
 
   const initialImageUris = route.params?.imageUris || [];
   const initialImageUri = route.params?.imageUri;
@@ -71,6 +71,12 @@ export default function MockupSelectionScreen() {
   const [customProductName, setCustomProductName] = useState("");
   // Track visited tabs for lazy rendering - only render tabs that have been visited
   const [visitedTabs, setVisitedTabs] = useState<Set<TabType>>(new Set(["product"]));
+
+  React.useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    });
+  }, [navigation]);
 
   // Prefetch all preset images on mount for faster loading
   useEffect(() => {
@@ -558,12 +564,13 @@ export default function MockupSelectionScreen() {
 
   return (
     <GradientBackground theme="home">
+      <ThemedHeader title="Create Mockup" />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,
           {
-            paddingTop: headerHeight + Spacing.md,
+            paddingTop: insets.top + 54,
             paddingBottom: insets.bottom + 100,
           },
         ]}

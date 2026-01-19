@@ -31,7 +31,7 @@ export interface ImageEditingState {
     width: number;
     height: number;
   } | null;
-  aspectRatio: "free" | "square" | "4:3" | "16:9" | null;
+  aspectRatio: "free" | "square" | "4:3" | "16:9" | "2:3" | null;
 
   // UI state
   activeTab: "adjust" | "crop" | "transform" | "amazonMain";
