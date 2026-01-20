@@ -312,15 +312,20 @@ export const SkiaEditableImage = React.forwardRef<
       const imgWidth = image.width();
       const imgHeight = image.height();
 
-      // If there's an active crop with valid dimensions, use the crop's aspect ratio
-      // This applies both during crop overlay mode AND after crop is applied
+      // While crop overlay is showing, use the full image aspect ratio
+      // so user can see and manipulate the entire image
+      if (showCropOverlay) {
+        return imgWidth / imgHeight;
+      }
+
+      // After crop is applied (overlay hidden), use the cropped aspect ratio
       if (crop && crop.width > 0 && crop.height > 0) {
         const croppedWidth = imgWidth * crop.width;
         const croppedHeight = imgHeight * crop.height;
         return croppedWidth / croppedHeight;
       }
 
-      // Default to original image aspect ratio (no crop active)
+      // Default to original image aspect ratio
       return imgWidth / imgHeight;
     }, [image, crop, showCropOverlay]);
 
