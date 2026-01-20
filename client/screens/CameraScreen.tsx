@@ -218,7 +218,7 @@ export default function CameraScreen() {
           </View>
         )}
 
-        <ThemedHeader title="Product Shot" />
+        <ThemedHeader title="Product Shot" transparent />
 
         {/* Bottom controls */}
         <Animated.View

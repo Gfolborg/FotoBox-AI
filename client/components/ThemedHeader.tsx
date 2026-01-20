@@ -12,16 +12,21 @@ import { Colors, Spacing } from "@/constants/theme";
 
 interface ThemedHeaderProps {
   title: string;
+  transparent?: boolean;
 }
 
-export function ThemedHeader({ title }: ThemedHeaderProps) {
+export function ThemedHeader({ title, transparent = false }: ThemedHeaderProps) {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
 
   return (
     <Animated.View
       entering={FadeIn.duration(300)}
-      style={[styles.header, { paddingTop: insets.top }]}
+      style={[
+        styles.header,
+        { paddingTop: insets.top },
+        transparent && styles.headerTransparent,
+      ]}
     >
       <View style={styles.headerContent}>
         <View style={styles.leftHeaderItem}>
@@ -60,6 +65,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 1,
+  },
+  headerTransparent: {
+    backgroundColor: "transparent",
   },
   headerContent: {
     flexDirection: "row",
