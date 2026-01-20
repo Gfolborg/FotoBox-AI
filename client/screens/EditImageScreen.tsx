@@ -1,5 +1,5 @@
 import * as React from "react";
-import { View, StyleSheet, Pressable, Dimensions, ActivityIndicator } from "react-native";
+import { View, StyleSheet, Pressable, Dimensions, ActivityIndicator, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -101,7 +101,38 @@ export default function EditImageScreen() {
   React.useEffect(() => {
     const prepareImage = async () => {
       try {
-        // Convert image to JPEG for Skia compatibility
+        // On web, Skia needs a proper URL or data URI
+        if (Platform.OS === "web") {
+          // If it's already a data URI or http(s) URL, use it directly
+          if (imageUri.startsWith("data:") || imageUri.startsWith("http")) {
+            console.log("[EditImageScreen] Web: Using URI directly:", imageUri.substring(0, 50));
+            setPreparedUri(imageUri);
+            setCurrentImageUri(imageUri);
+            return;
+          }
+          
+          // Otherwise, convert to base64 data URI for web
+          const manipResult = await ImageManipulator.manipulateAsync(
+            imageUri,
+            [],
+            { compress: 0.95, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+          );
+          
+          if (manipResult.base64) {
+            const dataUri = `data:image/jpeg;base64,${manipResult.base64}`;
+            console.log("[EditImageScreen] Web: Created data URI, length:", dataUri.length);
+            setPreparedUri(dataUri);
+            setCurrentImageUri(dataUri);
+          } else {
+            // Fallback to manipResult.uri if base64 not available
+            console.log("[EditImageScreen] Web: Using manipResult.uri:", manipResult.uri.substring(0, 50));
+            setPreparedUri(manipResult.uri);
+            setCurrentImageUri(manipResult.uri);
+          }
+          return;
+        }
+        
+        // Native platforms: Convert image to JPEG for Skia compatibility
         const manipResult = await ImageManipulator.manipulateAsync(
           imageUri,
           [],
@@ -117,14 +148,16 @@ export default function EditImageScreen() {
           to: tempUri,
         });
 
-        // Remove file:// prefix for Skia
+        // Remove file:// prefix for Skia on native
         const skiaUri = tempUri.replace("file://", "");
+        console.log("[EditImageScreen] Native: Prepared URI:", skiaUri.substring(0, 50));
         setPreparedUri(skiaUri);
         setCurrentImageUri(skiaUri);
       } catch (error) {
         console.error("[EditImageScreen] Failed to prepare image:", error);
-        // Fallback to original URI with file:// removed
-        const fallbackUri = imageUri.replace("file://", "");
+        // Fallback: try the original URI
+        const fallbackUri = Platform.OS === "web" ? imageUri : imageUri.replace("file://", "");
+        console.log("[EditImageScreen] Fallback URI:", fallbackUri.substring(0, 50));
         setPreparedUri(fallbackUri);
         setCurrentImageUri(fallbackUri);
       }
