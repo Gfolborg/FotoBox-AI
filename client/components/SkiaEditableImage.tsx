@@ -17,7 +17,34 @@ import { Colors } from "@/constants/theme";
 import { CropOverlay } from "./CropOverlay";
 import type { ImageEditingState } from "@/hooks/useImageEditing";
 
-// ... (Matrix functions remain the same)
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const IMAGE_SIZE = SCREEN_WIDTH * 0.75;
+
+export interface SkiaEditableImageRef {
+  snapshot: () => Promise<string | null>;
+}
+
+interface SkiaEditableImageProps {
+  originalUri: string;
+  adjustments: {
+    brightness: number;
+    contrast: number;
+    saturation: number;
+    exposure: number;
+    highlights: number;
+    shadows: number;
+    warmth: number;
+    rotation: number;
+    flipHorizontal: boolean;
+    flipVertical: boolean;
+  };
+  showOriginal?: boolean;
+  showCropOverlay?: boolean;
+  crop: ImageEditingState["crop"];
+  aspectRatio?: ImageEditingState["aspectRatio"];
+  onCropChange: (crop: ImageEditingState["crop"]) => void;
+}
+
 function brightnessMatrix(value: number): number[] {
   const b = value;
   return [1, 0, 0, 0, b, 0, 1, 0, 0, b, 0, 0, 1, 0, b, 0, 0, 0, 1, 0];
@@ -155,9 +182,6 @@ export const SkiaEditableImage = React.forwardRef<
     },
     ref,
   ) => {
-    const { width: SCREEN_WIDTH } = Dimensions.get("window");
-    const IMAGE_SIZE = SCREEN_WIDTH * 0.75;
-
     const [imageLayout, setImageLayout] = React.useState({
       width: IMAGE_SIZE,
       height: IMAGE_SIZE,
@@ -172,15 +196,6 @@ export const SkiaEditableImage = React.forwardRef<
 
     const image = useImage(originalUri);
     const canvasRef = React.useRef<any>(null);
-
-    const styles = StyleSheet.create({
-      container: {
-        width: IMAGE_SIZE,
-        height: IMAGE_SIZE,
-        justifyContent: "center",
-        alignItems: "center",
-      },
-    });
 
     // Calculate image dimensions for CropOverlay (must be before conditional returns)
     React.useEffect(() => {
@@ -461,6 +476,12 @@ export const SkiaEditableImage = React.forwardRef<
 SkiaEditableImage.displayName = "SkiaEditableImage";
 
 const styles = StyleSheet.create({
+  container: {
+    width: IMAGE_SIZE,
+    height: IMAGE_SIZE,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   imageContainer: {
     width: "100%",
     height: "100%",
