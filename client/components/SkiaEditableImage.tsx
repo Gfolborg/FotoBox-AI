@@ -114,21 +114,34 @@ function warmthMatrix(value: number): number[] {
   const w = value * 0.3;
   return [1 + w, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1 - w, 0, 0, 0, 0, 0, 1, 0];
 }
-// Shadows: Adds offset to lift shadows (affects darker tones more visually)
+// Shadows: Lifts or lowers the dark tones of the image
+// At max value (+1), this adds 0.8 to all RGB (very bright)
+// At min value (-1), this subtracts 0.8 from all RGB (very dark)
 function shadowsMatrix(value: number): number[] {
-  // value range: -1 to 1, scale to reasonable offset
-  const s = value * 0.3;
-  return [1, 0, 0, 0, s, 0, 1, 0, 0, s, 0, 0, 1, 0, s, 0, 0, 0, 1, 0];
+  // value range: -1 to 1
+  // VERY strong effect - 0.8 offset is dramatic
+  const offset = value * 0.8;
+  return [
+    1, 0, 0, 0, offset,
+    0, 1, 0, 0, offset,
+    0, 0, 1, 0, offset,
+    0, 0, 0, 1, 0,
+  ];
 }
-// Highlights: Multiplier that affects brighter areas more noticeably
+
+// Highlights: Scales the brightness of the image
+// At max value (+1), this scales RGB by 2x (very bright)
+// At min value (-1), this scales RGB by 0.2x (very dark)
 function highlightsMatrix(value: number): number[] {
   // value range: -1 to 1
-  // Positive: increase brightness of highlights
-  // Negative: decrease brightness of highlights
-  const h = 1 + value * 0.3;
-  // Slight contrast boost/reduction combined with brightness
-  const offset = value * -0.15; // compensate to keep midtones stable
-  return [h, 0, 0, 0, offset, 0, h, 0, 0, offset, 0, 0, h, 0, offset, 0, 0, 0, 1, 0];
+  // VERY strong effect - scaling from 0.2 to 2.0
+  const scale = 1 + value * 0.8;
+  return [
+    scale, 0, 0, 0, 0,
+    0, scale, 0, 0, 0,
+    0, 0, scale, 0, 0,
+    0, 0, 0, 1, 0,
+  ];
 }
 function multiplyColorMatrices(a: number[], b: number[]): number[] {
   const result: number[] = new Array(20).fill(0);
@@ -180,14 +193,24 @@ function createCombinedMatrix(
     matrix = multiplyColorMatrices(warmthMatrix(adjustments.warmth), matrix);
   }
   if (adjustments.shadows !== 0) {
-    matrix = multiplyColorMatrices(shadowsMatrix(adjustments.shadows), matrix);
+    const shadowMat = shadowsMatrix(adjustments.shadows);
+    console.log("[SkiaEditableImage] Shadows value:", adjustments.shadows, "Matrix offset:", shadowMat[4]);
+    matrix = multiplyColorMatrices(shadowMat, matrix);
   }
   if (adjustments.highlights !== 0) {
-    matrix = multiplyColorMatrices(
-      highlightsMatrix(adjustments.highlights),
-      matrix,
-    );
+    const highlightMat = highlightsMatrix(adjustments.highlights);
+    console.log("[SkiaEditableImage] Highlights value:", adjustments.highlights, "Matrix scale:", highlightMat[0]);
+    matrix = multiplyColorMatrices(highlightMat, matrix);
   }
+
+  // Debug: Log if any adjustment is active
+  const hasAdjustments = adjustments.brightness !== 0 || adjustments.contrast !== 1 ||
+    adjustments.saturation !== 1 || adjustments.exposure !== 0 ||
+    adjustments.warmth !== 0 || adjustments.shadows !== 0 || adjustments.highlights !== 0;
+  if (hasAdjustments) {
+    console.log("[SkiaEditableImage] Final matrix first row:", matrix.slice(0, 5));
+  }
+
   return matrix;
 }
 
@@ -412,6 +435,11 @@ export const SkiaEditableImage = React.forwardRef<
     const colorMatrix = showOriginal
       ? [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0] // Identity
       : createCombinedMatrix(adjustments);
+
+    // Debug: Log when highlights or shadows are non-zero
+    if (adjustments.highlights !== 0 || adjustments.shadows !== 0) {
+      console.log("[SkiaEditableImage] Render - highlights:", adjustments.highlights, "shadows:", adjustments.shadows);
+    }
 
     if (!image) {
       return (
