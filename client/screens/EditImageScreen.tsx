@@ -98,63 +98,35 @@ export default function EditImageScreen() {
   const [currentImageUri, setCurrentImageUri] = React.useState<string | null>(null); // Track current image (original or cropped)
 
   // Prepare image for Skia compatibility on mount
+  // Uses same approach as QuickFixScreen for consistency
   React.useEffect(() => {
     const prepareImage = async () => {
       try {
-        // On web, Skia needs a proper URL or data URI
-        if (Platform.OS === "web") {
-          // If it's already a data URI or http(s) URL, use it directly
-          if (imageUri.startsWith("data:") || imageUri.startsWith("http")) {
-            console.log("[EditImageScreen] Web: Using URI directly:", imageUri.substring(0, 50));
-            setPreparedUri(imageUri);
-            setCurrentImageUri(imageUri);
-            return;
-          }
-          
-          // Otherwise, convert to base64 data URI for web
-          const manipResult = await ImageManipulator.manipulateAsync(
-            imageUri,
-            [],
-            { compress: 0.95, format: ImageManipulator.SaveFormat.JPEG, base64: true }
-          );
-          
-          if (manipResult.base64) {
-            const dataUri = `data:image/jpeg;base64,${manipResult.base64}`;
-            console.log("[EditImageScreen] Web: Created data URI, length:", dataUri.length);
-            setPreparedUri(dataUri);
-            setCurrentImageUri(dataUri);
-          } else {
-            // Fallback to manipResult.uri if base64 not available
-            console.log("[EditImageScreen] Web: Using manipResult.uri:", manipResult.uri.substring(0, 50));
-            setPreparedUri(manipResult.uri);
-            setCurrentImageUri(manipResult.uri);
-          }
+        // If already a data URI, use directly
+        if (imageUri.startsWith("data:")) {
+          setPreparedUri(imageUri);
+          setCurrentImageUri(imageUri);
           return;
         }
-        
-        // Native platforms: Convert image to JPEG data URI for Skia compatibility
-        // Using base64 data URI is more reliable than file paths across platforms
+
+        // Convert to a clean file URI that Skia can load
         const manipResult = await ImageManipulator.manipulateAsync(
           imageUri,
           [],
-          { compress: 0.95, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+          { compress: 0.95, format: ImageManipulator.SaveFormat.JPEG }
         );
 
-        if (manipResult.base64) {
-          const dataUri = `data:image/jpeg;base64,${manipResult.base64}`;
-          console.log("[EditImageScreen] Native: Created data URI, length:", dataUri.length);
-          setPreparedUri(dataUri);
-          setCurrentImageUri(dataUri);
-        } else {
-          // Fallback to the file URI (keep file:// prefix for Skia)
-          console.log("[EditImageScreen] Native: Using file URI:", manipResult.uri.substring(0, 50));
-          setPreparedUri(manipResult.uri);
-          setCurrentImageUri(manipResult.uri);
+        // Ensure URI has file:// prefix for Skia compatibility
+        let fileUri = manipResult.uri;
+        if (!fileUri.startsWith("file://") && !fileUri.startsWith("data:")) {
+          fileUri = `file://${fileUri}`;
         }
+
+        setPreparedUri(fileUri);
+        setCurrentImageUri(fileUri);
       } catch (error) {
         console.error("[EditImageScreen] Failed to prepare image:", error);
         // Fallback: try the original URI as-is
-        console.log("[EditImageScreen] Fallback URI:", imageUri.substring(0, 50));
         setPreparedUri(imageUri);
         setCurrentImageUri(imageUri);
       }
