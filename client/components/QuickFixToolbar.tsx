@@ -24,6 +24,7 @@ interface QuickFixToolbarProps {
   onToggleFlipHorizontal: () => void;
   onToggleFlipVertical: () => void;
   onAspectRatioChange: (ratio: QuickFixState["aspectRatio"]) => void;
+  onResetCrop: () => void;
   isHidden?: boolean;
 }
 
@@ -44,6 +45,7 @@ export function QuickFixToolbar({
   onToggleFlipHorizontal,
   onToggleFlipVertical,
   onAspectRatioChange,
+  onResetCrop,
   isHidden = false,
 }: QuickFixToolbarProps) {
   const getToolModified = (toolKey: ToolKey): boolean => {
@@ -202,6 +204,19 @@ export function QuickFixToolbar({
               active={state.aspectRatio === "2:3"}
               onPress={() => onAspectRatioChange("2:3")}
             />
+            <Pressable
+              style={styles.resetCropButton}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onResetCrop();
+              }}
+            >
+              <Feather
+                name="refresh-ccw"
+                size={16}
+                color={Colors.editing.textSecondary}
+              />
+            </Pressable>
           </View>
         </Animated.View>
       )}
@@ -454,6 +469,16 @@ const styles = StyleSheet.create({
   },
   aspectBtnTextActive: {
     color: Colors.editing.buttonText,
+  },
+  resetCropButton: {
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    backgroundColor: "rgba(0, 0, 0, 0.05)",
+    borderWidth: 1,
+    borderColor: "rgba(0, 0, 0, 0.08)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   gestureHintContainer: {
     flexDirection: "row",

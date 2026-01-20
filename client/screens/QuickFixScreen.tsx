@@ -52,6 +52,7 @@ export default function QuickFixScreen() {
     toggleFlipVertical,
     setCrop,
     setAspectRatio,
+    resetCrop,
     setBrightness,
     setContrast,
     resetAll,
@@ -316,6 +317,7 @@ export default function QuickFixScreen() {
           onToggleFlipHorizontal={toggleFlipHorizontal}
           onToggleFlipVertical={toggleFlipVertical}
           onAspectRatioChange={setAspectRatio}
+          onResetCrop={resetCrop}
         />
 
         {/* Continue Button */}

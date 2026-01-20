@@ -83,6 +83,10 @@ export function useQuickFix() {
     }));
   }, []);
 
+  const resetCrop = useCallback(() => {
+    setState((prev) => ({ ...prev, crop: null, aspectRatio: null }));
+  }, []);
+
   const resetAll = useCallback(() => {
     setState(DEFAULT_STATE);
   }, []);
@@ -132,6 +136,7 @@ export function useQuickFix() {
     toggleFlipVertical,
     setCrop,
     setAspectRatio,
+    resetCrop,
     setBrightness,
     setContrast,
     resetAll,

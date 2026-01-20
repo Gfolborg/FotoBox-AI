@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { View, StyleSheet } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
@@ -57,17 +57,118 @@ export function CropOverlay({
   const width = useSharedValue(initialCrop.width * imageWidth);
   const height = useSharedValue(initialCrop.height * imageHeight);
 
-  // Update shared values when crop prop changes (e.g., aspect ratio selection)
+  // Track whether we initiated the last crop change (to avoid feedback loops)
+  const selfInitiatedChange = useRef(false);
+  // Track the last applied aspect ratio
+  const lastAppliedAspectRatio = useRef<string | null>(null);
+  // Track if this is the first render
+  const isFirstRender = useRef(true);
+
+  // Helper to update shared values and report change
+  const applyAndReportCrop = (
+    newX: number,
+    newY: number,
+    newW: number,
+    newH: number,
+  ) => {
+    x.value = newX;
+    y.value = newY;
+    width.value = newW;
+    height.value = newH;
+    reportCropChange(newX, newY, newW, newH);
+  };
+
+  // Update shared values when crop prop changes from parent
+  // Skip if we initiated the change ourselves
   useEffect(() => {
+    // Skip on first render - we already initialized from initialCrop
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
+    // Skip if we initiated this change
+    if (selfInitiatedChange.current) {
+      selfInitiatedChange.current = false;
+      return;
+    }
+
+    // External change - sync from parent
     if (crop) {
       x.value = offsetX + crop.x * imageWidth;
       y.value = offsetY + crop.y * imageHeight;
       width.value = crop.width * imageWidth;
       height.value = crop.height * imageHeight;
+    } else {
+      // crop is null - reset to full image
+      x.value = offsetX;
+      y.value = offsetY;
+      width.value = imageWidth;
+      height.value = imageHeight;
     }
-    // Shared values are stable refs and shouldn't trigger re-runs
+
+    // Also reset the aspect ratio tracking when crop resets
+    if (!crop) {
+      lastAppliedAspectRatio.current = null;
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [crop, imageWidth, imageHeight, offsetX, offsetY]);
+  }, [crop]);
+
+  // Apply aspect ratio constraint when aspect ratio changes
+  useEffect(() => {
+    // Handle free/null - just track it
+    if (!aspectRatio || aspectRatio === "free") {
+      lastAppliedAspectRatio.current = aspectRatio || null;
+      return;
+    }
+
+    // Skip if already applied this ratio
+    if (lastAppliedAspectRatio.current === aspectRatio) {
+      return;
+    }
+
+    const ratio =
+      aspectRatio === "square"
+        ? 1
+        : aspectRatio === "4:3"
+          ? 4 / 3
+          : aspectRatio === "16:9"
+            ? 16 / 9
+            : aspectRatio === "2:3"
+              ? 2 / 3
+              : null;
+
+    if (!ratio) return;
+
+    // Calculate new dimensions maintaining aspect ratio
+    const currentW = width.value;
+    const currentH = height.value;
+    const currentX = x.value;
+    const currentY = y.value;
+    const currentRatio = currentW / currentH;
+
+    let newW = currentW;
+    let newH = currentH;
+
+    if (currentRatio > ratio) {
+      // Too wide - reduce width to match ratio
+      newW = currentH * ratio;
+    } else {
+      // Too tall - reduce height to match ratio
+      newH = currentW / ratio;
+    }
+
+    // Center within old bounds
+    const newX = currentX + (currentW - newW) / 2;
+    const newY = currentY + (currentH - newH) / 2;
+
+    // Track that we applied this ratio
+    lastAppliedAspectRatio.current = aspectRatio;
+
+    // Apply and report
+    applyAndReportCrop(newX, newY, newW, newH);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aspectRatio]);
 
   // Context for tracking gesture start position
   const startX = useSharedValue(0);
@@ -86,25 +187,6 @@ export function CropOverlay({
 
   const aspectRatioValue = getAspectRatioValue();
 
-  // Apply aspect ratio constraint
-  const constrainToAspectRatio = (
-    w: number,
-    h: number,
-  ): { width: number; height: number } => {
-    if (!aspectRatioValue) return { width: w, height: h };
-
-    const currentRatio = w / h;
-    const targetRatio = aspectRatioValue;
-
-    if (currentRatio > targetRatio) {
-      // Width is too wide, adjust height
-      return { width: w, height: w / targetRatio };
-    } else {
-      // Height is too tall, adjust width
-      return { width: h * targetRatio, height: h };
-    }
-  };
-
   // Helper to report crop change (must use runOnJS from worklet)
   const reportCropChange = (
     cropX: number,
@@ -112,6 +194,9 @@ export function CropOverlay({
     cropW: number,
     cropH: number,
   ) => {
+    // Mark that we initiated this change to avoid feedback loop
+    selfInitiatedChange.current = true;
+
     // Subtract offset to get position relative to image, not canvas
     const relX = cropX - offsetX;
     const relY = cropY - offsetY;
@@ -150,7 +235,7 @@ export function CropOverlay({
       runOnJS(reportCropChange)(x.value, y.value, width.value, height.value);
     });
 
-  // Corner handle gestures
+  // Corner handle gestures with aspect ratio support
   const createCornerGesture = (corner: "tl" | "tr" | "bl" | "br") => {
     return Gesture.Pan()
       .minDistance(3) // Add small threshold
@@ -161,69 +246,73 @@ export function CropOverlay({
         startHeight.value = height.value;
       })
       .onUpdate((e) => {
+        // Calculate raw new dimensions based on corner being dragged
+        let newX = startX.value;
+        let newY = startY.value;
+        let newWidth = startWidth.value;
+        let newHeight = startHeight.value;
+
         if (corner === "tl") {
-          // Top-left: adjust x, y, width, height
-          const newX = Math.max(offsetX, startX.value + e.translationX);
-          const newY = Math.max(offsetY, startY.value + e.translationY);
-          const newWidth = startWidth.value - (newX - startX.value);
-          const newHeight = startHeight.value - (newY - startY.value);
-
-          if (newWidth >= MIN_CROP_SIZE && newHeight >= MIN_CROP_SIZE) {
-            x.value = newX;
-            y.value = newY;
-            width.value = newWidth;
-            height.value = newHeight;
-          }
+          newX = startX.value + e.translationX;
+          newY = startY.value + e.translationY;
+          newWidth = startWidth.value - e.translationX;
+          newHeight = startHeight.value - e.translationY;
         } else if (corner === "tr") {
-          // Top-right: adjust y, width, height
-          const newY = Math.max(offsetY, startY.value + e.translationY);
-          const newWidth = Math.max(
-            MIN_CROP_SIZE,
-            Math.min(
-              startWidth.value + e.translationX,
-              offsetX + imageWidth - (startX.value - offsetX),
-            ),
-          );
-          const newHeight = startHeight.value - (newY - startY.value);
-
-          if (newHeight >= MIN_CROP_SIZE) {
-            y.value = newY;
-            width.value = newWidth;
-            height.value = newHeight;
-          }
+          newY = startY.value + e.translationY;
+          newWidth = startWidth.value + e.translationX;
+          newHeight = startHeight.value - e.translationY;
         } else if (corner === "bl") {
-          // Bottom-left: adjust x, width, height
-          const newX = Math.max(offsetX, startX.value + e.translationX);
-          const newWidth = startWidth.value - (newX - startX.value);
-          const newHeight = Math.max(
-            MIN_CROP_SIZE,
-            Math.min(
-              startHeight.value + e.translationY,
-              offsetY + imageHeight - (startY.value - offsetY),
-            ),
-          );
-
-          if (newWidth >= MIN_CROP_SIZE) {
-            x.value = newX;
-            width.value = newWidth;
-            height.value = newHeight;
-          }
+          newX = startX.value + e.translationX;
+          newWidth = startWidth.value - e.translationX;
+          newHeight = startHeight.value + e.translationY;
         } else if (corner === "br") {
-          // Bottom-right: adjust width, height
-          width.value = Math.max(
-            MIN_CROP_SIZE,
-            Math.min(
-              startWidth.value + e.translationX,
-              offsetX + imageWidth - (startX.value - offsetX),
-            ),
-          );
-          height.value = Math.max(
-            MIN_CROP_SIZE,
-            Math.min(
-              startHeight.value + e.translationY,
-              offsetY + imageHeight - (startY.value - offsetY),
-            ),
-          );
+          newWidth = startWidth.value + e.translationX;
+          newHeight = startHeight.value + e.translationY;
+        }
+
+        // Apply aspect ratio constraint if set
+        if (aspectRatioValue) {
+          // Use the larger change as the leader dimension
+          const widthChange = Math.abs(newWidth - startWidth.value);
+          const heightChange = Math.abs(newHeight - startHeight.value);
+
+          if (widthChange >= heightChange) {
+            // Width is leader, adjust height
+            newHeight = newWidth / aspectRatioValue;
+          } else {
+            // Height is leader, adjust width
+            newWidth = newHeight * aspectRatioValue;
+          }
+
+          // Recalculate position for corners that move origin
+          if (corner === "tl") {
+            newX = startX.value + startWidth.value - newWidth;
+            newY = startY.value + startHeight.value - newHeight;
+          } else if (corner === "tr") {
+            newY = startY.value + startHeight.value - newHeight;
+          } else if (corner === "bl") {
+            newX = startX.value + startWidth.value - newWidth;
+          }
+          // br: origin stays the same
+        }
+
+        // Apply minimum size constraint
+        if (newWidth < MIN_CROP_SIZE || newHeight < MIN_CROP_SIZE) {
+          return;
+        }
+
+        // Apply bounds constraints
+        newX = Math.max(offsetX, Math.min(newX, offsetX + imageWidth - newWidth));
+        newY = Math.max(offsetY, Math.min(newY, offsetY + imageHeight - newHeight));
+        newWidth = Math.min(newWidth, offsetX + imageWidth - newX);
+        newHeight = Math.min(newHeight, offsetY + imageHeight - newY);
+
+        // Final check after bounds adjustment
+        if (newWidth >= MIN_CROP_SIZE && newHeight >= MIN_CROP_SIZE) {
+          x.value = newX;
+          y.value = newY;
+          width.value = newWidth;
+          height.value = newHeight;
         }
       })
       .onEnd(() => {
