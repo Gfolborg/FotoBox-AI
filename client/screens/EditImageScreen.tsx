@@ -97,6 +97,10 @@ export default function EditImageScreen() {
   const [preparedUri, setPreparedUri] = React.useState<string | null>(null);
   const [currentImageUri, setCurrentImageUri] = React.useState<string | null>(null); // Track current image (original or cropped)
 
+  // Dynamic image sizing - calculate max constraints based on screen
+  const imageMaxWidth = SCREEN_WIDTH - Spacing.lg * 2; // Account for padding
+  const imageMaxHeight = SCREEN_HEIGHT * 0.45; // Leave room for toolbar and buttons
+
   // Prepare image for Skia compatibility on mount
   // Uses same approach as QuickFixScreen for consistency
   React.useEffect(() => {
@@ -466,6 +470,8 @@ export default function EditImageScreen() {
                 crop={state.crop}
                 aspectRatio={state.aspectRatio}
                 onCropChange={(crop) => updateAdjustment("crop", crop)}
+                maxWidth={imageMaxWidth}
+                maxHeight={imageMaxHeight}
               />
 
               <Animated.View

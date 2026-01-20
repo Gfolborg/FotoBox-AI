@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from "react";
-import { View, StyleSheet, Pressable, Alert, Platform } from "react-native";
+import { View, StyleSheet, Pressable, Alert, Platform, Dimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -34,6 +34,7 @@ type RouteProps = RouteProp<RootStackParamList, "QuickFix">;
 type ToolKey = "rotate" | "flip" | "crop" | "brightness" | "contrast";
 
 export default function QuickFixScreen() {
+  const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
@@ -43,6 +44,10 @@ export default function QuickFixScreen() {
   const [selectedTool, setSelectedTool] = useState<ToolKey | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [preparedUri, setPreparedUri] = useState<string | null>(null);
+
+  // Dynamic image sizing - calculate max constraints based on screen
+  const imageMaxWidth = SCREEN_WIDTH - Spacing.lg * 2; // Account for padding
+  const imageMaxHeight = SCREEN_HEIGHT * 0.42; // Leave room for toolbar and buttons
 
   const {
     state,
@@ -272,6 +277,8 @@ export default function QuickFixScreen() {
                 crop={state.crop}
                 aspectRatio={state.aspectRatio}
                 onCropChange={setCrop}
+                maxWidth={imageMaxWidth}
+                maxHeight={imageMaxHeight}
               />
             ) : (
               <View style={styles.imagePlaceholder}>
