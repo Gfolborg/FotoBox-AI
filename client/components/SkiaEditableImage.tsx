@@ -547,15 +547,72 @@ export const SkiaEditableImage = React.forwardRef<
       );
     }
 
-    // With dynamic container sizing, image fills the container
-    const drawWidth = containerSize.width;
-    const drawHeight = containerSize.height;
-    const drawX = 0;
-    const drawY = 0;
-
     const rotationRad = (adjustments.rotation * Math.PI) / 180;
     const scaleX = adjustments.flipHorizontal ? -1 : 1;
     const scaleY = adjustments.flipVertical ? -1 : 1;
+
+    // Calculate how to draw the image based on crop state
+    const imgWidth = image.width();
+    const imgHeight = image.height();
+
+    // Check if we have an active crop that's not the full image
+    const hasActiveCrop = !showCropOverlay && crop &&
+      (crop.x !== 0 || crop.y !== 0 || crop.width !== 1 || crop.height !== 1);
+
+    let drawX = 0;
+    let drawY = 0;
+    let drawWidth = containerSize.width;
+    let drawHeight = containerSize.height;
+    let imageTransform = [
+      { translateX: containerSize.width / 2 },
+      { translateY: containerSize.height / 2 },
+      { rotate: rotationRad },
+      { scaleX },
+      { scaleY },
+      { translateX: -containerSize.width / 2 },
+      { translateY: -containerSize.height / 2 },
+    ];
+
+    if (hasActiveCrop && crop) {
+      // When crop is active (not in overlay mode), show only the cropped portion
+      // Scale the image so the cropped area fills the container
+      const cropWidthPx = imgWidth * crop.width;
+      const cropHeightPx = imgHeight * crop.height;
+
+      // Calculate scale to fit cropped area into container
+      const scaleToFit = Math.min(
+        containerSize.width / cropWidthPx,
+        containerSize.height / cropHeightPx
+      );
+
+      // Full image dimensions when scaled
+      const scaledImgWidth = imgWidth * scaleToFit;
+      const scaledImgHeight = imgHeight * scaleToFit;
+
+      // Offset to center the crop area in the container
+      const cropOffsetX = crop.x * scaledImgWidth;
+      const cropOffsetY = crop.y * scaledImgHeight;
+
+      // Center the cropped portion
+      const centerOffsetX = (containerSize.width - cropWidthPx * scaleToFit) / 2;
+      const centerOffsetY = (containerSize.height - cropHeightPx * scaleToFit) / 2;
+
+      drawX = -cropOffsetX + centerOffsetX;
+      drawY = -cropOffsetY + centerOffsetY;
+      drawWidth = scaledImgWidth;
+      drawHeight = scaledImgHeight;
+
+      // Adjust transform for cropped view
+      imageTransform = [
+        { translateX: containerSize.width / 2 },
+        { translateY: containerSize.height / 2 },
+        { rotate: rotationRad },
+        { scaleX },
+        { scaleY },
+        { translateX: -containerSize.width / 2 },
+        { translateY: -containerSize.height / 2 },
+      ];
+    }
 
     return (
       <Animated.View style={[styles.container, animatedContainerStyle]}>
@@ -578,16 +635,8 @@ export const SkiaEditableImage = React.forwardRef<
               y={drawY}
               width={drawWidth}
               height={drawHeight}
-              fit="contain"
-              transform={[
-                { translateX: containerSize.width / 2 },
-                { translateY: containerSize.height / 2 },
-                { rotate: rotationRad },
-                { scaleX },
-                { scaleY },
-                { translateX: -containerSize.width / 2 },
-                { translateY: -containerSize.height / 2 },
-              ]}
+              fit="fill"
+              transform={imageTransform}
             >
               <ColorMatrix matrix={colorMatrix} />
             </Image>
