@@ -131,29 +131,34 @@ export default function QuickFixScreen() {
   React.useEffect(() => {
     const prepareImage = async () => {
       try {
-        // Convert image to JPEG for Skia compatibility
+        // If already a data URI, use directly
+        if (imageUri.startsWith("data:")) {
+          console.log("[QuickFix] Using data URI directly");
+          setPreparedUri(imageUri);
+          return;
+        }
+
+        // Convert image to JPEG data URI for Skia compatibility
+        // Using base64 data URI is more reliable than file paths across platforms
         const manipResult = await ImageManipulator.manipulateAsync(
           imageUri,
           [],
-          { compress: 0.95, format: ImageManipulator.SaveFormat.JPEG }
+          { compress: 0.95, format: ImageManipulator.SaveFormat.JPEG, base64: true }
         );
 
-        // Copy to documents directory
-        const filename = `quickfix_temp_${Date.now()}.jpg`;
-        const tempUri = `${FileSystem.documentDirectory}${filename}`;
-
-        await FileSystem.copyAsync({
-          from: manipResult.uri,
-          to: tempUri,
-        });
-
-        // Remove file:// prefix for Skia
-        const skiaUri = tempUri.replace("file://", "");
-        setPreparedUri(skiaUri);
+        if (manipResult.base64) {
+          const dataUri = `data:image/jpeg;base64,${manipResult.base64}`;
+          console.log("[QuickFix] Created data URI, length:", dataUri.length);
+          setPreparedUri(dataUri);
+        } else {
+          // Fallback to file URI as-is
+          console.log("[QuickFix] Using file URI:", manipResult.uri);
+          setPreparedUri(manipResult.uri);
+        }
       } catch (error) {
         console.error("[QuickFix] Failed to prepare image:", error);
-        // Fallback to original URI
-        setPreparedUri(imageUri.replace("file://", ""));
+        // Fallback to original URI as-is
+        setPreparedUri(imageUri);
       }
     };
 
