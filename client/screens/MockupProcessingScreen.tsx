@@ -29,9 +29,17 @@ export default function MockupProcessingScreen() {
   const navigation = useNavigation<MockupProcessingScreenNavigationProp>();
   const route = useRoute<MockupProcessingScreenRouteProp>();
   const insets = useSafeAreaInsets();
-  
-  const { imageUri, mockupItem, sceneVibe, cameraOption, mockupColor, customDescription, modelOption } = route.params;
-  
+
+  const {
+    imageUri,
+    mockupItem,
+    sceneVibe,
+    cameraOption,
+    mockupColor,
+    customDescription,
+    modelOption,
+  } = route.params;
+
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState("Preparing your mockup...");
   const hasStartedRef = useRef(false);
@@ -39,7 +47,7 @@ export default function MockupProcessingScreen() {
   useEffect(() => {
     if (hasStartedRef.current) return;
     hasStartedRef.current = true;
-    
+
     processMockup();
   }, []);
 
@@ -47,21 +55,21 @@ export default function MockupProcessingScreen() {
     try {
       setProgress(10);
       setStatus("Uploading image...");
-      
+
       const formData = new FormData();
       formData.append("file", {
         uri: imageUri,
         name: "product.jpg",
         type: "image/jpeg",
       } as unknown as Blob);
-      
+
       const prompt = getMockupPrompt(
         mockupItem,
         sceneVibe,
         cameraOption,
         mockupColor,
         customDescription,
-        modelOption
+        modelOption,
       );
       formData.append("prompt", prompt);
       formData.append("mockupType", mockupItem.id);
@@ -74,10 +82,13 @@ export default function MockupProcessingScreen() {
       setProgress(30);
       setStatus("Creating your mockup with AI...");
 
-      const response = await fetch(new URL("/api/mockup", getApiUrl()).toString(), {
-        method: "POST",
-        body: formData,
-      });
+      const response = await fetch(
+        new URL("/api/mockup", getApiUrl()).toString(),
+        {
+          method: "POST",
+          body: formData,
+        },
+      );
 
       setProgress(70);
       setStatus("Finalizing result...");
@@ -88,10 +99,10 @@ export default function MockupProcessingScreen() {
       }
 
       const data = await response.json();
-      
+
       setProgress(100);
       setStatus("Complete!");
-      
+
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
       setTimeout(() => {
@@ -130,7 +141,9 @@ export default function MockupProcessingScreen() {
           <Animated.View entering={FadeInDown.delay(300).duration(400)}>
             <GlassCard style={styles.statusCard}>
               <ThemedText style={styles.statusText}>{status}</ThemedText>
-              <ThemedText style={styles.progressText}>{Math.round(progress)}%</ThemedText>
+              <ThemedText style={styles.progressText}>
+                {Math.round(progress)}%
+              </ThemedText>
             </GlassCard>
           </Animated.View>
 
@@ -138,15 +151,21 @@ export default function MockupProcessingScreen() {
             <View style={styles.detailsRow}>
               <View style={styles.detailItem}>
                 <ThemedText style={styles.detailLabel}>Product</ThemedText>
-                <ThemedText style={styles.detailValue}>{mockupItem.label}</ThemedText>
+                <ThemedText style={styles.detailValue}>
+                  {mockupItem.label}
+                </ThemedText>
               </View>
               <View style={styles.detailItem}>
                 <ThemedText style={styles.detailLabel}>Style</ThemedText>
-                <ThemedText style={styles.detailValue}>{sceneVibe.label}</ThemedText>
+                <ThemedText style={styles.detailValue}>
+                  {sceneVibe.label}
+                </ThemedText>
               </View>
               <View style={styles.detailItem}>
                 <ThemedText style={styles.detailLabel}>Camera</ThemedText>
-                <ThemedText style={styles.detailValue}>{cameraOption.label}</ThemedText>
+                <ThemedText style={styles.detailValue}>
+                  {cameraOption.label}
+                </ThemedText>
               </View>
             </View>
           </Animated.View>

@@ -1,3 +1,28 @@
+import React from "react";
+import {
+  View,
+  StyleSheet,
+  Image,
+  Pressable,
+  Alert,
+  Platform,
+  Dimensions,
+  ScrollView,
+  Share,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import * as FileSystem from "expo-file-system/legacy";
+import { Feather } from "@expo/vector-icons";
+import { StatusBar } from "expo-status-bar";
+import * as Haptics from "expo-haptics";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeOut,
+  FadeInUp,
+} from "react-native-reanimated";
 import { ThemedHeader } from "@/components/ThemedHeader";
 import { ThemedText } from "@/components/ThemedText";
 import { GlassCard } from "@/components/GlassCard";
@@ -17,6 +42,8 @@ type MockupResultScreenRouteProp = RouteProp<
 >;
 
 export default function MockupResultScreen() {
+  const { width: SCREEN_WIDTH } = Dimensions.get("window");
+  const IMAGE_SIZE = SCREEN_WIDTH - Spacing.lg * 2;
   const navigation = useNavigation<MockupResultScreenNavigationProp>();
   const route = useRoute<MockupResultScreenRouteProp>();
   const insets = useSafeAreaInsets();
@@ -49,10 +76,10 @@ export default function MockupResultScreen() {
 
   const handleShare = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
+
     try {
       let fileUri = resultUri;
-      
+
       if (resultUri.startsWith("data:")) {
         const base64Data = resultUri.split(",")[1];
         const filename = `mockup_${Date.now()}.jpg`;
@@ -64,7 +91,10 @@ export default function MockupResultScreen() {
 
       await Share.share({
         url: fileUri,
-        message: Platform.OS === "android" ? `Check out my ${mockupType} mockup!` : undefined,
+        message:
+          Platform.OS === "android"
+            ? `Check out my ${mockupType} mockup!`
+            : undefined,
       });
     } catch (error) {
       console.error("Share error:", error);
@@ -73,9 +103,9 @@ export default function MockupResultScreen() {
 
   const handleEditImage = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
+
     let imageUri = resultUri;
-    
+
     if (resultUri.startsWith("data:")) {
       const base64Data = resultUri.split(",")[1];
       const filename = `mockup_edit_${Date.now()}.jpg`;
@@ -84,7 +114,7 @@ export default function MockupResultScreen() {
         encoding: FileSystem.EncodingType.Base64,
       });
     }
-    
+
     navigation.navigate("EditImage", {
       imageUri,
       originalUri,

@@ -1,11 +1,22 @@
 import React from "react";
-import { View, StyleSheet, Pressable, Image, Dimensions, ScrollView } from "react-native";
+import {
+  View,
+  StyleSheet,
+  Pressable,
+  Image,
+  Dimensions,
+  ScrollView,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
-import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+} from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/ThemedText";
@@ -18,7 +29,10 @@ import { RootStackParamList } from "@/navigation/RootStackNavigator";
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const PREVIEW_SIZE = 60;
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList, "BatchActionSelection">;
+type NavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  "BatchActionSelection"
+>;
 type RouteProps = RouteProp<RootStackParamList, "BatchActionSelection">;
 
 interface ActionCardProps {
@@ -30,7 +44,14 @@ interface ActionCardProps {
   delay: number;
 }
 
-function ActionCard({ icon, title, description, color, onPress, delay }: ActionCardProps) {
+function ActionCard({
+  icon,
+  title,
+  description,
+  color,
+  onPress,
+  delay,
+}: ActionCardProps) {
   return (
     <Animated.View entering={FadeInDown.delay(delay).duration(400).springify()}>
       <Pressable
@@ -40,14 +61,25 @@ function ActionCard({ icon, title, description, color, onPress, delay }: ActionC
           onPress();
         }}
       >
-        <View style={[styles.actionIconContainer, { backgroundColor: color + "20" }]}>
+        <View
+          style={[
+            styles.actionIconContainer,
+            { backgroundColor: color + "20" },
+          ]}
+        >
           <Feather name={icon} size={28} color={color} />
         </View>
         <View style={styles.actionTextContainer}>
           <ThemedText style={styles.actionTitle}>{title}</ThemedText>
-          <ThemedText style={styles.actionDescription}>{description}</ThemedText>
+          <ThemedText style={styles.actionDescription}>
+            {description}
+          </ThemedText>
         </View>
-        <Feather name="chevron-right" size={24} color={Colors.editing.textTertiary} />
+        <Feather
+          name="chevron-right"
+          size={24}
+          color={Colors.editing.textTertiary}
+        />
       </Pressable>
     </Animated.View>
   );
@@ -78,77 +110,88 @@ export default function BatchActionSelectionScreen() {
       <StatusBar style="dark" />
 
       <View style={[styles.container, { paddingTop: insets.top }]}>
-        <Animated.View
-          entering={FadeIn.duration(300)}
-          style={styles.header}
-        >
+        <Animated.View entering={FadeIn.duration(300)} style={styles.header}>
           <View style={styles.headerContent}>
-          <IconButton
-            icon="chevron-left"
-            onPress={() => navigation.goBack()}
-            size={44}
-            iconSize={24}
-            variant="ghost"
-            color={Colors.editing.text}
-          />
+            <IconButton
+              icon="chevron-left"
+              onPress={() => navigation.goBack()}
+              size={44}
+              iconSize={24}
+              variant="ghost"
+              color={Colors.editing.text}
+            />
 
-          <GlassPill>
-            <Feather name="layers" size={16} color={Colors.editing.primary} />
-            <ThemedText style={styles.headerTitle}>{imageUris.length} Photos Selected</ThemedText>
-          </GlassPill>
+            <GlassPill>
+              <Feather name="layers" size={16} color={Colors.editing.primary} />
+              <ThemedText style={styles.headerTitle}>
+                {imageUris.length} Photos Selected
+              </ThemedText>
+            </GlassPill>
 
-          <View style={{ width: 44 }} />
-        </View>
-      </Animated.View>
-
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + Spacing.xl }]}
-        showsVerticalScrollIndicator={false}
-      >
-        <Animated.View
-          entering={FadeIn.delay(100).duration(400)}
-          style={styles.previewContainer}
-        >
-          <View style={styles.previewGrid}>
-            {imageUris.slice(0, 4).map((uri, index) => (
-              <View key={uri} style={styles.previewImageWrapper}>
-                <Image source={{ uri }} style={styles.previewImage} />
-                {index === 3 && imageUris.length > 4 && (
-                  <View style={styles.moreOverlay}>
-                    <ThemedText style={styles.moreText}>+{imageUris.length - 4}</ThemedText>
-                  </View>
-                )}
-              </View>
-            ))}
+            <View style={{ width: 44 }} />
           </View>
         </Animated.View>
 
-        <Animated.View entering={FadeInUp.delay(200).duration(400)} style={styles.promptContainer}>
-          <ThemedText style={styles.promptText}>What would you like to do?</ThemedText>
-          <ThemedText style={styles.promptSubtext}>Choose an action for your batch</ThemedText>
-        </Animated.View>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[
+            styles.content,
+            { paddingBottom: insets.bottom + Spacing.xl },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
+          <Animated.View
+            entering={FadeIn.delay(100).duration(400)}
+            style={styles.previewContainer}
+          >
+            <View style={styles.previewGrid}>
+              {imageUris.slice(0, 4).map((uri, index) => (
+                <View key={uri} style={styles.previewImageWrapper}>
+                  <Image source={{ uri }} style={styles.previewImage} />
+                  {index === 3 && imageUris.length > 4 && (
+                    <View style={styles.moreOverlay}>
+                      <ThemedText style={styles.moreText}>
+                        +{imageUris.length - 4}
+                      </ThemedText>
+                    </View>
+                  )}
+                </View>
+              ))}
+            </View>
+          </Animated.View>
 
-        <View style={styles.actionsContainer}>
-          <ActionCard
-            icon="crop"
-            title="Remove Backgrounds"
-            description="Create clean product photos with solid color backgrounds"
-            color={Colors.editing.primary}
-            onPress={handleRemoveBackground}
-            delay={300}
-          />
+          <Animated.View
+            entering={FadeInUp.delay(200).duration(400)}
+            style={styles.promptContainer}
+          >
+            <ThemedText style={styles.promptText}>
+              What would you like to do?
+            </ThemedText>
+            <ThemedText style={styles.promptSubtext}>
+              Choose an action for your batch
+            </ThemedText>
+          </Animated.View>
 
-          <ActionCard
-            icon="image"
-            title="Create Lifestyle Scenes"
-            description="Place products in realistic environments and settings"
-            color={Colors.editing.secondary}
-            onPress={handleCreateLifestyle}
-            delay={400}
-          />
-        </View>
-      </ScrollView>
+          <View style={styles.actionsContainer}>
+            <ActionCard
+              icon="crop"
+              title="Remove Backgrounds"
+              description="Create clean product photos with solid color backgrounds"
+              color={Colors.editing.primary}
+              onPress={handleRemoveBackground}
+              delay={300}
+            />
+
+            <ActionCard
+              icon="image"
+              title="Create Lifestyle Scenes"
+              description="Place products in realistic environments and settings"
+              color={Colors.editing.secondary}
+              onPress={handleCreateLifestyle}
+              delay={400}
+            />
+          </View>
+        </ScrollView>
       </View>
     </GradientBackground>
   );

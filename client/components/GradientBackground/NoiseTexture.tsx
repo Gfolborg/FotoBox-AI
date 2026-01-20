@@ -24,7 +24,10 @@ export function NoiseTexture({ config }: NoiseTextureProps) {
 
   // Use a simple dithered pattern with just a few elements for a subtle texture
   return (
-    <View style={[styles.container, { opacity: mergedConfig.opacity }]} pointerEvents="none">
+    <View
+      style={[styles.container, { opacity: mergedConfig.opacity }]}
+      pointerEvents="none"
+    >
       {/* Simple gradient-like texture layers */}
       <View style={[styles.layer, styles.layer1]} />
       <View style={[styles.layer, styles.layer2]} />

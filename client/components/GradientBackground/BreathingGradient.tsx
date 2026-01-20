@@ -47,7 +47,7 @@ export function BreathingGradient({ config }: BreathingGradientProps) {
         easing: Easing.inOut(Easing.sin),
       }),
       -1,
-      true
+      true,
     );
   }, [mergedConfig.speed]);
 
@@ -57,7 +57,11 @@ export function BreathingGradient({ config }: BreathingGradientProps) {
     const opacity = interpolate(
       progress.value,
       [0, 0.5, 1],
-      [mergedConfig.intensity * 0.6, mergedConfig.intensity, mergedConfig.intensity * 0.6]
+      [
+        mergedConfig.intensity * 0.6,
+        mergedConfig.intensity,
+        mergedConfig.intensity * 0.6,
+      ],
     );
     const translateX = interpolate(progress.value, [0, 1], [0, 15]);
     const translateY = interpolate(progress.value, [0, 1], [0, -10]);
@@ -68,7 +72,7 @@ export function BreathingGradient({ config }: BreathingGradientProps) {
       backgroundColor: interpolateColor(
         progress.value,
         [0, 1],
-        [mergedConfig.colors[0], mergedConfig.colors[1]]
+        [mergedConfig.colors[0], mergedConfig.colors[1]],
       ),
     };
   });
@@ -80,7 +84,11 @@ export function BreathingGradient({ config }: BreathingGradientProps) {
     const opacity = interpolate(
       offsetProgress,
       [0, 0.5, 1],
-      [mergedConfig.intensity * 0.4, mergedConfig.intensity * 0.8, mergedConfig.intensity * 0.4]
+      [
+        mergedConfig.intensity * 0.4,
+        mergedConfig.intensity * 0.8,
+        mergedConfig.intensity * 0.4,
+      ],
     );
     const translateX = interpolate(offsetProgress, [0, 1], [0, -10]);
     const translateY = interpolate(offsetProgress, [0, 1], [0, 10]);
@@ -91,7 +99,7 @@ export function BreathingGradient({ config }: BreathingGradientProps) {
       backgroundColor: interpolateColor(
         offsetProgress,
         [0, 1],
-        [mergedConfig.colors[1], mergedConfig.colors[0]]
+        [mergedConfig.colors[1], mergedConfig.colors[0]],
       ),
     };
   });
@@ -101,7 +109,7 @@ export function BreathingGradient({ config }: BreathingGradientProps) {
     const opacity = interpolate(
       progress.value,
       [0, 0.5, 1],
-      [0.02, 0.06, 0.02]
+      [0.02, 0.06, 0.02],
     );
     const scale = interpolate(progress.value, [0, 1], [0.9, 1.1]);
 
@@ -115,21 +123,13 @@ export function BreathingGradient({ config }: BreathingGradientProps) {
     <>
       {/* Top-right breathing blob */}
       <Animated.View
-        style={[
-          styles.blob,
-          styles.blob1,
-          blob1Style,
-        ]}
+        style={[styles.blob, styles.blob1, blob1Style]}
         pointerEvents="none"
       />
 
       {/* Bottom-left breathing blob */}
       <Animated.View
-        style={[
-          styles.blob,
-          styles.blob2,
-          blob2Style,
-        ]}
+        style={[styles.blob, styles.blob2, blob2Style]}
         pointerEvents="none"
       />
 

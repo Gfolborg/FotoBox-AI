@@ -13,7 +13,11 @@ import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
 import { Feather } from "@expo/vector-icons";
-import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+} from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/ThemedText";
@@ -32,7 +36,10 @@ import {
 import { batchOptimizeAndSave } from "@/lib/platform-optimizer";
 import { saveToFotoBoxAlbum } from "@/lib/save-to-album";
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList, "BatchPlatformSelection">;
+type NavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  "BatchPlatformSelection"
+>;
 type RouteProps = RouteProp<RootStackParamList, "BatchPlatformSelection">;
 
 export default function BatchPlatformSelectionScreen() {
@@ -41,11 +48,16 @@ export default function BatchPlatformSelectionScreen() {
   const route = useRoute<RouteProps>();
   const { results } = route.params;
 
-  const [selectedPlatforms, setSelectedPlatforms] = useState<Set<string>>(new Set());
+  const [selectedPlatforms, setSelectedPlatforms] = useState<Set<string>>(
+    new Set(),
+  );
   const [isExporting, setIsExporting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [exportCount, setExportCount] = useState(0);
-  const [currentProgress, setCurrentProgress] = useState<{ image: number; platform: string } | null>(null);
+  const [currentProgress, setCurrentProgress] = useState<{
+    image: number;
+    platform: string;
+  } | null>(null);
 
   const allPlatforms = getAllPlatforms();
   const imageCount = results.length;
@@ -80,7 +92,10 @@ export default function BatchPlatformSelectionScreen() {
     try {
       for (const result of results) {
         if (result.resultUri) {
-          const saveResult = await saveToFotoBoxAlbum(result.resultUri, "product_image");
+          const saveResult = await saveToFotoBoxAlbum(
+            result.resultUri,
+            "product_image",
+          );
           if (saveResult.success) {
             savedCount++;
           }
@@ -106,7 +121,10 @@ export default function BatchPlatformSelectionScreen() {
     if (selectedPlatforms.size === 0) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       if (Platform.OS !== "web") {
-        Alert.alert("No Platforms Selected", "Please select at least one platform to export for.");
+        Alert.alert(
+          "No Platforms Selected",
+          "Please select at least one platform to export for.",
+        );
       }
       return;
     }
@@ -128,7 +146,7 @@ export default function BatchPlatformSelectionScreen() {
             image: imageIndex + 1,
             platform: platformId,
           });
-        }
+        },
       );
 
       if (saveResult.totalSaved > 0) {
@@ -141,14 +159,17 @@ export default function BatchPlatformSelectionScreen() {
         if (Platform.OS !== "web") {
           Alert.alert(
             "Partial Export",
-            `${saveResult.totalSaved} images saved, ${saveResult.totalFailed} failed.`
+            `${saveResult.totalSaved} images saved, ${saveResult.totalFailed} failed.`,
           );
         }
       }
     } catch (error) {
       console.error("[BatchPlatformSelection] Export failed:", error);
       if (Platform.OS !== "web") {
-        Alert.alert("Export Failed", "Failed to export images. Please try again.");
+        Alert.alert(
+          "Export Failed",
+          "Failed to export images. Please try again.",
+        );
       }
     } finally {
       setIsExporting(false);
@@ -177,7 +198,11 @@ export default function BatchPlatformSelectionScreen() {
               onPress={() => navigation.goBack()}
               disabled={isExporting}
             >
-              <Feather name="chevron-left" size={24} color={Colors.editing.text} />
+              <Feather
+                name="chevron-left"
+                size={24}
+                color={Colors.editing.text}
+              />
             </Pressable>
 
             <GlassPill>
@@ -197,117 +222,137 @@ export default function BatchPlatformSelectionScreen() {
 
         <ScrollView
           style={styles.scrollView}
-        contentContainerStyle={[
-          styles.content,
-          { paddingBottom: insets.bottom + 100 },
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Image Preview Grid */}
-        <Animated.View
-          entering={FadeIn.delay(100).duration(400)}
-          style={styles.imageSection}
+          contentContainerStyle={[
+            styles.content,
+            { paddingBottom: insets.bottom + 100 },
+          ]}
+          showsVerticalScrollIndicator={false}
         >
-          <View style={styles.imageGrid}>
-            {results.slice(0, 4).map((result, index) => (
-              <View key={index} style={styles.imageThumb}>
-                {result.resultUri && (
-                  <Image
-                    source={{ uri: result.resultUri }}
-                    style={styles.thumbImage}
-                  />
-                )}
-                {index === 3 && results.length > 4 && (
-                  <View style={styles.moreOverlay}>
-                    <ThemedText style={styles.moreText}>
-                      +{results.length - 4}
+          {/* Image Preview Grid */}
+          <Animated.View
+            entering={FadeIn.delay(100).duration(400)}
+            style={styles.imageSection}
+          >
+            <View style={styles.imageGrid}>
+              {results.slice(0, 4).map((result, index) => (
+                <View key={index} style={styles.imageThumb}>
+                  {result.resultUri && (
+                    <Image
+                      source={{ uri: result.resultUri }}
+                      style={styles.thumbImage}
+                    />
+                  )}
+                  {index === 3 && results.length > 4 && (
+                    <View style={styles.moreOverlay}>
+                      <ThemedText style={styles.moreText}>
+                        +{results.length - 4}
+                      </ThemedText>
+                    </View>
+                  )}
+                </View>
+              ))}
+            </View>
+            <View style={styles.countBadge}>
+              <Feather name="layers" size={14} color={Colors.editing.primary} />
+              <ThemedText style={styles.countText}>
+                {imageCount} image{imageCount !== 1 ? "s" : ""}
+              </ThemedText>
+            </View>
+          </Animated.View>
+
+          {/* Platform Selection */}
+          <Animated.View
+            entering={FadeInUp.delay(200).duration(400)}
+            style={styles.platformSection}
+          >
+            <ThemedText style={styles.sectionTitle}>
+              Select platforms to optimize for
+            </ThemedText>
+
+            <View style={styles.platformGrid}>
+              {allPlatforms.map((platform) => (
+                <PlatformChip
+                  key={platform.id}
+                  platform={platform}
+                  selected={selectedPlatforms.has(platform.id)}
+                  onPress={() => togglePlatform(platform.id)}
+                  disabled={isExporting}
+                />
+              ))}
+            </View>
+          </Animated.View>
+
+          {/* Export Summary */}
+          {selectedPlatforms.size > 0 && (
+            <Animated.View
+              entering={FadeInUp.delay(300).duration(400)}
+              style={styles.summarySection}
+            >
+              <GlassCard theme="light" padding="md" borderRadius="lg">
+                <View style={styles.summaryRow}>
+                  <View style={styles.summaryItem}>
+                    <ThemedText style={styles.summaryLabel}>Images</ThemedText>
+                    <ThemedText style={styles.summaryValue}>
+                      {imageCount}
                     </ThemedText>
                   </View>
-                )}
-              </View>
-            ))}
-          </View>
-          <View style={styles.countBadge}>
-            <Feather name="layers" size={14} color={Colors.editing.primary} />
-            <ThemedText style={styles.countText}>
-              {imageCount} image{imageCount !== 1 ? "s" : ""}
-            </ThemedText>
-          </View>
-        </Animated.View>
-
-        {/* Platform Selection */}
-        <Animated.View
-          entering={FadeInUp.delay(200).duration(400)}
-          style={styles.platformSection}
-        >
-          <ThemedText style={styles.sectionTitle}>
-            Select platforms to optimize for
-          </ThemedText>
-
-          <View style={styles.platformGrid}>
-            {allPlatforms.map((platform) => (
-              <PlatformChip
-                key={platform.id}
-                platform={platform}
-                selected={selectedPlatforms.has(platform.id)}
-                onPress={() => togglePlatform(platform.id)}
-                disabled={isExporting}
-              />
-            ))}
-          </View>
-        </Animated.View>
-
-        {/* Export Summary */}
-        {selectedPlatforms.size > 0 && (
-          <Animated.View
-            entering={FadeInUp.delay(300).duration(400)}
-            style={styles.summarySection}
-          >
-            <GlassCard theme="light" padding="md" borderRadius="lg">
-              <View style={styles.summaryRow}>
-                <View style={styles.summaryItem}>
-                  <ThemedText style={styles.summaryLabel}>Images</ThemedText>
-                  <ThemedText style={styles.summaryValue}>{imageCount}</ThemedText>
+                  <Feather
+                    name="x"
+                    size={16}
+                    color={Colors.editing.textTertiary}
+                  />
+                  <View style={styles.summaryItem}>
+                    <ThemedText style={styles.summaryLabel}>
+                      Platforms
+                    </ThemedText>
+                    <ThemedText style={styles.summaryValue}>
+                      {selectedPlatforms.size}
+                    </ThemedText>
+                  </View>
+                  <ThemedText style={styles.mathSymbol}>=</ThemedText>
+                  <View style={styles.summaryItem}>
+                    <ThemedText style={styles.summaryLabel}>Total</ThemedText>
+                    <ThemedText
+                      style={[styles.summaryValue, styles.summaryTotal]}
+                    >
+                      {getTotalExports()}
+                    </ThemedText>
+                  </View>
                 </View>
-                <Feather name="x" size={16} color={Colors.editing.textTertiary} />
-                <View style={styles.summaryItem}>
-                  <ThemedText style={styles.summaryLabel}>Platforms</ThemedText>
-                  <ThemedText style={styles.summaryValue}>{selectedPlatforms.size}</ThemedText>
-                </View>
-                <ThemedText style={styles.mathSymbol}>=</ThemedText>
-                <View style={styles.summaryItem}>
-                  <ThemedText style={styles.summaryLabel}>Total</ThemedText>
-                  <ThemedText style={[styles.summaryValue, styles.summaryTotal]}>
-                    {getTotalExports()}
+              </GlassCard>
+            </Animated.View>
+          )}
+
+          {/* Progress */}
+          {isExporting && currentProgress && (
+            <Animated.View
+              entering={FadeIn.duration(200)}
+              style={styles.progressSection}
+            >
+              <GlassCard theme="light" padding="md" borderRadius="lg">
+                <View style={styles.progressContent}>
+                  <Feather
+                    name="loader"
+                    size={20}
+                    color={Colors.editing.primary}
+                  />
+                  <ThemedText style={styles.progressText}>
+                    Processing image {currentProgress.image} of {imageCount} for{" "}
+                    {currentProgress.platform}...
                   </ThemedText>
                 </View>
-              </View>
-            </GlassCard>
-          </Animated.View>
-        )}
-
-        {/* Progress */}
-        {isExporting && currentProgress && (
-          <Animated.View
-            entering={FadeIn.duration(200)}
-            style={styles.progressSection}
-          >
-            <GlassCard theme="light" padding="md" borderRadius="lg">
-              <View style={styles.progressContent}>
-                <Feather name="loader" size={20} color={Colors.editing.primary} />
-                <ThemedText style={styles.progressText}>
-                  Processing image {currentProgress.image} of {imageCount} for {currentProgress.platform}...
-                </ThemedText>
-              </View>
-            </GlassCard>
-          </Animated.View>
-        )}
-      </ScrollView>
+              </GlassCard>
+            </Animated.View>
+          )}
+        </ScrollView>
 
         {/* Export Button */}
         <Animated.View
           entering={FadeInUp.delay(400).duration(400)}
-          style={[styles.actionBar, { paddingBottom: insets.bottom + Spacing.md }]}
+          style={[
+            styles.actionBar,
+            { paddingBottom: insets.bottom + Spacing.md },
+          ]}
         >
           <View style={styles.actionBarContent}>
             <GradientButton
@@ -315,8 +360,8 @@ export default function BatchPlatformSelectionScreen() {
                 isExporting
                   ? "Exporting..."
                   : selectedPlatforms.size > 0
-                  ? `Export ${getTotalExports()} Images`
-                  : "Select Platforms"
+                    ? `Export ${getTotalExports()} Images`
+                    : "Select Platforms"
               }
               onPress={handleExport}
               disabled={isExporting || selectedPlatforms.size === 0}

@@ -38,19 +38,27 @@ export interface BatchOptimizationProgress {
 export function checkCompliance(
   imageWidth: number,
   imageHeight: number,
-  platform: PlatformRequirement
+  platform: PlatformRequirement,
 ): ComplianceResult {
   const issues: string[] = [];
   const suggestions: string[] = [];
 
   // Check minimum dimensions
   if (imageWidth < platform.minWidth) {
-    issues.push(`Width ${imageWidth}px is below minimum ${platform.minWidth}px`);
-    suggestions.push(`Image will be upscaled to ${platform.optimalWidth}px width`);
+    issues.push(
+      `Width ${imageWidth}px is below minimum ${platform.minWidth}px`,
+    );
+    suggestions.push(
+      `Image will be upscaled to ${platform.optimalWidth}px width`,
+    );
   }
   if (imageHeight < platform.minHeight) {
-    issues.push(`Height ${imageHeight}px is below minimum ${platform.minHeight}px`);
-    suggestions.push(`Image will be upscaled to ${platform.optimalHeight}px height`);
+    issues.push(
+      `Height ${imageHeight}px is below minimum ${platform.minHeight}px`,
+    );
+    suggestions.push(
+      `Image will be upscaled to ${platform.optimalHeight}px height`,
+    );
   }
 
   // Check aspect ratio
@@ -59,8 +67,11 @@ export function checkCompliance(
   const ratioDiff = Math.abs(currentRatio - targetRatio);
 
   if (ratioDiff > 0.05) {
-    const currentLabel = currentRatio > 1 ? "landscape" : currentRatio < 1 ? "portrait" : "square";
-    issues.push(`Current ratio is ${currentRatio.toFixed(2)} (${currentLabel})`);
+    const currentLabel =
+      currentRatio > 1 ? "landscape" : currentRatio < 1 ? "portrait" : "square";
+    issues.push(
+      `Current ratio is ${currentRatio.toFixed(2)} (${currentLabel})`,
+    );
     suggestions.push(`Will be center-cropped to ${platform.aspectRatioLabel}`);
   }
 
@@ -117,7 +128,7 @@ async function loadSkiaImage(imageUri: string) {
  * Get image dimensions from a URI
  */
 export async function getImageDimensions(
-  imageUri: string
+  imageUri: string,
 ): Promise<{ width: number; height: number }> {
   const image = await loadSkiaImage(imageUri);
   return {
@@ -136,7 +147,7 @@ export async function getImageDimensions(
  */
 export async function optimizeForPlatform(
   imageUri: string,
-  platform: PlatformRequirement
+  platform: PlatformRequirement,
 ): Promise<OptimizationResult> {
   console.log(`[PlatformOptimizer] Optimizing for ${platform.name}`);
 
@@ -145,7 +156,9 @@ export async function optimizeForPlatform(
   const srcWidth = sourceImage.width();
   const srcHeight = sourceImage.height();
 
-  console.log(`[PlatformOptimizer] Source dimensions: ${srcWidth}x${srcHeight}`);
+  console.log(
+    `[PlatformOptimizer] Source dimensions: ${srcWidth}x${srcHeight}`,
+  );
 
   // 2. Calculate crop rectangle for target aspect ratio
   const targetRatio = platform.aspectRatio;
@@ -172,7 +185,9 @@ export async function optimizeForPlatform(
     }
   }
 
-  console.log(`[PlatformOptimizer] Crop rect: x=${cropX}, y=${cropY}, w=${cropWidth}, h=${cropHeight}`);
+  console.log(
+    `[PlatformOptimizer] Crop rect: x=${cropX}, y=${cropY}, w=${cropWidth}, h=${cropHeight}`,
+  );
 
   // 3. Create output surface at optimal dimensions
   const outputWidth = platform.optimalWidth;
@@ -198,7 +213,9 @@ export async function optimizeForPlatform(
     throw new Error("Failed to create snapshot");
   }
 
-  console.log(`[PlatformOptimizer] Output dimensions: ${snapshot.width()}x${snapshot.height()}`);
+  console.log(
+    `[PlatformOptimizer] Output dimensions: ${snapshot.width()}x${snapshot.height()}`,
+  );
 
   // Encode based on platform format preference
   const format = platform.format === "PNG" ? ImageFormat.PNG : ImageFormat.JPEG;
@@ -211,7 +228,9 @@ export async function optimizeForPlatform(
   const mimeType = platform.format.toLowerCase();
   const dataUri = `data:image/${mimeType};base64,${base64}`;
 
-  console.log(`[PlatformOptimizer] Successfully optimized for ${platform.name}`);
+  console.log(
+    `[PlatformOptimizer] Successfully optimized for ${platform.name}`,
+  );
 
   return {
     uri: dataUri,
@@ -228,7 +247,7 @@ export async function optimizeForPlatform(
 export async function optimizeForPlatforms(
   imageUri: string,
   platforms: PlatformRequirement[],
-  onProgress?: (progress: BatchOptimizationProgress) => void
+  onProgress?: (progress: BatchOptimizationProgress) => void,
 ): Promise<Map<string, OptimizationResult>> {
   const results = new Map<string, OptimizationResult>();
 
@@ -249,7 +268,10 @@ export async function optimizeForPlatforms(
         result,
       });
     } catch (error) {
-      console.error(`[PlatformOptimizer] Failed to optimize for ${platform.name}:`, error);
+      console.error(
+        `[PlatformOptimizer] Failed to optimize for ${platform.name}:`,
+        error,
+      );
 
       onProgress?.({
         platformId: platform.id,
@@ -267,7 +289,7 @@ export async function optimizeForPlatforms(
  */
 export async function saveOptimizedImages(
   optimizedImages: Map<string, OptimizationResult>,
-  onProgress?: (platformId: string, success: boolean, error?: string) => void
+  onProgress?: (platformId: string, success: boolean, error?: string) => void,
 ): Promise<{ successful: number; failed: number }> {
   let successful = 0;
   let failed = 0;
@@ -276,7 +298,7 @@ export async function saveOptimizedImages(
     try {
       const saveResult = await saveToFotoBoxAlbum(
         result.uri,
-        `${platformId}_product`
+        `${platformId}_product`,
       );
 
       if (saveResult.success) {
@@ -288,7 +310,11 @@ export async function saveOptimizedImages(
       }
     } catch (error) {
       failed++;
-      onProgress?.(platformId, false, error instanceof Error ? error.message : "Unknown error");
+      onProgress?.(
+        platformId,
+        false,
+        error instanceof Error ? error.message : "Unknown error",
+      );
     }
   }
 
@@ -301,7 +327,11 @@ export async function saveOptimizedImages(
 export async function batchOptimizeAndSave(
   imageUris: string[],
   platforms: PlatformRequirement[],
-  onProgress?: (imageIndex: number, platformId: string, status: "optimizing" | "saving" | "done" | "failed") => void
+  onProgress?: (
+    imageIndex: number,
+    platformId: string,
+    status: "optimizing" | "saving" | "done" | "failed",
+  ) => void,
 ): Promise<{ totalImages: number; totalSaved: number; totalFailed: number }> {
   let totalSaved = 0;
   let totalFailed = 0;
@@ -319,7 +349,7 @@ export async function batchOptimizeAndSave(
         onProgress?.(i, platform.id, "saving");
         const saveResult = await saveToFotoBoxAlbum(
           optimized.uri,
-          `${platform.id}_product_${i + 1}`
+          `${platform.id}_product_${i + 1}`,
         );
 
         if (saveResult.success) {
@@ -332,7 +362,10 @@ export async function batchOptimizeAndSave(
       } catch (error) {
         totalFailed++;
         onProgress?.(i, platform.id, "failed");
-        console.error(`[PlatformOptimizer] Batch error for image ${i}, platform ${platform.id}:`, error);
+        console.error(
+          `[PlatformOptimizer] Batch error for image ${i}, platform ${platform.id}:`,
+          error,
+        );
       }
     }
   }

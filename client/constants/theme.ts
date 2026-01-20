@@ -360,7 +360,11 @@ export const Gradients = {
   warm: ["#FFF7ED", warmWhite],
   dark: [darkBgElevated, darkBg],
   success: ["#22C55E", "#16A34A"],
-  shimmer: ["rgba(255,255,255,0)", "rgba(255,255,255,0.3)", "rgba(255,255,255,0)"],
+  shimmer: [
+    "rgba(255,255,255,0)",
+    "rgba(255,255,255,0.3)",
+    "rgba(255,255,255,0)",
+  ],
 };
 
 export const Fonts = Platform.select({

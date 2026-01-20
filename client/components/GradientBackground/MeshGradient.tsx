@@ -41,17 +41,13 @@ export function MeshGradient({ config }: MeshGradientProps) {
           easing: Easing.inOut(Easing.sin),
         }),
         -1,
-        true
+        true,
       );
     }
   }, [mergedConfig.animated]);
 
   const layer1Style = useAnimatedStyle(() => {
-    const opacity = interpolate(
-      progress.value,
-      [0, 0.5, 1],
-      [0.3, 0.5, 0.3]
-    );
+    const opacity = interpolate(progress.value, [0, 0.5, 1], [0.3, 0.5, 0.3]);
     const translateX = interpolate(progress.value, [0, 1], [-20, 20]);
     const translateY = interpolate(progress.value, [0, 1], [-10, 10]);
     return {
@@ -61,11 +57,7 @@ export function MeshGradient({ config }: MeshGradientProps) {
   });
 
   const layer2Style = useAnimatedStyle(() => {
-    const opacity = interpolate(
-      progress.value,
-      [0, 0.5, 1],
-      [0.25, 0.4, 0.25]
-    );
+    const opacity = interpolate(progress.value, [0, 0.5, 1], [0.25, 0.4, 0.25]);
     const translateX = interpolate(progress.value, [0, 1], [15, -15]);
     const translateY = interpolate(progress.value, [0, 1], [10, -10]);
     return {
@@ -75,11 +67,7 @@ export function MeshGradient({ config }: MeshGradientProps) {
   });
 
   const layer3Style = useAnimatedStyle(() => {
-    const opacity = interpolate(
-      progress.value,
-      [0, 0.5, 1],
-      [0.2, 0.35, 0.2]
-    );
+    const opacity = interpolate(progress.value, [0, 0.5, 1], [0.2, 0.35, 0.2]);
     return { opacity };
   });
 

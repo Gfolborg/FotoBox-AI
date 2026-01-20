@@ -76,7 +76,9 @@ export function QuickFixToolbar({
 
   const containerStyle = useAnimatedStyle(() => ({
     opacity: withTiming(isHidden ? 0 : 1, { duration: 150 }),
-    transform: [{ translateY: withTiming(isHidden ? 20 : 0, { duration: 150 }) }],
+    transform: [
+      { translateY: withTiming(isHidden ? 20 : 0, { duration: 150 }) },
+    ],
   }));
 
   return (
@@ -118,7 +120,9 @@ export function QuickFixToolbar({
             />
             {state.rotation !== 0 && (
               <View style={styles.rotationBadge}>
-                <ThemedText style={styles.rotationText}>{state.rotation}°</ThemedText>
+                <ThemedText style={styles.rotationText}>
+                  {state.rotation}°
+                </ThemedText>
               </View>
             )}
             <TransformButton
@@ -173,7 +177,9 @@ export function QuickFixToolbar({
           <View style={styles.aspectRatioButtons}>
             <AspectRatioButton
               label="Free"
-              active={state.aspectRatio === "free" || state.aspectRatio === null}
+              active={
+                state.aspectRatio === "free" || state.aspectRatio === null
+              }
               onPress={() => onAspectRatioChange("free")}
             />
             <AspectRatioButton
@@ -208,11 +214,19 @@ export function QuickFixToolbar({
           style={styles.gestureHintContainer}
         >
           <View style={styles.gestureHint}>
-            <Feather name="arrow-up" size={14} color={Colors.editing.textTertiary} />
+            <Feather
+              name="arrow-up"
+              size={14}
+              color={Colors.editing.textTertiary}
+            />
             <ThemedText style={styles.gestureHintText}>
               Swipe up/down on image
             </ThemedText>
-            <Feather name="arrow-down" size={14} color={Colors.editing.textTertiary} />
+            <Feather
+              name="arrow-down"
+              size={14}
+              color={Colors.editing.textTertiary}
+            />
           </View>
           {((selectedTool === "brightness" && state.brightness !== 0) ||
             (selectedTool === "contrast" && state.contrast !== 0)) && (
@@ -244,12 +258,17 @@ function ToolChip({
   onPress: () => void;
 }) {
   return (
-    <Pressable onPress={onPress} style={[styles.chip, active && styles.chipActive]}>
+    <Pressable
+      onPress={onPress}
+      style={[styles.chip, active && styles.chipActive]}
+    >
       <View style={styles.chipContent}>
         <Feather
           name={icon}
           size={16}
-          color={active ? Colors.editing.buttonText : Colors.editing.textSecondary}
+          color={
+            active ? Colors.editing.buttonText : Colors.editing.textSecondary
+          }
         />
         <ThemedText style={[styles.chipText, active && styles.chipTextActive]}>
           {label}
@@ -282,7 +301,10 @@ function TransformButton({
         color={active ? Colors.editing.buttonText : Colors.editing.primary}
       />
       <ThemedText
-        style={[styles.transformBtnText, active && styles.transformBtnTextActive]}
+        style={[
+          styles.transformBtnText,
+          active && styles.transformBtnTextActive,
+        ]}
       >
         {label}
       </ThemedText>
@@ -307,7 +329,9 @@ function AspectRatioButton({
       }}
       style={[styles.aspectBtn, active && styles.aspectBtnActive]}
     >
-      <ThemedText style={[styles.aspectBtnText, active && styles.aspectBtnTextActive]}>
+      <ThemedText
+        style={[styles.aspectBtnText, active && styles.aspectBtnTextActive]}
+      >
         {label}
       </ThemedText>
     </Pressable>

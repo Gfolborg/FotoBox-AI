@@ -42,10 +42,10 @@ export function PulsingGlow({ config }: PulsingGlowProps) {
         withTiming(0, {
           duration: mergedConfig.speed,
           easing: Easing.inOut(Easing.ease),
-        })
+        }),
       ),
       -1, // infinite
-      false
+      false,
     );
   }, [mergedConfig.speed]);
 
@@ -53,7 +53,7 @@ export function PulsingGlow({ config }: PulsingGlowProps) {
     const opacity = interpolate(
       pulse.value,
       [0, 1],
-      [mergedConfig.intensity * 0.5, mergedConfig.intensity]
+      [mergedConfig.intensity * 0.5, mergedConfig.intensity],
     );
     const scale = interpolate(pulse.value, [0, 1], [1, 1.15]);
 

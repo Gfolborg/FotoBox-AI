@@ -62,9 +62,12 @@ export function useQuickFix() {
     setState((prev) => ({ ...prev, crop }));
   }, []);
 
-  const setAspectRatio = useCallback((aspectRatio: QuickFixState["aspectRatio"]) => {
-    setState((prev) => ({ ...prev, aspectRatio }));
-  }, []);
+  const setAspectRatio = useCallback(
+    (aspectRatio: QuickFixState["aspectRatio"]) => {
+      setState((prev) => ({ ...prev, aspectRatio }));
+    },
+    [],
+  );
 
   const setBrightness = useCallback((brightness: number) => {
     setState((prev) => ({
@@ -113,7 +116,13 @@ export function useQuickFix() {
       flipHorizontal: state.flipHorizontal,
       flipVertical: state.flipVertical,
     };
-  }, [state.rotation, state.flipHorizontal, state.flipVertical, state.brightness, state.contrast]);
+  }, [
+    state.rotation,
+    state.flipHorizontal,
+    state.flipVertical,
+    state.brightness,
+    state.contrast,
+  ]);
 
   return {
     state,

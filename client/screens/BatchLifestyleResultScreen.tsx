@@ -13,7 +13,11 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+} from "react-native-reanimated";
 
 import { ThemedText } from "@/components/ThemedText";
 import { GlassCard } from "@/components/GlassCard";
@@ -37,7 +41,9 @@ export default function BatchLifestyleResultScreen() {
   const route = useRoute<RouteProps>();
   const { results, environment } = route.params;
 
-  const successfulResults = results.filter((r) => r.status === "completed" && r.resultUri);
+  const successfulResults = results.filter(
+    (r) => r.status === "completed" && r.resultUri,
+  );
   const failedResults = results.filter((r) => r.status === "failed");
 
   const handleExportAll = () => {
@@ -45,13 +51,15 @@ export default function BatchLifestyleResultScreen() {
 
     // Prepare results for batch platform selection
     const exportableResults = successfulResults
-      .filter(r => r.resultUri)
-      .map(r => ({
+      .filter((r) => r.resultUri)
+      .map((r) => ({
         originalUri: r.originalUri,
         resultUri: r.resultUri!,
       }));
 
-    navigation.navigate("BatchPlatformSelection", { results: exportableResults });
+    navigation.navigate("BatchPlatformSelection", {
+      results: exportableResults,
+    });
   };
 
   const handleDone = () => {
@@ -59,7 +67,13 @@ export default function BatchLifestyleResultScreen() {
     navigation.popToTop();
   };
 
-  const renderResultItem = ({ item, index }: { item: typeof results[0]; index: number }) => {
+  const renderResultItem = ({
+    item,
+    index,
+  }: {
+    item: (typeof results)[0];
+    index: number;
+  }) => {
     const isSuccess = item.status === "completed" && item.resultUri;
 
     return (
@@ -98,14 +112,13 @@ export default function BatchLifestyleResultScreen() {
 
       <View style={[styles.container, { paddingTop: insets.top }]}>
         {/* Header */}
-        <Animated.View
-          entering={FadeIn.duration(300)}
-          style={styles.header}
-        >
+        <Animated.View entering={FadeIn.duration(300)} style={styles.header}>
           <View style={styles.headerContent}>
             <View style={{ width: 44 }} />
             <View style={styles.headerCenter}>
-              <ThemedText style={styles.headerTitle}>Lifestyle Results</ThemedText>
+              <ThemedText style={styles.headerTitle}>
+                Lifestyle Results
+              </ThemedText>
               <ThemedText style={styles.headerSubtitle}>
                 {successfulResults.length} of {results.length} successful
               </ThemedText>
@@ -118,23 +131,26 @@ export default function BatchLifestyleResultScreen() {
 
         {/* Results Grid */}
         <FlatList
-        data={results}
-        renderItem={renderResultItem}
-        keyExtractor={(_, index) => index.toString()}
-        numColumns={NUM_COLUMNS}
-        contentContainerStyle={[
-          styles.gridContent,
-          { paddingBottom: insets.bottom + 140 },
-        ]}
-        columnWrapperStyle={styles.gridRow}
-        showsVerticalScrollIndicator={false}
-        style={styles.grid}
-      />
+          data={results}
+          renderItem={renderResultItem}
+          keyExtractor={(_, index) => index.toString()}
+          numColumns={NUM_COLUMNS}
+          contentContainerStyle={[
+            styles.gridContent,
+            { paddingBottom: insets.bottom + 140 },
+          ]}
+          columnWrapperStyle={styles.gridRow}
+          showsVerticalScrollIndicator={false}
+          style={styles.grid}
+        />
 
         {/* Bottom Action Bar */}
         <Animated.View
           entering={FadeInUp.delay(400).duration(400)}
-          style={[styles.bottomBar, { paddingBottom: insets.bottom + Spacing.md }]}
+          style={[
+            styles.bottomBar,
+            { paddingBottom: insets.bottom + Spacing.md },
+          ]}
         >
           <GlassCard theme="light" padding="sm" borderRadius="lg">
             <View style={styles.bottomContent}>
@@ -146,7 +162,8 @@ export default function BatchLifestyleResultScreen() {
                     color={Colors.editing.error}
                   />
                   <ThemedText style={styles.warningText}>
-                    {failedResults.length} image{failedResults.length > 1 ? "s" : ""} failed
+                    {failedResults.length} image
+                    {failedResults.length > 1 ? "s" : ""} failed
                   </ThemedText>
                 </View>
               )}

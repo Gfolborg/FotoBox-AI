@@ -13,7 +13,11 @@ import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
 import { Feather } from "@expo/vector-icons";
-import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+} from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/ThemedText";
@@ -36,7 +40,10 @@ import {
 } from "@/lib/platform-optimizer";
 import { saveToFotoBoxAlbum } from "@/lib/save-to-album";
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList, "PlatformSelection">;
+type NavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  "PlatformSelection"
+>;
 type RouteProps = RouteProp<RootStackParamList, "PlatformSelection">;
 
 export default function PlatformSelectionScreen() {
@@ -45,11 +52,16 @@ export default function PlatformSelectionScreen() {
   const route = useRoute<RouteProps>();
   const { imageUri, originalUri } = route.params;
 
-  const [selectedPlatforms, setSelectedPlatforms] = useState<Set<string>>(new Set());
+  const [selectedPlatforms, setSelectedPlatforms] = useState<Set<string>>(
+    new Set(),
+  );
   const [isExporting, setIsExporting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [exportCount, setExportCount] = useState(0);
-  const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(null);
+  const [imageDimensions, setImageDimensions] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
 
   const allPlatforms = getAllPlatforms();
 
@@ -60,7 +72,10 @@ export default function PlatformSelectionScreen() {
         const dimensions = await getImageDimensions(imageUri);
         setImageDimensions(dimensions);
       } catch (error) {
-        console.error("[PlatformSelection] Failed to get image dimensions:", error);
+        console.error(
+          "[PlatformSelection] Failed to get image dimensions:",
+          error,
+        );
       }
     };
     loadDimensions();
@@ -95,7 +110,10 @@ export default function PlatformSelectionScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } else {
         if (Platform.OS !== "web") {
-          Alert.alert("Save Failed", result.error || "Could not save the image.");
+          Alert.alert(
+            "Save Failed",
+            result.error || "Could not save the image.",
+          );
         }
       }
     } catch (error) {
@@ -112,7 +130,10 @@ export default function PlatformSelectionScreen() {
     if (selectedPlatforms.size === 0) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       if (Platform.OS !== "web") {
-        Alert.alert("No Platforms Selected", "Please select at least one platform to export for.");
+        Alert.alert(
+          "No Platforms Selected",
+          "Please select at least one platform to export for.",
+        );
       }
       return;
     }
@@ -139,14 +160,17 @@ export default function PlatformSelectionScreen() {
         if (Platform.OS !== "web") {
           Alert.alert(
             "Partial Export",
-            `${saveResult.successful} images saved successfully, ${saveResult.failed} failed.`
+            `${saveResult.successful} images saved successfully, ${saveResult.failed} failed.`,
           );
         }
       }
     } catch (error) {
       console.error("[PlatformSelection] Export failed:", error);
       if (Platform.OS !== "web") {
-        Alert.alert("Export Failed", "Failed to export images. Please try again.");
+        Alert.alert(
+          "Export Failed",
+          "Failed to export images. Please try again.",
+        );
       }
     } finally {
       setIsExporting(false);
@@ -174,7 +198,11 @@ export default function PlatformSelectionScreen() {
               onPress={() => navigation.goBack()}
               disabled={isExporting}
             >
-              <Feather name="chevron-left" size={24} color={Colors.editing.text} />
+              <Feather
+                name="chevron-left"
+                size={24}
+                color={Colors.editing.text}
+              />
             </Pressable>
 
             <GlassPill>
@@ -194,67 +222,74 @@ export default function PlatformSelectionScreen() {
 
         <ScrollView
           style={styles.scrollView}
-        contentContainerStyle={[
-          styles.content,
-          { paddingBottom: insets.bottom + 100 },
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Image Preview */}
-        <Animated.View
-          entering={FadeIn.delay(100).duration(400)}
-          style={styles.imagePreviewContainer}
+          contentContainerStyle={[
+            styles.content,
+            { paddingBottom: insets.bottom + 100 },
+          ]}
+          showsVerticalScrollIndicator={false}
         >
-          <Image source={{ uri: imageUri }} style={styles.imagePreview} />
-          {imageDimensions && (
-            <View style={styles.dimensionsBadge}>
-              <Feather name="image" size={12} color={Colors.editing.textSecondary} />
-              <ThemedText style={styles.dimensionsText}>
-                {imageDimensions.width} x {imageDimensions.height}
-              </ThemedText>
+          {/* Image Preview */}
+          <Animated.View
+            entering={FadeIn.delay(100).duration(400)}
+            style={styles.imagePreviewContainer}
+          >
+            <Image source={{ uri: imageUri }} style={styles.imagePreview} />
+            {imageDimensions && (
+              <View style={styles.dimensionsBadge}>
+                <Feather
+                  name="image"
+                  size={12}
+                  color={Colors.editing.textSecondary}
+                />
+                <ThemedText style={styles.dimensionsText}>
+                  {imageDimensions.width} x {imageDimensions.height}
+                </ThemedText>
+              </View>
+            )}
+          </Animated.View>
+
+          {/* Platform Selection */}
+          <Animated.View
+            entering={FadeInUp.delay(200).duration(400)}
+            style={styles.platformSection}
+          >
+            <ThemedText style={styles.sectionTitle}>
+              Select platforms to optimize for
+            </ThemedText>
+
+            <View style={styles.platformGrid}>
+              {allPlatforms.map((platform) => (
+                <PlatformChip
+                  key={platform.id}
+                  platform={platform}
+                  selected={selectedPlatforms.has(platform.id)}
+                  onPress={() => togglePlatform(platform.id)}
+                  disabled={isExporting}
+                />
+              ))}
             </View>
-          )}
-        </Animated.View>
+          </Animated.View>
 
-        {/* Platform Selection */}
-        <Animated.View
-          entering={FadeInUp.delay(200).duration(400)}
-          style={styles.platformSection}
-        >
-          <ThemedText style={styles.sectionTitle}>
-            Select platforms to optimize for
-          </ThemedText>
-
-          <View style={styles.platformGrid}>
-            {allPlatforms.map((platform) => (
-              <PlatformChip
-                key={platform.id}
-                platform={platform}
-                selected={selectedPlatforms.has(platform.id)}
-                onPress={() => togglePlatform(platform.id)}
-                disabled={isExporting}
-              />
-            ))}
-          </View>
-        </Animated.View>
-
-        {/* Optimization Preview */}
-        <Animated.View
-          entering={FadeInUp.delay(300).duration(400)}
-          style={styles.previewSection}
-        >
-          <OptimizationPreview
-            selectedPlatforms={getSelectedRequirements()}
-            currentWidth={imageDimensions?.width}
-            currentHeight={imageDimensions?.height}
-          />
-        </Animated.View>
-      </ScrollView>
+          {/* Optimization Preview */}
+          <Animated.View
+            entering={FadeInUp.delay(300).duration(400)}
+            style={styles.previewSection}
+          >
+            <OptimizationPreview
+              selectedPlatforms={getSelectedRequirements()}
+              currentWidth={imageDimensions?.width}
+              currentHeight={imageDimensions?.height}
+            />
+          </Animated.View>
+        </ScrollView>
 
         {/* Export Button */}
         <Animated.View
           entering={FadeInUp.delay(400).duration(400)}
-          style={[styles.actionBar, { paddingBottom: insets.bottom + Spacing.md }]}
+          style={[
+            styles.actionBar,
+            { paddingBottom: insets.bottom + Spacing.md },
+          ]}
         >
           <View style={styles.actionBarContent}>
             <GradientButton
@@ -262,8 +297,8 @@ export default function PlatformSelectionScreen() {
                 isExporting
                   ? "Exporting..."
                   : selectedPlatforms.size > 0
-                  ? `Optimize & Export (${selectedPlatforms.size})`
-                  : "Select Platforms"
+                    ? `Optimize & Export (${selectedPlatforms.size})`
+                    : "Select Platforms"
               }
               onPress={handleExport}
               disabled={isExporting || selectedPlatforms.size === 0}

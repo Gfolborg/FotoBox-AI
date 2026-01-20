@@ -49,36 +49,33 @@ export function SuccessAnimation({
       withSpring(1, {
         ...Animations.spring,
         damping: 12,
-      })
+      }),
     );
 
-    opacity.value = withDelay(
-      delay,
-      withTiming(1, { duration: 200 })
-    );
+    opacity.value = withDelay(delay, withTiming(1, { duration: 200 }));
 
     checkScale.value = withDelay(
       delay + 200,
       withSequence(
         withSpring(1.2, { damping: 8, stiffness: 300 }),
-        withSpring(1, { damping: 15, stiffness: 200 })
-      )
+        withSpring(1, { damping: 15, stiffness: 200 }),
+      ),
     );
 
     ringScale.value = withDelay(
       delay + 100,
       withSequence(
         withTiming(1.3, { duration: 400, easing: Easing.out(Easing.cubic) }),
-        withTiming(1.5, { duration: 200 })
-      )
+        withTiming(1.5, { duration: 200 }),
+      ),
     );
 
     ringOpacity.value = withDelay(
       delay + 100,
       withSequence(
         withTiming(0.6, { duration: 200 }),
-        withTiming(0, { duration: 400 })
-      )
+        withTiming(0, { duration: 400 }),
+      ),
     );
 
     const hapticTimeout = setTimeout(() => {

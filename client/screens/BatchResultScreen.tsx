@@ -10,13 +10,22 @@ import {
   Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRoute, useNavigation, RouteProp, useFocusEffect } from "@react-navigation/native";
+import {
+  useRoute,
+  useNavigation,
+  RouteProp,
+  useFocusEffect,
+} from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Haptics from "expo-haptics";
-import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+} from "react-native-reanimated";
 
 import { ThemedText } from "@/components/ThemedText";
 import { GradientButton } from "@/components/GradientButton";
@@ -70,12 +79,17 @@ export default function BatchResultScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (lastEditedUri && !hasShownApplyAllPopup && successfulResults.length > 1 && uneditedCount > 0) {
-        setEditedImages(prev => new Set([...prev, lastEditedUri]));
+      if (
+        lastEditedUri &&
+        !hasShownApplyAllPopup &&
+        successfulResults.length > 1 &&
+        uneditedCount > 0
+      ) {
+        setEditedImages((prev) => new Set([...prev, lastEditedUri]));
         setShowApplyAllModal(true);
         setHasShownApplyAllPopup(true);
       }
-    }, [lastEditedUri, hasShownApplyAllPopup, uneditedCount])
+    }, [lastEditedUri, hasShownApplyAllPopup, uneditedCount]),
   );
 
   const handleSaveImage = async (resultUri: string, originalUri: string) => {
@@ -131,26 +145,27 @@ export default function BatchResultScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     successfulResults.forEach((item) => {
       if (!editedImages.has(item.originalUri)) {
-        setEditedImages(prev => new Set([...prev, item.originalUri]));
+        setEditedImages((prev) => new Set([...prev, item.originalUri]));
       }
     });
   };
 
-  const handleSkipApplyAll = () => {
-  };
+  const handleSkipApplyAll = () => {};
 
   const handleExportAll = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     // Prepare results for batch platform selection
     const exportableResults = successfulResults
-      .filter(r => r.resultUri)
-      .map(r => ({
+      .filter((r) => r.resultUri)
+      .map((r) => ({
         originalUri: r.originalUri,
         resultUri: r.resultUri!,
       }));
 
-    navigation.navigate("BatchPlatformSelection", { results: exportableResults });
+    navigation.navigate("BatchPlatformSelection", {
+      results: exportableResults,
+    });
   };
 
   return (
@@ -159,10 +174,7 @@ export default function BatchResultScreen() {
 
       <View style={[styles.container, { paddingTop: insets.top }]}>
         {/* Header */}
-        <Animated.View
-          entering={FadeIn.duration(300)}
-          style={styles.header}
-        >
+        <Animated.View entering={FadeIn.duration(300)} style={styles.header}>
           <View style={styles.headerContent}>
             <IconButton
               icon="chevron-left"
@@ -174,7 +186,11 @@ export default function BatchResultScreen() {
             />
 
             <GlassPill>
-              <Feather name="check-circle" size={16} color={Colors.editing.success} />
+              <Feather
+                name="check-circle"
+                size={16}
+                color={Colors.editing.success}
+              />
               <ThemedText style={styles.headerTitle}>Results</ThemedText>
             </GlassPill>
 
@@ -183,96 +199,130 @@ export default function BatchResultScreen() {
         </Animated.View>
 
         {/* Stats */}
-        <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.statsRow}>
-        <View style={styles.statItem}>
-          <ThemedText style={styles.statNumber}>{successfulResults.length}</ThemedText>
-          <ThemedText style={styles.statLabel}>Successful</ThemedText>
-        </View>
-        {failedCount > 0 && (
-          <>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <ThemedText style={[styles.statNumber, styles.errorNumber]}>{failedCount}</ThemedText>
-              <ThemedText style={styles.statLabel}>Failed</ThemedText>
-            </View>
-          </>
-        )}
-      </Animated.View>
-
-      {/* Image Grid */}
-      <FlatList
-        data={results}
-        numColumns={2}
-        keyExtractor={(item) => item.originalUri}
-        contentContainerStyle={styles.grid}
-        columnWrapperStyle={styles.gridRow}
-        showsVerticalScrollIndicator={false}
-        renderItem={({ item, index }) => (
-          <Animated.View
-            entering={FadeInDown.delay(200 + index * 60).duration(400)}
-            style={styles.resultCard}
-          >
-            {item.resultUri ? (
-              <>
-                <Pressable
-                  style={styles.imageContainer}
-                  onPress={() => handleEditImage(item.resultUri!, item.originalUri)}
-                >
-                  <Image source={{ uri: item.resultUri }} style={styles.image} />
-                </Pressable>
-
-                {/* Status Badge */}
-                {savedUris.has(item.originalUri) && (
-                  <View style={styles.savedBadge}>
-                    <Feather name="check" size={12} color={Colors.editing.buttonText} />
-                  </View>
-                )}
-
-                {/* Action Buttons */}
-                <View style={styles.actionButtons}>
-                  <Pressable
-                    style={styles.editButton}
-                    onPress={() => handleEditImage(item.resultUri!, item.originalUri)}
-                  >
-                    <ThemedText style={styles.buttonText}>Edit</ThemedText>
-                  </Pressable>
-                  <Pressable
-                    style={[
-                      styles.saveButton,
-                      savedUris.has(item.originalUri) && styles.saveButtonSaved,
-                    ]}
-                    onPress={() => handleSaveImage(item.resultUri!, item.originalUri)}
-                    disabled={savingUris.has(item.originalUri) || savedUris.has(item.originalUri)}
-                  >
-                    <ThemedText style={[
-                      styles.buttonText,
-                      savedUris.has(item.originalUri) && styles.buttonTextSaved,
-                    ]}>
-                      {savingUris.has(item.originalUri)
-                        ? "Saving..."
-                        : savedUris.has(item.originalUri)
-                        ? "Saved"
-                        : "Save"}
-                    </ThemedText>
-                  </Pressable>
-                </View>
-              </>
-            ) : (
-              <View style={styles.failedCard}>
-                <Feather name="alert-circle" size={28} color={Colors.editing.error} />
-                <ThemedText style={styles.errorText} numberOfLines={2}>
-                  {item.error || "Failed"}
+        <Animated.View
+          entering={FadeInDown.delay(100).duration(400)}
+          style={styles.statsRow}
+        >
+          <View style={styles.statItem}>
+            <ThemedText style={styles.statNumber}>
+              {successfulResults.length}
+            </ThemedText>
+            <ThemedText style={styles.statLabel}>Successful</ThemedText>
+          </View>
+          {failedCount > 0 && (
+            <>
+              <View style={styles.statDivider} />
+              <View style={styles.statItem}>
+                <ThemedText style={[styles.statNumber, styles.errorNumber]}>
+                  {failedCount}
                 </ThemedText>
+                <ThemedText style={styles.statLabel}>Failed</ThemedText>
               </View>
-            )}
-          </Animated.View>
-        )}
-      />
+            </>
+          )}
+        </Animated.View>
+
+        {/* Image Grid */}
+        <FlatList
+          data={results}
+          numColumns={2}
+          keyExtractor={(item) => item.originalUri}
+          contentContainerStyle={styles.grid}
+          columnWrapperStyle={styles.gridRow}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item, index }) => (
+            <Animated.View
+              entering={FadeInDown.delay(200 + index * 60).duration(400)}
+              style={styles.resultCard}
+            >
+              {item.resultUri ? (
+                <>
+                  <Pressable
+                    style={styles.imageContainer}
+                    onPress={() =>
+                      handleEditImage(item.resultUri!, item.originalUri)
+                    }
+                  >
+                    <Image
+                      source={{ uri: item.resultUri }}
+                      style={styles.image}
+                    />
+                  </Pressable>
+
+                  {/* Status Badge */}
+                  {savedUris.has(item.originalUri) && (
+                    <View style={styles.savedBadge}>
+                      <Feather
+                        name="check"
+                        size={12}
+                        color={Colors.editing.buttonText}
+                      />
+                    </View>
+                  )}
+
+                  {/* Action Buttons */}
+                  <View style={styles.actionButtons}>
+                    <Pressable
+                      style={styles.editButton}
+                      onPress={() =>
+                        handleEditImage(item.resultUri!, item.originalUri)
+                      }
+                    >
+                      <ThemedText style={styles.buttonText}>Edit</ThemedText>
+                    </Pressable>
+                    <Pressable
+                      style={[
+                        styles.saveButton,
+                        savedUris.has(item.originalUri) &&
+                          styles.saveButtonSaved,
+                      ]}
+                      onPress={() =>
+                        handleSaveImage(item.resultUri!, item.originalUri)
+                      }
+                      disabled={
+                        savingUris.has(item.originalUri) ||
+                        savedUris.has(item.originalUri)
+                      }
+                    >
+                      <ThemedText
+                        style={[
+                          styles.buttonText,
+                          savedUris.has(item.originalUri) &&
+                            styles.buttonTextSaved,
+                        ]}
+                      >
+                        {savingUris.has(item.originalUri)
+                          ? "Saving..."
+                          : savedUris.has(item.originalUri)
+                            ? "Saved"
+                            : "Save"}
+                      </ThemedText>
+                    </Pressable>
+                  </View>
+                </>
+              ) : (
+                <View style={styles.failedCard}>
+                  <Feather
+                    name="alert-circle"
+                    size={28}
+                    color={Colors.editing.error}
+                  />
+                  <ThemedText style={styles.errorText} numberOfLines={2}>
+                    {item.error || "Failed"}
+                  </ThemedText>
+                </View>
+              )}
+            </Animated.View>
+          )}
+        />
 
         {/* Bottom Action Bar */}
         <Animated.View
           entering={FadeInUp.delay(400).duration(400)}
-          style={[styles.bottomBar, { paddingBottom: insets.bottom + Spacing.md }]}
+          style={[
+            styles.bottomBar,
+            { paddingBottom: insets.bottom + Spacing.md },
+          ]}
         >
           <GlassCard theme="light" padding="xs" borderRadius="lg">
             <View style={styles.bottomContent}>

@@ -84,7 +84,7 @@ export function ImageAdjustmentOverlay({
       const range = activeAdjustment.max - activeAdjustment.min;
       const newValue = Math.max(
         activeAdjustment.min,
-        Math.min(activeAdjustment.max, dragStartValue.value + delta * range)
+        Math.min(activeAdjustment.max, dragStartValue.value + delta * range),
       );
 
       const steppedValue =
@@ -121,7 +121,9 @@ export function ImageAdjustmentOverlay({
           </ThemedText>
         </View>
         <View style={styles.dragHint}>
-          <ThemedText style={styles.dragHintText}>← Drag to adjust →</ThemedText>
+          <ThemedText style={styles.dragHintText}>
+            ← Drag to adjust →
+          </ThemedText>
         </View>
       </Animated.View>
     </View>

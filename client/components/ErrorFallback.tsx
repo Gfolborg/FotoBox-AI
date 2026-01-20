@@ -19,7 +19,13 @@ import { ThemedText } from "@/components/ThemedText";
 import { GradientButton } from "@/components/GradientButton";
 import { GlassCard } from "@/components/GlassCard";
 import { useTheme } from "@/hooks/useTheme";
-import { Colors, Spacing, BorderRadius, Fonts, Gradients } from "@/constants/theme";
+import {
+  Colors,
+  Spacing,
+  BorderRadius,
+  Fonts,
+  Gradients,
+} from "@/constants/theme";
 
 const logoImage = require("../../assets/images/fotobox-logo.png");
 
@@ -68,12 +74,19 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
 
       <Animated.View entering={FadeIn.duration(600)} style={styles.content}>
         {/* Error Icon */}
-        <Animated.View entering={FadeInUp.delay(100).duration(500)} style={styles.iconContainer}>
+        <Animated.View
+          entering={FadeInUp.delay(100).duration(500)}
+          style={styles.iconContainer}
+        >
           <LinearGradient
             colors={["rgba(255, 99, 71, 0.2)", "rgba(255, 99, 71, 0.05)"]}
             style={styles.iconGradient}
           >
-            <Feather name="alert-triangle" size={48} color={Colors.editing.error} />
+            <Feather
+              name="alert-triangle"
+              size={48}
+              color={Colors.editing.error}
+            />
           </LinearGradient>
         </Animated.View>
 
@@ -83,21 +96,28 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
         </Animated.View>
 
         {/* Error Message Card */}
-        <Animated.View entering={FadeInUp.delay(300).duration(500)} style={styles.cardContainer}>
+        <Animated.View
+          entering={FadeInUp.delay(300).duration(500)}
+          style={styles.cardContainer}
+        >
           <GlassCard theme="light" padding="lg" borderRadius="xl">
             <View style={styles.cardContent}>
               <ThemedText type="h3" style={styles.title}>
                 Oops! Something went wrong
               </ThemedText>
               <ThemedText style={styles.message}>
-                FotoBox encountered an unexpected issue. Tap below to restart and try again.
+                FotoBox encountered an unexpected issue. Tap below to restart
+                and try again.
               </ThemedText>
             </View>
           </GlassCard>
         </Animated.View>
 
         {/* Restart Button */}
-        <Animated.View entering={FadeInUp.delay(400).duration(500)} style={styles.buttonContainer}>
+        <Animated.View
+          entering={FadeInUp.delay(400).duration(500)}
+          style={styles.buttonContainer}
+        >
           <GradientButton
             title="Restart FotoBox"
             onPress={handleRestart}

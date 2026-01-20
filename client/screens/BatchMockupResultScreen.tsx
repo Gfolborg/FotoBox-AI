@@ -34,7 +34,9 @@ export default function BatchMockupResultScreen() {
 
   const [selectedIndex, setSelectedIndex] = useState(0);
 
-  const successResults = results.filter((r) => r.status === "completed" && r.resultUri);
+  const successResults = results.filter(
+    (r) => r.status === "completed" && r.resultUri,
+  );
   const failedResults = results.filter((r) => r.status === "failed");
 
   const handleExportAll = () => {
@@ -42,24 +44,26 @@ export default function BatchMockupResultScreen() {
 
     // Prepare results for batch platform selection
     const exportableResults = successResults
-      .filter(r => r.resultUri)
-      .map(r => ({
+      .filter((r) => r.resultUri)
+      .map((r) => ({
         originalUri: r.originalUri,
         resultUri: r.resultUri!,
       }));
 
-    navigation.navigate("BatchPlatformSelection", { results: exportableResults });
+    navigation.navigate("BatchPlatformSelection", {
+      results: exportableResults,
+    });
   };
 
   const currentResult = successResults[selectedIndex];
 
   const handleEditSelected = async () => {
     if (!currentResult?.resultUri) return;
-    
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
+
     let imageUri = currentResult.resultUri;
-    
+
     if (currentResult.resultUri.startsWith("data:")) {
       const base64Data = currentResult.resultUri.split(",")[1];
       const filename = `mockup_edit_${Date.now()}.jpg`;
@@ -68,7 +72,7 @@ export default function BatchMockupResultScreen() {
         encoding: FileSystem.EncodingType.Base64,
       });
     }
-    
+
     navigation.navigate("EditImage", {
       imageUri,
       originalUri: currentResult.originalUri,

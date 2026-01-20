@@ -91,7 +91,9 @@ export function WorkflowCard({
         <View
           style={[
             styles.iconContainer,
-            isPrimary ? styles.iconContainerPrimary : styles.iconContainerSecondary,
+            isPrimary
+              ? styles.iconContainerPrimary
+              : styles.iconContainerSecondary,
           ]}
         >
           {isPrimary ? (
@@ -116,7 +118,12 @@ export function WorkflowCard({
           {description}
         </ThemedText>
 
-        <View style={[styles.arrowContainer, isPrimary && styles.arrowContainerPrimary]}>
+        <View
+          style={[
+            styles.arrowContainer,
+            isPrimary && styles.arrowContainerPrimary,
+          ]}
+        >
           <Feather
             name="arrow-right"
             size={18}

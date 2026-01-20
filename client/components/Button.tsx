@@ -134,7 +134,9 @@ export function Button({
           style={styles.gradientBackground}
         >
           {isStringChild ? (
-            <ThemedText style={[getTextStyle(), textStyle]}>{children}</ThemedText>
+            <ThemedText style={[getTextStyle(), textStyle]}>
+              {children}
+            </ThemedText>
           ) : (
             <View style={styles.childContainer}>{children}</View>
           )}

@@ -3,7 +3,7 @@ const { createProxyMiddleware } = require("http-proxy-middleware");
 const path = require("path");
 
 function escapeRegExp(string) {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+  return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // $& means the whole matched string
 }
 
 const config = getDefaultConfig(__dirname);
@@ -11,12 +11,14 @@ const config = getDefaultConfig(__dirname);
 const blockList = [
   new RegExp(
     `^${escapeRegExp(
-      path.resolve(__dirname, ".config/npm/node_global/lib/node_modules")
-    )}\\/.*$`
+      path.resolve(__dirname, ".config/npm/node_global/lib/node_modules"),
+    )}\\/.*$`,
   ),
 ];
 
-config.resolver.blockList = new RegExp(blockList.map((r) => r.source).join("|"));
+config.resolver.blockList = new RegExp(
+  blockList.map((r) => r.source).join("|"),
+);
 
 config.server = {
   ...config.server,

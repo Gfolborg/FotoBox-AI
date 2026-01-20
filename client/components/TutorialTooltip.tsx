@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
-import { Feather } from '@expo/vector-icons';
-import { Colors, Spacing, BorderRadius, Shadows } from '@/constants/theme';
+import React, { useState } from "react";
+import { View, Text, StyleSheet, Pressable } from "react-native";
+import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
+import { Feather } from "@expo/vector-icons";
+import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 
 interface TutorialTooltipProps {
   message: string;
@@ -41,13 +41,13 @@ export function TutorialTooltip({
 
 const styles = StyleSheet.create({
   tooltipContainer: {
-    position: 'absolute',
+    position: "absolute",
     padding: Spacing.xs,
     zIndex: 1000,
     maxWidth: 250, // Add maxWidth to constrain width
   },
   tooltipContent: {
-    position: 'relative', // Add position relative for the dismiss button
+    position: "relative", // Add position relative for the dismiss button
     backgroundColor: Colors.light.primary,
     borderRadius: BorderRadius.md,
     padding: Spacing.md,
@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   dismissButton: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     right: 0,
     padding: Spacing.md, // Make it easier to tap
@@ -67,17 +67,17 @@ const styles = StyleSheet.create({
   triangle: {
     width: 0,
     height: 0,
-    backgroundColor: 'transparent',
-    borderStyle: 'solid',
+    backgroundColor: "transparent",
+    borderStyle: "solid",
     borderLeftWidth: 10,
     borderRightWidth: 10,
     borderBottomWidth: 10,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
+    borderLeftColor: "transparent",
+    borderRightColor: "transparent",
     borderBottomColor: Colors.light.primary,
-    position: 'absolute',
+    position: "absolute",
     bottom: -Spacing.xs, // Position below the tooltip content
-    alignSelf: 'center',
-    transform: [{ rotate: '180deg' }], // Point the triangle down
+    alignSelf: "center",
+    transform: [{ rotate: "180deg" }], // Point the triangle down
   },
 });

@@ -5,7 +5,11 @@ import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
-import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+} from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 
 import { ThemedHeader } from "@/components/ThemedHeader";
@@ -18,7 +22,10 @@ import { RootStackParamList } from "@/navigation/RootStackNavigator";
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const IMAGE_PREVIEW_SIZE = Math.min(SCREEN_WIDTH - Spacing.xl * 2, 200);
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList, "BackgroundColorSelection">;
+type NavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  "BackgroundColorSelection"
+>;
 type RouteProps = RouteProp<RootStackParamList, "BackgroundColorSelection">;
 
 const BACKGROUND_COLORS = [
@@ -46,10 +53,10 @@ export default function BackgroundColorSelectionScreen() {
   }, [navigation]);
 
   const handleGenerate = () => {
-    const selected = BACKGROUND_COLORS.find(c => c.id === selectedColor);
-    navigation.replace("BatchProcessing", { 
-      imageUris: [imageUri], 
-      backgroundColor: selected?.color || "#FFFFFF" 
+    const selected = BACKGROUND_COLORS.find((c) => c.id === selectedColor);
+    navigation.replace("BatchProcessing", {
+      imageUris: [imageUri],
+      backgroundColor: selected?.color || "#FFFFFF",
     });
   };
 
@@ -59,60 +66,93 @@ export default function BackgroundColorSelectionScreen() {
       <ThemedHeader title="Background Color" />
       <View style={[styles.container, { paddingTop: insets.top + 54 }]}>
         <View style={styles.content}>
+          <Animated.View
+            entering={FadeIn.delay(100).duration(400)}
+            style={[
+              styles.imagePreviewContainer,
+              {
+                backgroundColor: BACKGROUND_COLORS.find(
+                  (c) => c.id === selectedColor,
+                )?.color,
+              },
+            ]}
+          >
+            <Image source={{ uri: imageUri }} style={styles.imagePreview} />
+          </Animated.View>
+
+          <Animated.View
+            entering={FadeInUp.delay(200).duration(400)}
+            style={styles.promptContainer}
+          >
+            <ThemedText style={styles.promptText}>
+              Choose background color
+            </ThemedText>
+            <ThemedText style={styles.promptSubtext}>
+              AI will remove the background and place your product on this color
+            </ThemedText>
+          </Animated.View>
+
+          <Animated.View
+            entering={FadeInDown.delay(300).duration(400)}
+            style={styles.colorsContainer}
+          >
+            {BACKGROUND_COLORS.map((item, index) => (
+              <Pressable
+                key={item.id}
+                style={[
+                  styles.colorButton,
+                  { backgroundColor: item.color },
+                  item.border && styles.colorButtonBorder,
+                  selectedColor === item.id && styles.colorButtonSelected,
+                ]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setSelectedColor(item.id);
+                }}
+              >
+                {selectedColor === item.id && (
+                  <View
+                    style={[
+                      styles.checkmark,
+                      item.color === "#000000" && styles.checkmarkLight,
+                    ]}
+                  >
+                    <Feather
+                      name="check"
+                      size={16}
+                      color={
+                        item.color === "#000000"
+                          ? "#FFFFFF"
+                          : Colors.editing.primary
+                      }
+                    />
+                  </View>
+                )}
+              </Pressable>
+            ))}
+          </Animated.View>
+
+          <Animated.View
+            entering={FadeInUp.delay(400).duration(400)}
+            style={styles.selectedLabel}
+          >
+            <ThemedText style={styles.selectedLabelText}>
+              {BACKGROUND_COLORS.find((c) => c.id === selectedColor)?.name}
+            </ThemedText>
+          </Animated.View>
+        </View>
+
         <Animated.View
-          entering={FadeIn.delay(100).duration(400)}
-          style={[styles.imagePreviewContainer, { backgroundColor: BACKGROUND_COLORS.find(c => c.id === selectedColor)?.color }]}
+          entering={FadeInUp.delay(500).duration(400)}
+          style={[styles.footer, { paddingBottom: insets.bottom + Spacing.lg }]}
         >
-          <Image source={{ uri: imageUri }} style={styles.imagePreview} />
+          <GradientButton
+            title="Generate"
+            icon="zap"
+            onPress={handleGenerate}
+            fullWidth
+          />
         </Animated.View>
-
-        <Animated.View entering={FadeInUp.delay(200).duration(400)} style={styles.promptContainer}>
-          <ThemedText style={styles.promptText}>Choose background color</ThemedText>
-          <ThemedText style={styles.promptSubtext}>AI will remove the background and place your product on this color</ThemedText>
-        </Animated.View>
-
-        <Animated.View entering={FadeInDown.delay(300).duration(400)} style={styles.colorsContainer}>
-          {BACKGROUND_COLORS.map((item, index) => (
-            <Pressable
-              key={item.id}
-              style={[
-                styles.colorButton,
-                { backgroundColor: item.color },
-                item.border && styles.colorButtonBorder,
-                selectedColor === item.id && styles.colorButtonSelected,
-              ]}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setSelectedColor(item.id);
-              }}
-            >
-              {selectedColor === item.id && (
-                <View style={[styles.checkmark, item.color === "#000000" && styles.checkmarkLight]}>
-                  <Feather name="check" size={16} color={item.color === "#000000" ? "#FFFFFF" : Colors.editing.primary} />
-                </View>
-              )}
-            </Pressable>
-          ))}
-        </Animated.View>
-
-        <Animated.View entering={FadeInUp.delay(400).duration(400)} style={styles.selectedLabel}>
-          <ThemedText style={styles.selectedLabelText}>
-            {BACKGROUND_COLORS.find(c => c.id === selectedColor)?.name}
-          </ThemedText>
-        </Animated.View>
-      </View>
-
-      <Animated.View
-        entering={FadeInUp.delay(500).duration(400)}
-        style={[styles.footer, { paddingBottom: insets.bottom + Spacing.lg }]}
-      >
-        <GradientButton
-          title="Generate"
-          icon="zap"
-          onPress={handleGenerate}
-          fullWidth
-        />
-      </Animated.View>
       </View>
     </GradientBackground>
   );

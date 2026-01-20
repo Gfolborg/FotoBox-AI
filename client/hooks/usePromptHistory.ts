@@ -41,7 +41,7 @@ export function usePromptHistory() {
     };
 
     const existingIndex = history.findIndex(
-      (item) => item.prompt.toLowerCase() === prompt.trim().toLowerCase()
+      (item) => item.prompt.toLowerCase() === prompt.trim().toLowerCase(),
     );
 
     let newHistory: PromptHistoryItem[];

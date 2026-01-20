@@ -32,14 +32,15 @@ export default function BatchLifestyleProcessingScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
-  const { imageUris, environment, productDescription, shadowControl } = route.params;
+  const { imageUris, environment, productDescription, shadowControl } =
+    route.params;
 
   const [results, setResults] = useState<ProcessingResult[]>(
     imageUris.map((uri) => ({
       originalUri: uri,
       resultUri: null,
       status: "pending",
-    }))
+    })),
   );
   const [currentIndex, setCurrentIndex] = useState(0);
   const processingRef = useRef(false);
@@ -61,12 +62,19 @@ export default function BatchLifestyleProcessingScreen() {
 
     for (let i = 0; i < imageUris.length; i++) {
       setCurrentIndex(i);
-      resultsRef.current[i] = { ...resultsRef.current[i], status: "processing" };
+      resultsRef.current[i] = {
+        ...resultsRef.current[i],
+        status: "processing",
+      };
       setResults([...resultsRef.current]);
 
       try {
         const resultUri = await processImage(imageUris[i]);
-        resultsRef.current[i] = { ...resultsRef.current[i], resultUri, status: "completed" };
+        resultsRef.current[i] = {
+          ...resultsRef.current[i],
+          resultUri,
+          status: "completed",
+        };
         setResults([...resultsRef.current]);
       } catch (error) {
         resultsRef.current[i] = {
@@ -153,7 +161,9 @@ export default function BatchLifestyleProcessingScreen() {
 
       <View style={styles.content}>
         <Animated.View entering={FadeIn.duration(400)} style={styles.header}>
-          <ThemedText style={styles.title}>Creating Lifestyle Scenes</ThemedText>
+          <ThemedText style={styles.title}>
+            Creating Lifestyle Scenes
+          </ThemedText>
           <ThemedText style={styles.subtitle}>
             {completedCount + failedCount} of {imageUris.length} completed
           </ThemedText>
@@ -202,8 +212,8 @@ export default function BatchLifestyleProcessingScreen() {
                   Processing image {currentIndex + 1}
                 </ThemedText>
                 <ThemedText style={styles.environmentText}>
-                  {environment.length > 40 
-                    ? environment.slice(0, 40) + "..." 
+                  {environment.length > 40
+                    ? environment.slice(0, 40) + "..."
                     : environment}
                 </ThemedText>
               </View>
@@ -215,7 +225,11 @@ export default function BatchLifestyleProcessingScreen() {
           entering={FadeInUp.delay(600).duration(400)}
           style={styles.estimateContainer}
         >
-          <Feather name="clock" size={16} color={Colors.editing.textSecondary} />
+          <Feather
+            name="clock"
+            size={16}
+            color={Colors.editing.textSecondary}
+          />
           <ThemedText style={styles.estimateText}>
             ~{(imageUris.length - completedCount - failedCount) * 15}s remaining
           </ThemedText>

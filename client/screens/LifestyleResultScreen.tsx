@@ -1,3 +1,4 @@
+/* eslint-disable react/jsx-no-undef */
 import React, { useState } from "react";
 import {
   View,
@@ -16,7 +17,12 @@ import * as FileSystem from "expo-file-system/legacy";
 import { Feather } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import * as Haptics from "expo-haptics";
-import Animated, { FadeIn, FadeInDown, FadeOut, FadeInUp } from "react-native-reanimated";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeOut,
+  FadeInUp,
+} from "react-native-reanimated";
 
 import { ThemedHeader } from "@/components/ThemedHeader";
 import { ThemedText } from "@/components/ThemedText";
@@ -87,10 +93,7 @@ export default function LifestyleResultScreen() {
     } catch (error) {
       console.error("Failed to prepare image for platform selection:", error);
       if (Platform.OS !== "web") {
-        Alert.alert(
-          "Error",
-          "Could not prepare image. Please try again."
-        );
+        Alert.alert("Error", "Could not prepare image. Please try again.");
       }
     }
   };
@@ -138,78 +141,94 @@ export default function LifestyleResultScreen() {
       <View style={[styles.container, { paddingTop: insets.top + 54 }]}>
         <ScrollView
           style={styles.scrollView}
-          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 240 }]}
+          contentContainerStyle={[
+            styles.content,
+            { paddingBottom: insets.bottom + 240 },
+          ]}
           showsVerticalScrollIndicator={false}
         >
-        {/* Image Display */}
-        {showComparison ? (
-          <Animated.View
-            entering={FadeIn.duration(300)}
-            exiting={FadeOut.duration(200)}
-          >
-            <BeforeAfterSlider
-              beforeImage={originalUri}
-              afterImage={resultUri}
-              size={IMAGE_SIZE}
-            />
-          </Animated.View>
-        ) : (
-          <Animated.View
-            entering={FadeInDown.delay(100).duration(400)}
-            exiting={FadeOut.duration(200)}
-            style={styles.imageContainer}
-          >
-            <Image source={{ uri: resultUri }} style={styles.resultImage} />
-          </Animated.View>
-        )}
-
-        {/* Environment Badge */}
-        <Animated.View
-          entering={FadeInUp.delay(200).duration(400)}
-          style={styles.badgeContainer}
-        >
-          <GlassPill>
-            <Feather name="check-circle" size={14} color={Colors.editing.success} />
-            <ThemedText style={styles.environmentText}>{environmentLabel}</ThemedText>
-          </GlassPill>
-        </Animated.View>
-
-        {/* Comparison Toggle */}
-        <Animated.View
-          entering={FadeInUp.delay(300).duration(400)}
-          style={styles.toggleContainer}
-        >
-          <Pressable
-            style={[
-              styles.toggleButton,
-              showComparison && styles.toggleButtonActive,
-            ]}
-            onPress={() => {
-              setShowComparison(!showComparison);
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            }}
-          >
-            <Feather
-              name={showComparison ? "eye" : "sliders"}
-              size={16}
-              color={showComparison ? Colors.editing.text : Colors.editing.textSecondary}
-            />
-            <ThemedText
-              style={[
-                styles.toggleText,
-                showComparison && styles.toggleTextActive,
-              ]}
+          {/* Image Display */}
+          {showComparison ? (
+            <Animated.View
+              entering={FadeIn.duration(300)}
+              exiting={FadeOut.duration(200)}
             >
-              {showComparison ? "View Result" : "Compare"}
-            </ThemedText>
-          </Pressable>
-        </Animated.View>
-      </ScrollView>
+              <BeforeAfterSlider
+                beforeImage={originalUri}
+                afterImage={resultUri}
+                size={IMAGE_SIZE}
+              />
+            </Animated.View>
+          ) : (
+            <Animated.View
+              entering={FadeInDown.delay(100).duration(400)}
+              exiting={FadeOut.duration(200)}
+              style={styles.imageContainer}
+            >
+              <Image source={{ uri: resultUri }} style={styles.resultImage} />
+            </Animated.View>
+          )}
+
+          {/* Environment Badge */}
+          <Animated.View
+            entering={FadeInUp.delay(200).duration(400)}
+            style={styles.badgeContainer}
+          >
+            <GlassPill>
+              <Feather
+                name="check-circle"
+                size={14}
+                color={Colors.editing.success}
+              />
+              <ThemedText style={styles.environmentText}>
+                {environmentLabel}
+              </ThemedText>
+            </GlassPill>
+          </Animated.View>
+
+          {/* Comparison Toggle */}
+          <Animated.View
+            entering={FadeInUp.delay(300).duration(400)}
+            style={styles.toggleContainer}
+          >
+            <Pressable
+              style={[
+                styles.toggleButton,
+                showComparison && styles.toggleButtonActive,
+              ]}
+              onPress={() => {
+                setShowComparison(!showComparison);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }}
+            >
+              <Feather
+                name={showComparison ? "eye" : "sliders"}
+                size={16}
+                color={
+                  showComparison
+                    ? Colors.editing.text
+                    : Colors.editing.textSecondary
+                }
+              />
+              <ThemedText
+                style={[
+                  styles.toggleText,
+                  showComparison && styles.toggleTextActive,
+                ]}
+              >
+                {showComparison ? "View Result" : "Compare"}
+              </ThemedText>
+            </Pressable>
+          </Animated.View>
+        </ScrollView>
 
         {/* Bottom Action Bar */}
         <Animated.View
           entering={FadeInUp.delay(400).duration(400)}
-          style={[styles.bottomBar, { paddingBottom: insets.bottom + Spacing.md }]}
+          style={[
+            styles.bottomBar,
+            { paddingBottom: insets.bottom + Spacing.md },
+          ]}
         >
           <GlassCard theme="light" padding="sm" borderRadius="lg">
             <View style={styles.actionButtons}>
@@ -223,7 +242,10 @@ export default function LifestyleResultScreen() {
 
               {/* Secondary Actions */}
               <View style={styles.secondaryActions}>
-                <Pressable style={styles.actionButton} onPress={handleEditImage}>
+                <Pressable
+                  style={styles.actionButton}
+                  onPress={handleEditImage}
+                >
                   <IconButton
                     icon="edit-2"
                     onPress={handleEditImage}
@@ -234,7 +256,10 @@ export default function LifestyleResultScreen() {
                   <ThemedText style={styles.actionLabel}>Edit</ThemedText>
                 </Pressable>
 
-                <Pressable style={styles.actionButton} onPress={handleTryDifferentEnvironment}>
+                <Pressable
+                  style={styles.actionButton}
+                  onPress={handleTryDifferentEnvironment}
+                >
                   <IconButton
                     icon="refresh-cw"
                     onPress={handleTryDifferentEnvironment}
@@ -245,7 +270,10 @@ export default function LifestyleResultScreen() {
                   <ThemedText style={styles.actionLabel}>Retry</ThemedText>
                 </Pressable>
 
-                <Pressable style={styles.actionButton} onPress={handleGenerateAnother}>
+                <Pressable
+                  style={styles.actionButton}
+                  onPress={handleGenerateAnother}
+                >
                   <IconButton
                     icon="plus"
                     onPress={handleGenerateAnother}

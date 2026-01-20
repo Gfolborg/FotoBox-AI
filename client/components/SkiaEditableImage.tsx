@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useRef,
-  useImperativeHandle,
-  forwardRef,
-  useEffect,
-} from "react";
+import * as React from "react";
 import { View, StyleSheet, Dimensions, Platform } from "react-native";
 import {
   Canvas,
@@ -14,6 +8,7 @@ import {
   Skia,
   rect,
   ImageFormat,
+  useImage,
   type SkImage,
 } from "@shopify/react-native-skia";
 import * as FileSystem from "expo-file-system/legacy";
@@ -21,34 +16,6 @@ import * as FileSystem from "expo-file-system/legacy";
 import { Colors } from "@/constants/theme";
 import { CropOverlay } from "./CropOverlay";
 import type { ImageEditingState } from "@/hooks/useImageEditing";
-
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const IMAGE_SIZE = SCREEN_WIDTH * 0.75;
-
-export interface SkiaEditableImageRef {
-  snapshot: () => Promise<string | null>;
-}
-
-interface SkiaEditableImageProps {
-  originalUri: string;
-  adjustments: {
-    brightness: number;
-    contrast: number;
-    saturation: number;
-    exposure: number;
-    highlights: number;
-    shadows: number;
-    warmth: number;
-    rotation: number;
-    flipHorizontal: boolean;
-    flipVertical: boolean;
-  };
-  showOriginal?: boolean;
-  showCropOverlay?: boolean;
-  crop: ImageEditingState["crop"];
-  aspectRatio?: ImageEditingState["aspectRatio"];
-  onCropChange: (crop: ImageEditingState["crop"]) => void;
-}
 
 // ... (Matrix functions remain the same)
 function brightnessMatrix(value: number): number[] {
@@ -172,7 +139,7 @@ function createCombinedMatrix(
   return matrix;
 }
 
-export const SkiaEditableImage = forwardRef<
+export const SkiaEditableImage = React.forwardRef<
   SkiaEditableImageRef,
   SkiaEditableImageProps
 >(
@@ -188,99 +155,35 @@ export const SkiaEditableImage = forwardRef<
     },
     ref,
   ) => {
-    const [imageLayout, setImageLayout] = useState({
+    const { width: SCREEN_WIDTH } = Dimensions.get("window");
+    const IMAGE_SIZE = SCREEN_WIDTH * 0.75;
+
+    const [imageLayout, setImageLayout] = React.useState({
       width: IMAGE_SIZE,
       height: IMAGE_SIZE,
     });
 
-    const [actualImageDimensions, setActualImageDimensions] = useState({
+    const [actualImageDimensions, setActualImageDimensions] = React.useState({
       width: IMAGE_SIZE,
       height: IMAGE_SIZE,
       offsetX: 0,
       offsetY: 0,
     });
 
-    const [skiaImage, setSkiaImage] = useState<SkImage | null>(null);
-    const canvasRef = useRef<any>(null);
+    const image = useImage(originalUri);
+    const canvasRef = React.useRef<any>(null);
 
-    // Load image using Skia's native decoding
-    useEffect(() => {
-      let cancelled = false;
-
-      const loadImage = async () => {
-        try {
-          console.log("[SkiaEditableImage] Loading URI:", originalUri);
-
-          let base64String: string;
-
-          if (originalUri.startsWith("data:")) {
-            // Extract base64 from data URI
-            base64String = originalUri.split(",")[1];
-            console.log("[SkiaEditableImage] Extracted base64 from data URI");
-          } else {
-            // Load file as base64
-            let fileUri = originalUri;
-            if (!fileUri.startsWith("file://") && fileUri.startsWith("/")) {
-              fileUri = `file://${fileUri}`;
-            }
-
-            base64String = await FileSystem.readAsStringAsync(fileUri, {
-              encoding: FileSystem.EncodingType.Base64,
-            });
-            console.log(
-              "[SkiaEditableImage] Loaded file as base64, length:",
-              base64String.length,
-            );
-          }
-
-          if (cancelled) return;
-
-          // Decode base64 to Uint8Array
-          const binaryString = atob(base64String);
-          const bytes = new Uint8Array(binaryString.length);
-          for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-          }
-
-          // Create Skia Data and decode image
-          const skData = Skia.Data.fromBytes(bytes);
-          const decodedImage = Skia.Image.MakeImageFromEncoded(skData);
-
-          if (!cancelled) {
-            if (decodedImage) {
-              console.log(
-                "[SkiaEditableImage] Image decoded successfully:",
-                decodedImage.width(),
-                "x",
-                decodedImage.height(),
-              );
-              setSkiaImage(decodedImage);
-            } else {
-              console.error(
-                "[SkiaEditableImage] Failed to decode image from bytes",
-              );
-              setSkiaImage(null);
-            }
-          }
-        } catch (error) {
-          console.error("[SkiaEditableImage] Failed to load image:", error);
-          if (!cancelled) {
-            setSkiaImage(null);
-          }
-        }
-      };
-
-      loadImage();
-
-      return () => {
-        cancelled = true;
-      };
-    }, [originalUri]);
-
-    const image = skiaImage;
+    const styles = StyleSheet.create({
+      container: {
+        width: IMAGE_SIZE,
+        height: IMAGE_SIZE,
+        justifyContent: "center",
+        alignItems: "center",
+      },
+    });
 
     // Calculate image dimensions for CropOverlay (must be before conditional returns)
-    useEffect(() => {
+    React.useEffect(() => {
       if (!image) {
         setActualImageDimensions({
           width: IMAGE_SIZE,
@@ -317,7 +220,7 @@ export const SkiaEditableImage = forwardRef<
       });
     }, [image]);
 
-    useImperativeHandle(ref, () => ({
+    React.useImperativeHandle(ref, () => ({
       snapshot: async (): Promise<string | null> => {
         if (!image) {
           console.error(
@@ -333,9 +236,10 @@ export const SkiaEditableImage = forwardRef<
           const origHeight = image.height();
 
           // Determine if we need to apply rotation/flip first
-          const needsTransform = adjustments.rotation !== 0 ||
-                                  adjustments.flipHorizontal ||
-                                  adjustments.flipVertical;
+          const needsTransform =
+            adjustments.rotation !== 0 ||
+            adjustments.flipHorizontal ||
+            adjustments.flipVertical;
 
           let workingImage = image;
           let workingWidth = origWidth;
@@ -350,9 +254,14 @@ export const SkiaEditableImage = forwardRef<
             const transformedWidth = needsSwap ? origHeight : origWidth;
             const transformedHeight = needsSwap ? origWidth : origHeight;
 
-            const tempSurface = Skia.Surface.Make(transformedWidth, transformedHeight);
+            const tempSurface = Skia.Surface.Make(
+              transformedWidth,
+              transformedHeight,
+            );
             if (!tempSurface) {
-              console.error("[SkiaEditableImage] Failed to create transform surface");
+              console.error(
+                "[SkiaEditableImage] Failed to create transform surface",
+              );
               return null;
             }
 
@@ -375,7 +284,9 @@ export const SkiaEditableImage = forwardRef<
             workingHeight = transformedHeight;
 
             if (!workingImage) {
-              console.error("[SkiaEditableImage] Failed to create transformed image");
+              console.error(
+                "[SkiaEditableImage] Failed to create transformed image",
+              );
               return null;
             }
           }
@@ -422,7 +333,9 @@ export const SkiaEditableImage = forwardRef<
           const snapshot = surface.makeImageSnapshot();
 
           if (!snapshot) {
-            console.error("[SkiaEditableImage] Failed to create snapshot from surface");
+            console.error(
+              "[SkiaEditableImage] Failed to create snapshot from surface",
+            );
             return null;
           }
 
@@ -434,11 +347,14 @@ export const SkiaEditableImage = forwardRef<
           );
 
           // Encode to base64
-          const format = Platform.OS === "web" ? ImageFormat.PNG : ImageFormat.JPEG;
+          const format =
+            Platform.OS === "web" ? ImageFormat.PNG : ImageFormat.JPEG;
           const base64 = snapshot.encodeToBase64(format, 95);
 
           if (!base64) {
-            console.error("[SkiaEditableImage] Failed to encode snapshot to base64");
+            console.error(
+              "[SkiaEditableImage] Failed to encode snapshot to base64",
+            );
             return null;
           }
 
@@ -545,12 +461,6 @@ export const SkiaEditableImage = forwardRef<
 SkiaEditableImage.displayName = "SkiaEditableImage";
 
 const styles = StyleSheet.create({
-  container: {
-    width: IMAGE_SIZE,
-    height: IMAGE_SIZE,
-    justifyContent: "center",
-    alignItems: "center",
-  },
   imageContainer: {
     width: "100%",
     height: "100%",

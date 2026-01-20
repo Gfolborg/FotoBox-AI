@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  ReactNode,
+} from "react";
 import type { ImageEditingState } from "@/hooks/useImageEditing";
 
 interface BatchEditContextType {
@@ -17,18 +23,23 @@ interface BatchEditContextType {
   resetBatchSession: () => void;
 }
 
-const BatchEditContext = createContext<BatchEditContextType | undefined>(undefined);
+const BatchEditContext = createContext<BatchEditContextType | undefined>(
+  undefined,
+);
 
 export function BatchEditProvider({ children }: { children: ReactNode }) {
   const [isBatchMode, setIsBatchMode] = useState(false);
   const [hasShownApplyAllPopup, setHasShownApplyAllPopup] = useState(false);
-  const [savedEditSettings, setSavedEditSettings] = useState<Partial<ImageEditingState> | null>(null);
+  const [savedEditSettings, setSavedEditSettings] =
+    useState<Partial<ImageEditingState> | null>(null);
   const [applyToAllPending, setApplyToAllPending] = useState(false);
   const [totalBatchImages, setTotalBatchImages] = useState(0);
-  const [editedBatchImages, setEditedBatchImages] = useState<Set<string>>(new Set());
+  const [editedBatchImages, setEditedBatchImages] = useState<Set<string>>(
+    new Set(),
+  );
 
   const markImageAsEdited = useCallback((uri: string) => {
-    setEditedBatchImages(prev => new Set([...prev, uri]));
+    setEditedBatchImages((prev) => new Set([...prev, uri]));
   }, []);
 
   const resetBatchSession = useCallback(() => {
@@ -40,13 +51,16 @@ export function BatchEditProvider({ children }: { children: ReactNode }) {
     setEditedBatchImages(new Set());
   }, []);
 
-  const setBatchMode = useCallback((value: boolean) => {
-    if (!value) {
-      resetBatchSession();
-    } else {
-      setIsBatchMode(true);
-    }
-  }, [resetBatchSession]);
+  const setBatchMode = useCallback(
+    (value: boolean) => {
+      if (!value) {
+        resetBatchSession();
+      } else {
+        setIsBatchMode(true);
+      }
+    },
+    [resetBatchSession],
+  );
 
   return (
     <BatchEditContext.Provider

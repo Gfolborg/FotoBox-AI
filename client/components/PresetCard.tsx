@@ -148,7 +148,11 @@ export function PresetCard({
           )}
           {preset.aiSettings.shadowControl && (
             <View style={styles.adjustmentPill}>
-              <Feather name="cloud-drizzle" size={12} color={Colors.light.primary} />
+              <Feather
+                name="cloud-drizzle"
+                size={12}
+                color={Colors.light.primary}
+              />
               <ThemedText style={styles.adjustmentPillText}>
                 {preset.aiSettings.shadowControl}
               </ThemedText>

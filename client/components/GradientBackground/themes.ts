@@ -68,7 +68,7 @@ export const screenThemes: Record<ScreenTheme, ThemeConfig> = {
 };
 
 export function getVariantConfig(
-  variant: "default" | "subtle" | "warm"
+  variant: "default" | "subtle" | "warm",
 ): ThemeConfig {
   switch (variant) {
     case "warm":

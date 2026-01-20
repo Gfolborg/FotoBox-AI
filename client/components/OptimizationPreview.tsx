@@ -35,12 +35,11 @@ export function OptimizationPreview({
     <GlassCard theme="light" padding="md" borderRadius="lg">
       {/* Header */}
       <View style={styles.header}>
-        <ThemedText style={styles.headerTitle}>
-          Optimization Preview
-        </ThemedText>
+        <ThemedText style={styles.headerTitle}>Optimization Preview</ThemedText>
         <View style={styles.countBadge}>
           <ThemedText style={styles.countText}>
-            {selectedPlatforms.length} platform{selectedPlatforms.length !== 1 ? "s" : ""}
+            {selectedPlatforms.length} platform
+            {selectedPlatforms.length !== 1 ? "s" : ""}
           </ThemedText>
         </View>
       </View>
@@ -48,7 +47,11 @@ export function OptimizationPreview({
       {/* Current Dimensions */}
       {currentWidth && currentHeight && (
         <View style={styles.currentDimensions}>
-          <Feather name="image" size={14} color={Colors.editing.textSecondary} />
+          <Feather
+            name="image"
+            size={14}
+            color={Colors.editing.textSecondary}
+          />
           <ThemedText style={styles.currentText}>
             Current: {currentWidth} x {currentHeight}
           </ThemedText>
@@ -94,7 +97,8 @@ export function OptimizationPreview({
         <View style={styles.noteContainer}>
           <Feather name="scissors" size={12} color="#F59E0B" />
           <ThemedText style={styles.noteText}>
-            Images will be center-cropped to fit each platform's aspect ratio
+            Images will be center-cropped to fit each platform&apos;s aspect
+            ratio
           </ThemedText>
         </View>
       )}

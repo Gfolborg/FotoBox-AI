@@ -105,7 +105,9 @@ export function GradientButton({
       {loading ? (
         <ActivityIndicator
           size="small"
-          color={variant === "ghost" ? Colors.light.primary : Colors.light.buttonText}
+          color={
+            variant === "ghost" ? Colors.light.primary : Colors.light.buttonText
+          }
         />
       ) : (
         <>
@@ -113,7 +115,11 @@ export function GradientButton({
             <Feather
               name={icon}
               size={currentSize.iconSize}
-              color={variant === "ghost" ? Colors.light.primary : Colors.light.buttonText}
+              color={
+                variant === "ghost"
+                  ? Colors.light.primary
+                  : Colors.light.buttonText
+              }
               style={styles.iconLeft}
             />
           )}
@@ -131,7 +137,11 @@ export function GradientButton({
             <Feather
               name={icon}
               size={currentSize.iconSize}
-              color={variant === "ghost" ? Colors.light.primary : Colors.light.buttonText}
+              color={
+                variant === "ghost"
+                  ? Colors.light.primary
+                  : Colors.light.buttonText
+              }
               style={styles.iconRight}
             />
           )}

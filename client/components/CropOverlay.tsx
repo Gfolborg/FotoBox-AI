@@ -87,7 +87,10 @@ export function CropOverlay({
   const aspectRatioValue = getAspectRatioValue();
 
   // Apply aspect ratio constraint
-  const constrainToAspectRatio = (w: number, h: number): { width: number; height: number } => {
+  const constrainToAspectRatio = (
+    w: number,
+    h: number,
+  ): { width: number; height: number } => {
     if (!aspectRatioValue) return { width: w, height: h };
 
     const currentRatio = w / h;
@@ -133,8 +136,14 @@ export function CropOverlay({
       const newY = startY.value + e.translationY;
 
       // Constrain to image bounds (accounting for offset)
-      x.value = Math.max(offsetX, Math.min(newX, offsetX + imageWidth - width.value));
-      y.value = Math.max(offsetY, Math.min(newY, offsetY + imageHeight - height.value));
+      x.value = Math.max(
+        offsetX,
+        Math.min(newX, offsetX + imageWidth - width.value),
+      );
+      y.value = Math.max(
+        offsetY,
+        Math.min(newY, offsetY + imageHeight - height.value),
+      );
     })
     .onEnd(() => {
       // Report back as percentages using runOnJS

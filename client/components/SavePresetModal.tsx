@@ -17,10 +17,13 @@ import { PresetAdjustments, EditingPreset } from "@/types/preset";
 interface SavePresetModalProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (name: string, aiSettings?: EditingPreset['aiSettings']) => Promise<void>;
+  onSave: (
+    name: string,
+    aiSettings?: EditingPreset["aiSettings"],
+  ) => Promise<void>;
   adjustments: PresetAdjustments;
   backgroundColor: string;
-  aiSettings?: EditingPreset['aiSettings'];
+  aiSettings?: EditingPreset["aiSettings"];
   isSaving?: boolean;
 }
 

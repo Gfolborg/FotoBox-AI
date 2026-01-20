@@ -133,14 +133,20 @@ export function GradientBackground({
 
     if (typeof breathingGradient === "object") {
       return {
-        colors: themeConfig.breathingColors ?? [Colors.light.primary, Colors.light.secondary],
+        colors: themeConfig.breathingColors ?? [
+          Colors.light.primary,
+          Colors.light.secondary,
+        ],
         ...breathingGradient,
       };
     }
 
     if (breathingGradient === true || themeConfig.enableBreathing) {
       return {
-        colors: themeConfig.breathingColors ?? [Colors.light.primary, Colors.light.secondary],
+        colors: themeConfig.breathingColors ?? [
+          Colors.light.primary,
+          Colors.light.secondary,
+        ],
         speed: 3000,
         intensity: 0.2,
       };

@@ -1,59 +1,63 @@
-import React, { useRef, useState } from 'react';
-import { View, StyleSheet, FlatList, Dimensions, Image } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
+import React, { useRef, useState } from "react";
+import { View, StyleSheet, FlatList, Dimensions, Image } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
   withTiming,
   FadeIn,
   FadeInUp,
-} from 'react-native-reanimated';
-import { Feather } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
-import { GradientButton } from '@/components/GradientButton';
-import { GlassCard } from '@/components/GlassCard';
-import { ThemedText } from '@/components/ThemedText';
+} from "react-native-reanimated";
+import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import { GradientButton } from "@/components/GradientButton";
+import { GlassCard } from "@/components/GlassCard";
+import { ThemedText } from "@/components/ThemedText";
 import { GradientBackground } from "@/components/GradientBackground";
-import { Colors, Spacing, BorderRadius, Gradients } from '@/constants/theme';
+import { Colors, Spacing, BorderRadius, Gradients } from "@/constants/theme";
 
 const logoImage = require("../../assets/images/fotobox-logo.png");
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 const onboardingSlides = [
   {
-    id: '1',
-    icon: 'logo',
-    title: '',
-    description: 'Create professional product images with one tap. Our AI removes backgrounds and creates perfect listings.',
-    gradient: ['#FFF7ED', '#FAFAF9'] as [string, string],
+    id: "1",
+    icon: "logo",
+    title: "",
+    description:
+      "Create professional product images with one tap. Our AI removes backgrounds and creates perfect listings.",
+    gradient: ["#FFF7ED", "#FAFAF9"] as [string, string],
   },
   {
-    id: '2',
-    icon: 'image',
-    title: 'AI-Powered Scenes',
-    description: 'Place your products in beautiful, AI-generated lifestyle environments to attract more customers.',
-    gradient: ['#F0F9FF', '#F5F5F4'] as [string, string],
+    id: "2",
+    icon: "image",
+    title: "AI-Powered Scenes",
+    description:
+      "Place your products in beautiful, AI-generated lifestyle environments to attract more customers.",
+    gradient: ["#F0F9FF", "#F5F5F4"] as [string, string],
   },
   {
-    id: '3',
-    icon: 'figma',
-    title: 'Create Realistic Mockups',
-    description: 'Instantly generate professional mockups for your products. Showcase your designs on t-shirts, mugs, and more.',
-    gradient: ['#FEF2F2', '#F5F5F4'] as [string, string],
+    id: "3",
+    icon: "figma",
+    title: "Create Realistic Mockups",
+    description:
+      "Instantly generate professional mockups for your products. Showcase your designs on t-shirts, mugs, and more.",
+    gradient: ["#FEF2F2", "#F5F5F4"] as [string, string],
   },
   {
-    id: '4',
-    icon: 'layers',
-    title: 'Batch Edit Like a Pro',
-    description: 'Save time by processing multiple images at once. Edit and enhance your entire product line in minutes.',
-    gradient: ['#ECFDF5', '#F5F5F4'] as [string, string],
+    id: "4",
+    icon: "layers",
+    title: "Batch Edit Like a Pro",
+    description:
+      "Save time by processing multiple images at once. Edit and enhance your entire product line in minutes.",
+    gradient: ["#ECFDF5", "#F5F5F4"] as [string, string],
   },
 ];
 
 interface OnboardingSlideProps {
-  item: typeof onboardingSlides[0];
+  item: (typeof onboardingSlides)[0];
   index: number;
 }
 
@@ -65,13 +69,17 @@ const OnboardingSlide = ({ item, index }: OnboardingSlideProps) => (
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
     />
-    
-    <Animated.View 
+
+    <Animated.View
       entering={FadeIn.delay(index * 100).duration(600)}
       style={styles.slideContent}
     >
-      {item.icon === 'logo' ? (
-        <Image source={logoImage} style={styles.fullLogo} resizeMode="contain" />
+      {item.icon === "logo" ? (
+        <Image
+          source={logoImage}
+          style={styles.fullLogo}
+          resizeMode="contain"
+        />
       ) : (
         <View style={styles.iconContainer}>
           <LinearGradient
@@ -80,16 +88,24 @@ const OnboardingSlide = ({ item, index }: OnboardingSlideProps) => (
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
-            <Feather name={item.icon as any} size={48} color={Colors.light.buttonText} />
+            <Feather
+              name={item.icon as any}
+              size={48}
+              color={Colors.light.buttonText}
+            />
           </LinearGradient>
         </View>
       )}
-      
+
       {item.title ? (
-        <ThemedText type="h2" style={styles.slideTitle}>{item.title}</ThemedText>
+        <ThemedText type="h2" style={styles.slideTitle}>
+          {item.title}
+        </ThemedText>
       ) : null}
-      
-      <ThemedText style={styles.slideDescription}>{item.description}</ThemedText>
+
+      <ThemedText style={styles.slideDescription}>
+        {item.description}
+      </ThemedText>
     </Animated.View>
   </View>
 );
@@ -98,7 +114,9 @@ interface OnboardingScreenProps {
   onComplete: () => void;
 }
 
-export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
+export default function OnboardingScreen({
+  onComplete,
+}: OnboardingScreenProps) {
   const insets = useSafeAreaInsets();
   const flatListRef = useRef<FlatList>(null);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -122,23 +140,32 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
       <FlatList
         ref={flatListRef}
         data={onboardingSlides}
-        renderItem={({ item, index }) => <OnboardingSlide item={item} index={index} />}
+        renderItem={({ item, index }) => (
+          <OnboardingSlide item={item} index={index} />
+        )}
         keyExtractor={(item) => item.id}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={(e) => {
-          const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+          const index = Math.round(
+            e.nativeEvent.contentOffset.x / SCREEN_WIDTH,
+          );
           setActiveIndex(index);
         }}
         scrollEventThrottle={16}
       />
 
-      <Animated.View 
+      <Animated.View
         entering={FadeInUp.delay(400).duration(500)}
         style={[styles.footer, { paddingBottom: insets.bottom + Spacing.lg }]}
       >
-        <GlassCard theme="light" variant="subtle" padding="lg" borderRadius="2xl">
+        <GlassCard
+          theme="light"
+          variant="subtle"
+          padding="lg"
+          borderRadius="2xl"
+        >
           <View style={styles.footerContent}>
             {/* Pagination */}
             <View style={styles.pagination}>
@@ -158,11 +185,19 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
                   style={styles.skipButton}
                 />
               )}
-              
+
               <GradientButton
-                title={activeIndex === onboardingSlides.length - 1 ? 'Get Started' : 'Next'}
+                title={
+                  activeIndex === onboardingSlides.length - 1
+                    ? "Get Started"
+                    : "Next"
+                }
                 onPress={handleNext}
-                icon={activeIndex === onboardingSlides.length - 1 ? 'arrow-right' : undefined}
+                icon={
+                  activeIndex === onboardingSlides.length - 1
+                    ? "arrow-right"
+                    : undefined
+                }
                 iconPosition="right"
                 style={styles.nextButton}
               />
@@ -207,15 +242,15 @@ const styles = StyleSheet.create({
   },
   slideContent: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: Spacing.xl,
   },
   iconContainer: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginBottom: Spacing.xl,
     shadowColor: Colors.light.primary,
     shadowOffset: { width: 0, height: 8 },
@@ -224,10 +259,10 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   iconGradient: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
   },
   fullLogo: {
     width: 280,
@@ -236,18 +271,18 @@ const styles = StyleSheet.create({
   },
   slideTitle: {
     color: Colors.light.text,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: Spacing.md,
   },
   slideDescription: {
     color: Colors.light.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
     fontSize: 16,
     lineHeight: 24,
-    maxWidth: '85%',
+    maxWidth: "85%",
   },
   footer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: Spacing.lg,
     right: Spacing.lg,
@@ -256,23 +291,23 @@ const styles = StyleSheet.create({
     gap: Spacing.lg,
   },
   pagination: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     gap: Spacing.sm,
   },
   dot: {
     height: 8,
     borderRadius: 4,
     backgroundColor: Colors.light.primary,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   dotGradient: {
     ...StyleSheet.absoluteFillObject,
   },
   buttonsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.md,
   },
   skipButton: {

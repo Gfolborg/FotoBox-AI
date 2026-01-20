@@ -6,11 +6,15 @@ import { createServer } from "node:http";
 import multer from "multer";
 import sharp from "sharp";
 import { GoogleGenAI, Modality } from "@google/genai";
-var upload = multer({
+
+// server/index.ts
+import * as fs from "fs";
+import * as path from "path";
+let upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }
 });
-var ai = new GoogleGenAI({
+let ai = new GoogleGenAI({
   apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY,
   httpOptions: {
     apiVersion: "",
@@ -26,7 +30,7 @@ function hexToRGB(hex) {
     b: parseInt(fullHex.substring(4, 6), 16)
   };
 }
-var LIFESTYLE_ENVIRONMENTS = {
+let LIFESTYLE_ENVIRONMENTS = {
   kitchen: "Place this product on a modern kitchen counter with natural lighting streaming through a window, marble or granite surface, with subtle kitchen background elements like wooden cutting boards or fresh herbs. The scene should feel clean, bright, and aspirational.",
   outdoor: "Place this product in a natural outdoor setting with soft golden-hour sunlight, lush greenery or flowers in the background, creating a fresh and organic atmosphere. The lighting should be warm and inviting.",
   studio: "Place this product in a professional photography studio with soft box lighting, clean neutral background with subtle shadows, creating a high-end commercial look. The lighting should be even and flattering.",
@@ -374,12 +378,8 @@ async function registerRoutes(app2) {
   const httpServer = createServer(app2);
   return httpServer;
 }
-
-// server/index.ts
-import * as fs from "fs";
-import * as path from "path";
-var app = express();
-var log = console.log;
+let app = express();
+let log = console.log;
 function setupCors(app2) {
   app2.use((req, res, next) => {
     const origins = /* @__PURE__ */ new Set();

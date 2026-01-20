@@ -89,8 +89,8 @@ function AnimatedOrb({ orb, opacity }: AnimatedOrbProps) {
           easing: Easing.inOut(Easing.sin),
         }),
         -1, // infinite
-        true // reverse
-      )
+        true, // reverse
+      ),
     );
   }, [orb.delay, orb.duration]);
 
@@ -99,18 +99,18 @@ function AnimatedOrb({ orb, opacity }: AnimatedOrbProps) {
     const translateX = interpolate(
       progress.value,
       [0, 0.25, 0.5, 0.75, 1],
-      [0, orb.movementX, 0, -orb.movementX * 0.5, 0]
+      [0, orb.movementX, 0, -orb.movementX * 0.5, 0],
     );
     const translateY = interpolate(
       progress.value,
       [0, 0.33, 0.66, 1],
-      [0, -orb.movementY, orb.movementY * 0.7, 0]
+      [0, -orb.movementY, orb.movementY * 0.7, 0],
     );
     const scale = interpolate(progress.value, [0, 0.5, 1], [1, 1.08, 1]);
     const orbOpacity = interpolate(
       progress.value,
       [0, 0.5, 1],
-      [opacity * 0.8, opacity, opacity * 0.8]
+      [opacity * 0.8, opacity, opacity * 0.8],
     );
 
     return {
@@ -147,7 +147,7 @@ export function FloatingOrbs({ config }: FloatingOrbsProps) {
       ...DEFAULT_CONFIG,
       ...config,
     }),
-    [config]
+    [config],
   );
 
   const orbs = useMemo(() => generateOrbs(mergedConfig), [mergedConfig]);

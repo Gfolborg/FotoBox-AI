@@ -19,10 +19,14 @@ export function GlassPill({
   variant = "light",
 }: GlassPillProps) {
   const isDark = variant === "dark";
-  
+
   return (
     <View style={[styles.container, isDark && styles.containerDark, style]}>
-      <BlurView intensity={intensity} tint={isDark ? "dark" : "light"} style={styles.blur} />
+      <BlurView
+        intensity={intensity}
+        tint={isDark ? "dark" : "light"}
+        style={styles.blur}
+      />
       <View
         style={[
           styles.content,

@@ -38,14 +38,22 @@ export default function BatchMockupProcessingScreen() {
   const route = useRoute<BatchMockupProcessingScreenRouteProp>();
   const insets = useSafeAreaInsets();
 
-  const { imageUris, mockupItem, sceneVibe, cameraOption, mockupColor, customDescription, modelOption } = route.params;
+  const {
+    imageUris,
+    mockupItem,
+    sceneVibe,
+    cameraOption,
+    mockupColor,
+    customDescription,
+    modelOption,
+  } = route.params;
 
   const [results, setResults] = useState<ProcessingResult[]>(
     imageUris.map((uri) => ({
       originalUri: uri,
       resultUri: null,
       status: "pending",
-    }))
+    })),
   );
   const [currentIndex, setCurrentIndex] = useState(0);
   const hasStartedRef = useRef(false);
@@ -69,15 +77,13 @@ export default function BatchMockupProcessingScreen() {
       cameraOption,
       mockupColor,
       customDescription,
-      modelOption
+      modelOption,
     );
 
     for (let i = 0; i < imageUris.length; i++) {
       setCurrentIndex(i);
       setResults((prev) =>
-        prev.map((r, idx) =>
-          idx === i ? { ...r, status: "processing" } : r
-        )
+        prev.map((r, idx) => (idx === i ? { ...r, status: "processing" } : r)),
       );
 
       try {
@@ -100,7 +106,7 @@ export default function BatchMockupProcessingScreen() {
           {
             method: "POST",
             body: formData,
-          }
+          },
         );
 
         if (!response.ok) {
@@ -114,8 +120,8 @@ export default function BatchMockupProcessingScreen() {
           prev.map((r, idx) =>
             idx === i
               ? { ...r, resultUri: data.resultUri, status: "completed" }
-              : r
-          )
+              : r,
+          ),
         );
 
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -129,8 +135,8 @@ export default function BatchMockupProcessingScreen() {
                   error: error instanceof Error ? error.message : "Failed",
                   status: "failed",
                 }
-              : r
-          )
+              : r,
+          ),
         );
       }
     }
@@ -152,7 +158,13 @@ export default function BatchMockupProcessingScreen() {
     }, 1000);
   };
 
-  const renderItem = ({ item, index }: { item: ProcessingResult; index: number }) => (
+  const renderItem = ({
+    item,
+    index,
+  }: {
+    item: ProcessingResult;
+    index: number;
+  }) => (
     <View style={styles.thumbnailContainer}>
       <Image source={{ uri: item.originalUri }} style={styles.thumbnail} />
       <View
@@ -169,9 +181,7 @@ export default function BatchMockupProcessingScreen() {
         {item.status === "failed" && (
           <Feather name="x" size={20} color="#FFF" />
         )}
-        {item.status === "processing" && (
-          <View style={styles.processingDot} />
-        )}
+        {item.status === "processing" && <View style={styles.processingDot} />}
       </View>
     </View>
   );

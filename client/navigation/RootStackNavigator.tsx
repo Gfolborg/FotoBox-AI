@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
 import CameraScreen from "@/screens/CameraScreen";
@@ -26,9 +26,12 @@ import BatchMockupResultScreen from "@/screens/BatchMockupResultScreen";
 import QuickFixScreen from "@/screens/QuickFixScreen";
 import PlatformSelectionScreen from "@/screens/PlatformSelectionScreen";
 import BatchPlatformSelectionScreen from "@/screens/BatchPlatformSelectionScreen";
-import { MockupItem, SceneVibe, CameraOption, ModelOption } from "@/lib/mockup-presets";
-
-
+import {
+  MockupItem,
+  SceneVibe,
+  CameraOption,
+  ModelOption,
+} from "@/lib/mockup-presets";
 
 export type RootStackParamList = {
   Home: undefined;
@@ -37,9 +40,16 @@ export type RootStackParamList = {
   PhotoAction: { imageUri: string };
   BackgroundColorSelection: { imageUri: string };
   EditImage: { imageUri: string; originalUri?: string; presetId?: string };
-  Result: { resultUri: string; originalUri: string; backgroundColor?: string; isEdited?: boolean };
+  Result: {
+    resultUri: string;
+    originalUri: string;
+    backgroundColor?: string;
+    isEdited?: boolean;
+  };
   PlatformSelection: { imageUri: string; originalUri?: string };
-  BatchPlatformSelection: { results: { originalUri: string; resultUri: string }[] };
+  BatchPlatformSelection: {
+    results: { originalUri: string; resultUri: string }[];
+  };
 
   // Batch flow
   BatchActionSelection: { imageUris: string[] };
@@ -57,12 +67,21 @@ export type RootStackParamList = {
   // Preset and Lifestyle flows
   PresetSelection: undefined;
   EnvironmentSelection: { imageUri?: string; imageUris?: string[] };
-  LifestyleResult: { resultUri: string; originalUri: string; environment: string };
-  BatchLifestyleProcessing: { imageUris: string[]; environment: string; productDescription?: string; shadowControl?: string };
-  BatchLifestyleResult: { 
-    results: { 
-      originalUri: string; 
-      resultUri: string | null; 
+  LifestyleResult: {
+    resultUri: string;
+    originalUri: string;
+    environment: string;
+  };
+  BatchLifestyleProcessing: {
+    imageUris: string[];
+    environment: string;
+    productDescription?: string;
+    shadowControl?: string;
+  };
+  BatchLifestyleResult: {
+    results: {
+      originalUri: string;
+      resultUri: string | null;
       error?: string;
       status: "pending" | "processing" | "completed" | "failed";
     }[];
@@ -107,7 +126,7 @@ export type RootStackParamList = {
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-const ONBOARDING_COMPLETED_KEY = '@FotoBox:onboardingCompleted';
+const ONBOARDING_COMPLETED_KEY = "@FotoBox:onboardingCompleted";
 
 export default function RootStackNavigator() {
   const screenOptions = useScreenOptions({ transparent: false });
@@ -117,8 +136,10 @@ export default function RootStackNavigator() {
   useEffect(() => {
     const checkOnboardingStatus = async () => {
       try {
-        const onboardingCompleted = await AsyncStorage.getItem(ONBOARDING_COMPLETED_KEY);
-        if (onboardingCompleted === 'true') {
+        const onboardingCompleted = await AsyncStorage.getItem(
+          ONBOARDING_COMPLETED_KEY,
+        );
+        if (onboardingCompleted === "true") {
           setShowOnboarding(false);
         }
       } catch (e) {
@@ -132,7 +153,7 @@ export default function RootStackNavigator() {
 
   const handleOnboardingComplete = async () => {
     try {
-      await AsyncStorage.setItem(ONBOARDING_COMPLETED_KEY, 'true');
+      await AsyncStorage.setItem(ONBOARDING_COMPLETED_KEY, "true");
       setShowOnboarding(false);
     } catch (e) {
       console.error("Failed to save onboarding status", e);
@@ -224,11 +245,11 @@ export default function RootStackNavigator() {
         component={EnvironmentSelectionScreen}
         options={{ headerTitle: "Lifestyle Scene" }}
       />
-               <Stack.Screen
-                 name="LifestyleResult"
-                 component={LifestyleResultScreen}
-                 options={{ headerTitle: "Lifestyle Scene", headerBackVisible: false }}
-               />
+      <Stack.Screen
+        name="LifestyleResult"
+        component={LifestyleResultScreen}
+        options={{ headerTitle: "Lifestyle Scene", headerBackVisible: false }}
+      />
       <Stack.Screen
         name="BatchLifestyleProcessing"
         component={BatchLifestyleProcessingScreen}

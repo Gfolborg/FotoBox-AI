@@ -13,7 +13,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
-import Animated, { FadeIn, FadeOut, FadeInUp, FadeInDown } from "react-native-reanimated";
+import Animated, {
+  FadeIn,
+  FadeOut,
+  FadeInUp,
+  FadeInDown,
+} from "react-native-reanimated";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Haptics from "expo-haptics";
 import { Feather } from "@expo/vector-icons";
@@ -70,10 +75,7 @@ export default function ResultScreen() {
     } catch (error) {
       console.error("Failed to prepare image for platform selection:", error);
       if (Platform.OS !== "web") {
-        Alert.alert(
-          "Error",
-          "Could not prepare image. Please try again."
-        );
+        Alert.alert("Error", "Could not prepare image. Please try again.");
       }
     }
   };
@@ -101,7 +103,7 @@ export default function ResultScreen() {
       if (Platform.OS !== "web") {
         Alert.alert(
           "Error",
-          "Could not prepare image for editing. Please try again."
+          "Could not prepare image for editing. Please try again.",
         );
       }
     }
@@ -196,10 +198,7 @@ export default function ResultScreen() {
     } catch (error) {
       console.error("Failed to prepare image for lifestyle:", error);
       if (Platform.OS !== "web") {
-        Alert.alert(
-          "Error",
-          "Could not prepare image. Please try again."
-        );
+        Alert.alert("Error", "Could not prepare image. Please try again.");
       }
     }
   };
@@ -220,10 +219,7 @@ export default function ResultScreen() {
     } catch (error) {
       console.error("Failed to prepare image for mockup:", error);
       if (Platform.OS !== "web") {
-        Alert.alert(
-          "Error",
-          "Could not prepare image. Please try again."
-        );
+        Alert.alert("Error", "Could not prepare image. Please try again.");
       }
     }
   };
@@ -247,7 +243,11 @@ export default function ResultScreen() {
             </Pressable>
 
             <GlassPill>
-              <Feather name="check-circle" size={16} color={Colors.editing.success} />
+              <Feather
+                name="check-circle"
+                size={16}
+                color={Colors.editing.success}
+              />
               <ThemedText style={styles.headerTitle}>Result</ThemedText>
             </GlassPill>
 
@@ -263,194 +263,212 @@ export default function ResultScreen() {
           ]}
           showsVerticalScrollIndicator={false}
         >
-        {/* Image Display */}
-        {showComparison ? (
-          <Animated.View
-            entering={FadeIn.duration(300)}
-            exiting={FadeOut.duration(200)}
-          >
-            <BeforeAfterSlider
-              beforeImage={originalUri}
-              afterImage={resultUri}
-              size={IMAGE_SIZE}
-            />
-          </Animated.View>
-        ) : (
-          <Animated.View
-            entering={FadeIn.duration(400)}
-            exiting={FadeOut.duration(200)}
-            style={styles.imageContainer}
-          >
-            <Image
-              source={{ uri: resultUri }}
-              style={styles.image}
-              resizeMode="contain"
-            />
-          </Animated.View>
-        )}
-
-        {/* Image Specs Pill */}
-        <Animated.View
-          entering={FadeInUp.delay(200).duration(400)}
-          style={styles.specContainer}
-        >
-          <GlassPill>
-            <Feather name="image" size={14} color={Colors.editing.textSecondary} />
-            <ThemedText style={styles.specText}>2000 x 2000 - JPG</ThemedText>
-          </GlassPill>
-        </Animated.View>
-
-        {/* Compare Toggle */}
-        <Animated.View
-          entering={FadeInUp.delay(300).duration(400)}
-          style={styles.toggleContainer}
-        >
-          <Pressable
-            style={[
-              styles.toggleButton,
-              showComparison && styles.toggleButtonActive,
-            ]}
-            onPress={() => {
-              setShowComparison(!showComparison);
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            }}
-          >
-            <Feather
-              name={showComparison ? "eye" : "sliders"}
-              size={16}
-              color={showComparison ? Colors.editing.text : Colors.editing.textSecondary}
-            />
-            <ThemedText
-              style={[
-                styles.toggleText,
-                showComparison && styles.toggleTextActive,
-              ]}
+          {/* Image Display */}
+          {showComparison ? (
+            <Animated.View
+              entering={FadeIn.duration(300)}
+              exiting={FadeOut.duration(200)}
             >
-              {showComparison ? "View Result" : "Compare"}
-            </ThemedText>
-          </Pressable>
-        </Animated.View>
-
-        {/* Action Buttons */}
-        <Animated.View
-          entering={FadeInUp.delay(400).duration(400)}
-          style={styles.actionsContainer}
-        >
-          <GlassCard theme="light" padding="sm" borderRadius="lg">
-            <View style={styles.actionButtons}>
-              {/* Primary Continue Button */}
-              <GradientButton
-                title="Continue"
-                onPress={handleContinue}
-                icon="arrow-right"
-                fullWidth
+              <BeforeAfterSlider
+                beforeImage={originalUri}
+                afterImage={resultUri}
+                size={IMAGE_SIZE}
               />
+            </Animated.View>
+          ) : (
+            <Animated.View
+              entering={FadeIn.duration(400)}
+              exiting={FadeOut.duration(200)}
+              style={styles.imageContainer}
+            >
+              <Image
+                source={{ uri: resultUri }}
+                style={styles.image}
+                resizeMode="contain"
+              />
+            </Animated.View>
+          )}
 
-              {/* Secondary Actions */}
-              <View style={styles.secondaryActions}>
-                <Pressable
-                  style={styles.actionButton}
-                  onPress={handleEdit}
-                  disabled={isRetrying}
-                >
-                  <IconButton
-                    icon="edit-2"
+          {/* Image Specs Pill */}
+          <Animated.View
+            entering={FadeInUp.delay(200).duration(400)}
+            style={styles.specContainer}
+          >
+            <GlassPill>
+              <Feather
+                name="image"
+                size={14}
+                color={Colors.editing.textSecondary}
+              />
+              <ThemedText style={styles.specText}>2000 x 2000 - JPG</ThemedText>
+            </GlassPill>
+          </Animated.View>
+
+          {/* Compare Toggle */}
+          <Animated.View
+            entering={FadeInUp.delay(300).duration(400)}
+            style={styles.toggleContainer}
+          >
+            <Pressable
+              style={[
+                styles.toggleButton,
+                showComparison && styles.toggleButtonActive,
+              ]}
+              onPress={() => {
+                setShowComparison(!showComparison);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }}
+            >
+              <Feather
+                name={showComparison ? "eye" : "sliders"}
+                size={16}
+                color={
+                  showComparison
+                    ? Colors.editing.text
+                    : Colors.editing.textSecondary
+                }
+              />
+              <ThemedText
+                style={[
+                  styles.toggleText,
+                  showComparison && styles.toggleTextActive,
+                ]}
+              >
+                {showComparison ? "View Result" : "Compare"}
+              </ThemedText>
+            </Pressable>
+          </Animated.View>
+
+          {/* Action Buttons */}
+          <Animated.View
+            entering={FadeInUp.delay(400).duration(400)}
+            style={styles.actionsContainer}
+          >
+            <GlassCard theme="light" padding="sm" borderRadius="lg">
+              <View style={styles.actionButtons}>
+                {/* Primary Continue Button */}
+                <GradientButton
+                  title="Continue"
+                  onPress={handleContinue}
+                  icon="arrow-right"
+                  fullWidth
+                />
+
+                {/* Secondary Actions */}
+                <View style={styles.secondaryActions}>
+                  <Pressable
+                    style={styles.actionButton}
                     onPress={handleEdit}
-                    size={48}
-                    iconSize={22}
-                    variant="glass"
                     disabled={isRetrying}
-                  />
-                  <ThemedText style={styles.actionLabel}>Edit</ThemedText>
-                </Pressable>
+                  >
+                    <IconButton
+                      icon="edit-2"
+                      onPress={handleEdit}
+                      size={48}
+                      iconSize={22}
+                      variant="glass"
+                      disabled={isRetrying}
+                    />
+                    <ThemedText style={styles.actionLabel}>Edit</ThemedText>
+                  </Pressable>
 
-                <Pressable
-                  style={styles.actionButton}
-                  onPress={handleRetry}
-                  disabled={isRetrying}
-                >
-                  <IconButton
-                    icon={isRetrying ? "loader" : "refresh-cw"}
+                  <Pressable
+                    style={styles.actionButton}
                     onPress={handleRetry}
-                    size={48}
-                    iconSize={22}
-                    variant="glass"
                     disabled={isRetrying}
-                  />
-                  <ThemedText style={styles.actionLabel}>
-                    {isRetrying ? "Retrying..." : "Retry"}
+                  >
+                    <IconButton
+                      icon={isRetrying ? "loader" : "refresh-cw"}
+                      onPress={handleRetry}
+                      size={48}
+                      iconSize={22}
+                      variant="glass"
+                      disabled={isRetrying}
+                    />
+                    <ThemedText style={styles.actionLabel}>
+                      {isRetrying ? "Retrying..." : "Retry"}
+                    </ThemedText>
+                  </Pressable>
+
+                  <Pressable
+                    style={styles.actionButton}
+                    onPress={handleGenerateAnother}
+                    disabled={isRetrying}
+                  >
+                    <IconButton
+                      icon="plus"
+                      onPress={handleGenerateAnother}
+                      size={48}
+                      iconSize={22}
+                      variant="glass"
+                      disabled={isRetrying}
+                    />
+                    <ThemedText style={styles.actionLabel}>New</ThemedText>
+                  </Pressable>
+                </View>
+              </View>
+            </GlassCard>
+          </Animated.View>
+
+          {/* Continue with AI Section - Only show for edited photos */}
+          {isEdited && (
+            <Animated.View
+              entering={FadeInUp.delay(500).duration(400)}
+              style={styles.aiServicesContainer}
+            >
+              <ThemedText style={styles.aiServicesTitle}>
+                Continue with AI
+              </ThemedText>
+
+              <View style={styles.aiServiceCards}>
+                <Pressable
+                  style={styles.aiServiceCard}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    handleCreateLifestyle();
+                  }}
+                >
+                  <View
+                    style={[
+                      styles.aiServiceIcon,
+                      { backgroundColor: "#10B98120" },
+                    ]}
+                  >
+                    <Feather name="image" size={24} color="#10B981" />
+                  </View>
+                  <ThemedText style={styles.aiServiceTitle}>
+                    Lifestyle Scene
+                  </ThemedText>
+                  <ThemedText style={styles.aiServiceDescription}>
+                    Place in AI environments
                   </ThemedText>
                 </Pressable>
 
                 <Pressable
-                  style={styles.actionButton}
-                  onPress={handleGenerateAnother}
-                  disabled={isRetrying}
+                  style={styles.aiServiceCard}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    handleCreateMockup();
+                  }}
                 >
-                  <IconButton
-                    icon="plus"
-                    onPress={handleGenerateAnother}
-                    size={48}
-                    iconSize={22}
-                    variant="glass"
-                    disabled={isRetrying}
-                  />
-                  <ThemedText style={styles.actionLabel}>New</ThemedText>
+                  <View
+                    style={[
+                      styles.aiServiceIcon,
+                      { backgroundColor: "#A78BFA20" },
+                    ]}
+                  >
+                    <Feather name="box" size={24} color="#A78BFA" />
+                  </View>
+                  <ThemedText style={styles.aiServiceTitle}>
+                    Create Mockup
+                  </ThemedText>
+                  <ThemedText style={styles.aiServiceDescription}>
+                    Generate product mockups
+                  </ThemedText>
                 </Pressable>
               </View>
-            </View>
-          </GlassCard>
-        </Animated.View>
-
-        {/* Continue with AI Section - Only show for edited photos */}
-        {isEdited && (
-          <Animated.View
-            entering={FadeInUp.delay(500).duration(400)}
-            style={styles.aiServicesContainer}
-          >
-            <ThemedText style={styles.aiServicesTitle}>
-              Continue with AI
-            </ThemedText>
-
-            <View style={styles.aiServiceCards}>
-              <Pressable
-                style={styles.aiServiceCard}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  handleCreateLifestyle();
-                }}
-              >
-                <View style={[styles.aiServiceIcon, { backgroundColor: "#10B98120" }]}>
-                  <Feather name="image" size={24} color="#10B981" />
-                </View>
-                <ThemedText style={styles.aiServiceTitle}>
-                  Lifestyle Scene
-                </ThemedText>
-                <ThemedText style={styles.aiServiceDescription}>
-                  Place in AI environments
-                </ThemedText>
-              </Pressable>
-
-              <Pressable
-                style={styles.aiServiceCard}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  handleCreateMockup();
-                }}
-              >
-                <View style={[styles.aiServiceIcon, { backgroundColor: "#A78BFA20" }]}>
-                  <Feather name="box" size={24} color="#A78BFA" />
-                </View>
-                <ThemedText style={styles.aiServiceTitle}>
-                  Create Mockup
-                </ThemedText>
-                <ThemedText style={styles.aiServiceDescription}>
-                  Generate product mockups
-                </ThemedText>
-              </Pressable>
-            </View>
-          </Animated.View>
-        )}
+            </Animated.View>
+          )}
         </ScrollView>
       </View>
     </GradientBackground>

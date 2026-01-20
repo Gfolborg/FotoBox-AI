@@ -35,13 +35,13 @@ export function ScrollIndicator({
           withRepeat(
             withSequence(
               withTiming(0.8, { duration: 800 }),
-              withTiming(0.3, { duration: 800 })
+              withTiming(0.3, { duration: 800 }),
             ),
             3,
-            false
+            false,
           ),
-          withTiming(0, { duration: 500 })
-        )
+          withTiming(0, { duration: 500 }),
+        ),
       );
 
       const movement = direction === "left" || direction === "up" ? -5 : 5;
@@ -53,11 +53,11 @@ export function ScrollIndicator({
           withRepeat(
             withSequence(
               withTiming(movement, { duration: 400 }),
-              withTiming(0, { duration: 400 })
+              withTiming(0, { duration: 400 }),
             ),
             6,
-            false
-          )
+            false,
+          ),
         );
       } else {
         translateY.value = withDelay(
@@ -65,11 +65,11 @@ export function ScrollIndicator({
           withRepeat(
             withSequence(
               withTiming(movement, { duration: 400 }),
-              withTiming(0, { duration: 400 })
+              withTiming(0, { duration: 400 }),
             ),
             6,
-            false
-          )
+            false,
+          ),
         );
       }
     } else {

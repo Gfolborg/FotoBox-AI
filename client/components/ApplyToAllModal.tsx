@@ -46,15 +46,19 @@ export function ApplyToAllModal({
       <View style={styles.overlay}>
         <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-        
-        <Animated.View entering={FadeInUp.duration(300).springify()} style={styles.modalContainer}>
+
+        <Animated.View
+          entering={FadeInUp.duration(300).springify()}
+          style={styles.modalContainer}
+        >
           <View style={styles.iconContainer}>
             <Feather name="copy" size={32} color={Colors.editing.primary} />
           </View>
-          
+
           <ThemedText style={styles.title}>Apply to All?</ThemedText>
           <ThemedText style={styles.description}>
-            Would you like to apply the same edits to the remaining {remainingCount} {remainingCount === 1 ? 'image' : 'images'}?
+            Would you like to apply the same edits to the remaining{" "}
+            {remainingCount} {remainingCount === 1 ? "image" : "images"}?
           </ThemedText>
 
           <View style={styles.buttonsContainer}>
@@ -64,16 +68,21 @@ export function ApplyToAllModal({
               icon="check"
               fullWidth
             />
-            
+
             <Pressable style={styles.skipButton} onPress={handleSkip}>
-              <ThemedText style={styles.skipText}>No, I'll edit each one</ThemedText>
+              <ThemedText style={styles.skipText}>
+                No, I&apos;ll edit each one
+              </ThemedText>
             </Pressable>
           </View>
-
           <View style={styles.hintContainer}>
-            <Feather name="info" size={14} color={Colors.editing.textTertiary} />
+            <Feather
+              name="info"
+              size={14}
+              color={Colors.editing.textTertiary}
+            />
             <ThemedText style={styles.hintText}>
-              This prompt won't appear again this session
+              This prompt won&apos;t appear again this session
             </ThemedText>
           </View>
         </Animated.View>

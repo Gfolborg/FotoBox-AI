@@ -4,7 +4,6 @@ import multer from "multer";
 import sharp from "sharp";
 import { GoogleGenAI, Modality } from "@google/genai";
 
-
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
@@ -45,9 +44,12 @@ const LIFESTYLE_ENVIRONMENTS: Record<string, string> = {
   minimal:
     "Place this product on a clean, minimalist surface with a soft gradient or solid neutral background, using even studio-like lighting to create a sophisticated, modern aesthetic.",
   cafe: "Place this product on a rustic wooden table in a sunlit cafe, with subtle background elements like a latte art cup, a book, or a potted plant, creating a relaxed and inviting atmosphere.",
-  bedroom: "Place this product on a minimalist nightstand in a serene bedroom with soft, indirect lighting, featuring neutral tones and cozy textiles in the background.",
-  garden: "Place this product amidst lush green foliage in a vibrant garden, with dappled sunlight and a natural, organic feel. The background should be slightly blurred to keep the focus on the product.",
-  industrial: "Place this product on a concrete surface in an industrial-chic loft, with exposed brick or metal accents in the background, and strong, directional lighting to create a modern, edgy look.",
+  bedroom:
+    "Place this product on a minimalist nightstand in a serene bedroom with soft, indirect lighting, featuring neutral tones and cozy textiles in the background.",
+  garden:
+    "Place this product amidst lush green foliage in a vibrant garden, with dappled sunlight and a natural, organic feel. The background should be slightly blurred to keep the focus on the product.",
+  industrial:
+    "Place this product on a concrete surface in an industrial-chic loft, with exposed brick or metal accents in the background, and strong, directional lighting to create a modern, edgy look.",
 };
 
 function getLifestyleScenePrompt(
@@ -89,7 +91,10 @@ CRITICAL INSTRUCTIONS:
 }
 
 // Generate prompt with explicit background color specification
-function getGenericMainPrompt(backgroundColor: string, platform: string): string {
+function getGenericMainPrompt(
+  backgroundColor: string,
+  platform: string,
+): string {
   const rgb = hexToRGB(backgroundColor);
   const isWhite = rgb.r === 255 && rgb.g === 255 && rgb.b === 255;
 
@@ -130,7 +135,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ status: "ok" });
   });
 
-  app.post("/api/main-image",
+  app.post(
+    "/api/main-image",
     upload.single("file"),
     async (req: Request, res: Response) => {
       try {
@@ -147,7 +153,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               "Gemini AI integration is not configured. Please set up the AI integration.",
           });
         }
-        
+
         const ai = new GoogleGenAI({
           apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY,
           httpOptions: {
@@ -162,7 +168,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           (req.body?.backgroundColor as string) ||
           "#FFFFFF";
         // Extract platform parameter, default to 'amazon'
-        const platform = (req.query.platform as string)?.toLowerCase() || "amazon";
+        const platform =
+          (req.query.platform as string)?.toLowerCase() || "amazon";
 
         const imageBuffer = req.file.buffer;
         const base64Image = imageBuffer.toString("base64");
@@ -212,27 +219,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const bgRgb = hexToRGB(backgroundColor);
 
         let resizeOptions: {
-            width: number;
-            height: number;
-            fit: "contain" | "cover" | "fill" | "inside" | "outside";
-            background: { r: number; g: number; b: number };
+          width: number;
+          height: number;
+          fit: "contain" | "cover" | "fill" | "inside" | "outside";
+          background: { r: number; g: number; b: number };
         } = {
-            width: 2000,
-            height: 2000,
-            fit: "contain",
-            background: { r: bgRgb.r, g: bgRgb.g, b: bgRgb.b },
+          width: 2000,
+          height: 2000,
+          fit: "contain",
+          background: { r: bgRgb.r, g: bgRgb.g, b: bgRgb.b },
         };
 
         // Platform-specific resizing/formatting
         if (platform === "shopify") {
-            // Shopify recommends 2048x2048 for square, or flexible aspect ratios
-            resizeOptions.width = 2048;
-            resizeOptions.height = 2048;
+          // Shopify recommends 2048x2048 for square, or flexible aspect ratios
+          resizeOptions.width = 2048;
+          resizeOptions.height = 2048;
         } else if (platform === "etsy") {
-            // Etsy recommends 4:3 aspect ratio, e.g., 3000x2250, or square
-            resizeOptions.width = 3000;
-            resizeOptions.height = 2250; // Will be adjusted by 'contain' if square
-            resizeOptions.fit = 'contain';
+          // Etsy recommends 4:3 aspect ratio, e.g., 3000x2250, or square
+          resizeOptions.width = 3000;
+          resizeOptions.height = 2250; // Will be adjusted by 'contain' if square
+          resizeOptions.fit = "contain";
         }
 
         const finalBuffer = await sharp(generatedImageBuffer)
@@ -462,7 +469,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               "Gemini AI integration is not configured. Please set up the AI integration.",
           });
         }
-        
+
         const ai = new GoogleGenAI({
           apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY,
           httpOptions: {
@@ -472,8 +479,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
 
         // Parse parameters from query
-        const environment =
-          (req.query.environment as string) || "minimal";
+        const environment = (req.query.environment as string) || "minimal";
         const isCustom = (req.query.isCustom as string) === "true";
         const productDescription = req.query.productDescription as string;
         const shadowControl = req.query.shadowControl as string; // Extract new parameter
@@ -554,9 +560,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-
-
-
   // Mockup generation endpoint
   app.post(
     "/api/mockup",
@@ -586,7 +589,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
 
         // Parse mockup parameters from body
-        const prompt = req.body?.prompt || "Create a professional product mockup";
+        const prompt =
+          req.body?.prompt || "Create a professional product mockup";
         const mockupType = req.body?.mockupType || "generic";
         const sceneVibe = req.body?.sceneVibe || "casual";
         const cameraOption = req.body?.cameraOption || "medium";

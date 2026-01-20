@@ -49,7 +49,8 @@ export const ADJUSTMENT_TOOLS: ToolConfig[] = [
     max: 1,
     step: 0.05,
     defaultValue: 0,
-    format: (v) => (v > 0 ? `+${(v * 100).toFixed(0)}%` : `${(v * 100).toFixed(0)}%`),
+    format: (v) =>
+      v > 0 ? `+${(v * 100).toFixed(0)}%` : `${(v * 100).toFixed(0)}%`,
   },
   {
     key: "contrast",
@@ -93,7 +94,8 @@ export const ADJUSTMENT_TOOLS: ToolConfig[] = [
     max: 1,
     step: 0.05,
     defaultValue: 0,
-    format: (v) => (v > 0 ? `+${(v * 100).toFixed(0)}` : `${(v * 100).toFixed(0)}`),
+    format: (v) =>
+      v > 0 ? `+${(v * 100).toFixed(0)}` : `${(v * 100).toFixed(0)}`,
   },
   {
     key: "shadows",
@@ -104,7 +106,8 @@ export const ADJUSTMENT_TOOLS: ToolConfig[] = [
     max: 1,
     step: 0.05,
     defaultValue: 0,
-    format: (v) => (v > 0 ? `+${(v * 100).toFixed(0)}` : `${(v * 100).toFixed(0)}`),
+    format: (v) =>
+      v > 0 ? `+${(v * 100).toFixed(0)}` : `${(v * 100).toFixed(0)}`,
   },
   {
     key: "warmth",
@@ -115,7 +118,8 @@ export const ADJUSTMENT_TOOLS: ToolConfig[] = [
     max: 1,
     step: 0.05,
     defaultValue: 0,
-    format: (v) => (v > 0 ? `+${(v * 100).toFixed(0)}` : `${(v * 100).toFixed(0)}`),
+    format: (v) =>
+      v > 0 ? `+${(v * 100).toFixed(0)}` : `${(v * 100).toFixed(0)}`,
   },
   {
     key: "rotate",
@@ -143,7 +147,7 @@ interface CompactToolbarProps {
   onSelectTool: (tool: ToolKey | null) => void;
   onUpdateAdjustment: <K extends keyof ImageEditingState>(
     key: K,
-    value: ImageEditingState[K]
+    value: ImageEditingState[K],
   ) => void;
   onRotateCW: () => void;
   onRotateCCW: () => void;
@@ -166,7 +170,9 @@ export function CompactToolbar({
   const getToolModified = (tool: ToolConfig): boolean => {
     if (tool.min !== undefined) {
       const value = state[tool.key as keyof ImageEditingState] as number;
-      return Math.abs(value - (tool.defaultValue || 0)) > (tool.step || 0.01) / 2;
+      return (
+        Math.abs(value - (tool.defaultValue || 0)) > (tool.step || 0.01) / 2
+      );
     }
     if (tool.key === "rotate") {
       return state.rotation !== 0;
@@ -190,11 +196,15 @@ export function CompactToolbar({
   };
 
   const adjustTools = ADJUSTMENT_TOOLS.filter((t) => t.category === "adjust");
-  const transformTools = ADJUSTMENT_TOOLS.filter((t) => t.category === "transform");
+  const transformTools = ADJUSTMENT_TOOLS.filter(
+    (t) => t.category === "transform",
+  );
 
   const containerStyle = useAnimatedStyle(() => ({
     opacity: withTiming(isHidden ? 0 : 1, { duration: 150 }),
-    transform: [{ translateY: withTiming(isHidden ? 20 : 0, { duration: 150 }) }],
+    transform: [
+      { translateY: withTiming(isHidden ? 20 : 0, { duration: 150 }) },
+    ],
   }));
 
   return (
@@ -222,21 +232,39 @@ export function CompactToolbar({
       </ScrollView>
 
       {selectedTool === "rotate" && (
-        <Animated.View entering={FadeIn.duration(150)} exiting={FadeOut.duration(100)} style={styles.transformContent}>
+        <Animated.View
+          entering={FadeIn.duration(150)}
+          exiting={FadeOut.duration(100)}
+          style={styles.transformContent}
+        >
           <View style={styles.transformButtons}>
-            <TransformButton icon="rotate-ccw" label="Left 90°" onPress={onRotateCCW} />
+            <TransformButton
+              icon="rotate-ccw"
+              label="Left 90°"
+              onPress={onRotateCCW}
+            />
             {state.rotation !== 0 && (
               <View style={styles.rotationBadge}>
-                <ThemedText style={styles.rotationText}>{state.rotation}°</ThemedText>
+                <ThemedText style={styles.rotationText}>
+                  {state.rotation}°
+                </ThemedText>
               </View>
             )}
-            <TransformButton icon="rotate-cw" label="Right 90°" onPress={onRotateCW} />
+            <TransformButton
+              icon="rotate-cw"
+              label="Right 90°"
+              onPress={onRotateCW}
+            />
           </View>
         </Animated.View>
       )}
 
       {selectedTool === "flip" && (
-        <Animated.View entering={FadeIn.duration(150)} exiting={FadeOut.duration(100)} style={styles.transformContent}>
+        <Animated.View
+          entering={FadeIn.duration(150)}
+          exiting={FadeOut.duration(100)}
+          style={styles.transformContent}
+        >
           <View style={styles.transformButtons}>
             <TransformButton
               icon="more-horizontal"
@@ -255,11 +283,17 @@ export function CompactToolbar({
       )}
 
       {selectedTool === "crop" && (
-        <Animated.View entering={FadeIn.duration(150)} exiting={FadeOut.duration(100)} style={styles.cropContentCompact}>
+        <Animated.View
+          entering={FadeIn.duration(150)}
+          exiting={FadeOut.duration(100)}
+          style={styles.cropContentCompact}
+        >
           <View style={styles.aspectRatioButtonsRow}>
             <AspectRatioButton
               label="Free"
-              active={state.aspectRatio === "free" || state.aspectRatio === null}
+              active={
+                state.aspectRatio === "free" || state.aspectRatio === null
+              }
               onPress={() => onUpdateAdjustment("aspectRatio", "free")}
             />
             <AspectRatioButton
@@ -298,12 +332,17 @@ function ToolChip({
   onPress: () => void;
 }) {
   return (
-    <Pressable onPress={onPress} style={[styles.chip, active && styles.chipActive]}>
+    <Pressable
+      onPress={onPress}
+      style={[styles.chip, active && styles.chipActive]}
+    >
       <View style={styles.chipContent}>
         <Feather
           name={icon}
           size={14}
-          color={active ? Colors.editing.buttonText : Colors.editing.textSecondary}
+          color={
+            active ? Colors.editing.buttonText : Colors.editing.textSecondary
+          }
         />
         <ThemedText style={[styles.chipText, active && styles.chipTextActive]}>
           {label}
@@ -326,13 +365,21 @@ function TransformButton({
   onPress: () => void;
 }) {
   return (
-    <Pressable onPress={onPress} style={[styles.transformBtn, active && styles.transformBtnActive]}>
+    <Pressable
+      onPress={onPress}
+      style={[styles.transformBtn, active && styles.transformBtnActive]}
+    >
       <Feather
         name={icon}
         size={18}
         color={active ? Colors.editing.buttonText : Colors.editing.primary}
       />
-      <ThemedText style={[styles.transformBtnText, active && styles.transformBtnTextActive]}>
+      <ThemedText
+        style={[
+          styles.transformBtnText,
+          active && styles.transformBtnTextActive,
+        ]}
+      >
         {label}
       </ThemedText>
     </Pressable>
@@ -356,7 +403,9 @@ function AspectRatioButton({
       }}
       style={[styles.aspectBtn, active && styles.aspectBtnActive]}
     >
-      <ThemedText style={[styles.aspectBtnText, active && styles.aspectBtnTextActive]}>
+      <ThemedText
+        style={[styles.aspectBtnText, active && styles.aspectBtnTextActive]}
+      >
         {label}
       </ThemedText>
     </Pressable>

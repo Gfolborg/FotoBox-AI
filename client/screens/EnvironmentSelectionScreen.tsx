@@ -101,7 +101,11 @@ function SceneCard({
       style={[styles.sceneCardWrapper, animatedStyle]}
     >
       <View style={[styles.sceneCard, selected && styles.sceneCardSelected]}>
-        <Image source={scene.image} style={styles.sceneImage} resizeMode="cover" />
+        <Image
+          source={scene.image}
+          style={styles.sceneImage}
+          resizeMode="cover"
+        />
         {selected && (
           <View style={styles.selectedCheck}>
             <Feather name="check" size={12} color="#fff" />
@@ -124,7 +128,9 @@ export default function EnvironmentSelectionScreen() {
   const route = useRoute<RouteProps>();
   const flatListRef = React.useRef<FlatList>(null);
 
-  const initialImages = route.params?.imageUris || (route.params?.imageUri ? [route.params.imageUri] : []);
+  const initialImages =
+    route.params?.imageUris ||
+    (route.params?.imageUri ? [route.params.imageUri] : []);
   const [selectedImages, setSelectedImages] = useState<string[]>(initialImages);
   const [customScene, setCustomScene] = useState("");
   const [productKeywords, setProductKeywords] = useState("");
@@ -144,7 +150,6 @@ export default function EnvironmentSelectionScreen() {
     });
   }, [navigation]);
 
-  
   useEffect(() => {
     if (selectedImages.length === 0) {
       handlePickImages();
@@ -175,7 +180,9 @@ export default function EnvironmentSelectionScreen() {
     });
 
     if (!result.canceled && result.assets.length > 0) {
-      setSelectedImages((prev) => [...prev, ...result.assets.map((a) => a.uri)].slice(0, 10));
+      setSelectedImages((prev) =>
+        [...prev, ...result.assets.map((a) => a.uri)].slice(0, 10),
+      );
     }
   };
 
@@ -213,7 +220,10 @@ export default function EnvironmentSelectionScreen() {
         imageUris: selectedImages,
         environment: environmentText,
         productDescription: productKeywords.trim() || undefined,
-        shadowControl: selectedShadowControl !== "natural" ? selectedShadowControl : undefined,
+        shadowControl:
+          selectedShadowControl !== "natural"
+            ? selectedShadowControl
+            : undefined,
       });
       return;
     }
@@ -317,296 +327,332 @@ export default function EnvironmentSelectionScreen() {
       <ThemedHeader title="Lifestyle Scene" />
       <View style={[styles.container, { paddingTop: insets.top + 54 }]}>
         <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingBottom: insets.bottom + 140 },
-        ]}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Image Preview Section */}
-        <Animated.View
-          entering={FadeInDown.delay(100).duration(400)}
-          style={styles.imageSection}
+          style={styles.scrollView}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: insets.bottom + 140 },
+          ]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          {isBatchMode ? (
-            <View style={styles.batchImageGrid}>
-              {selectedImages.slice(0, 4).map((uri, idx) => (
-                <View key={uri} style={styles.batchImageItem}>
-                  <Image source={{ uri }} style={styles.batchImage} />
-                  {idx === 3 && selectedImages.length > 4 && (
-                    <View style={styles.moreOverlay}>
-                      <ThemedText style={styles.moreText}>+{selectedImages.length - 4}</ThemedText>
+          {/* Image Preview Section */}
+          <Animated.View
+            entering={FadeInDown.delay(100).duration(400)}
+            style={styles.imageSection}
+          >
+            {isBatchMode ? (
+              <View style={styles.batchImageGrid}>
+                {selectedImages.slice(0, 4).map((uri, idx) => (
+                  <View key={uri} style={styles.batchImageItem}>
+                    <Image source={{ uri }} style={styles.batchImage} />
+                    {idx === 3 && selectedImages.length > 4 && (
+                      <View style={styles.moreOverlay}>
+                        <ThemedText style={styles.moreText}>
+                          +{selectedImages.length - 4}
+                        </ThemedText>
+                      </View>
+                    )}
+                  </View>
+                ))}
+                <Pressable
+                  style={styles.addMoreBatchButton}
+                  onPress={handlePickImage}
+                >
+                  <Feather
+                    name="plus"
+                    size={24}
+                    color={Colors.editing.primary}
+                  />
+                  <ThemedText style={styles.addMoreBatchText}>Add</ThemedText>
+                </Pressable>
+              </View>
+            ) : (
+              <Pressable onPress={handlePickImage} style={styles.imageWrapper}>
+                {imageUri ? (
+                  <View style={styles.imageContainer}>
+                    <Image
+                      source={{ uri: imageUri }}
+                      style={styles.previewImage}
+                    />
+                    <View style={styles.changeImageBadge}>
+                      <Feather
+                        name="camera"
+                        size={14}
+                        color={Colors.editing.text}
+                      />
+                      <ThemedText style={styles.changeImageText}>
+                        Change
+                      </ThemedText>
                     </View>
+                  </View>
+                ) : (
+                  <GlassCard theme="light" padding="xl" borderRadius="xl">
+                    <View style={styles.placeholderContainer}>
+                      <Feather
+                        name="image"
+                        size={48}
+                        color={Colors.editing.textTertiary}
+                      />
+                      <ThemedText style={styles.placeholderText}>
+                        Select a product image
+                      </ThemedText>
+                    </View>
+                  </GlassCard>
+                )}
+              </Pressable>
+            )}
+            {isBatchMode && (
+              <ThemedText style={styles.batchCountText}>
+                {selectedImages.length} images selected
+              </ThemedText>
+            )}
+          </Animated.View>
+
+          {/* Scene Description Input */}
+          <Animated.View
+            entering={FadeInDown.delay(200).duration(400)}
+            style={styles.section}
+          >
+            <View style={styles.sectionHeader}>
+              <Feather name="edit-3" size={18} color={Colors.editing.primary} />
+              <ThemedText style={styles.sectionTitle}>
+                Describe Your Scene
+              </ThemedText>
+            </View>
+            <ThemedText style={styles.sectionSubtitle}>
+              Be descriptive for the best results
+            </ThemedText>
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.textInput}
+                placeholder="e.g., On a marble countertop next to a plant"
+                placeholderTextColor={Colors.editing.textTertiary}
+                value={customScene}
+                onChangeText={(text) => {
+                  setCustomScene(text);
+                  if (text.trim()) setShowSceneError(false);
+                }}
+                multiline={false}
+                returnKeyType="done"
+              />
+            </View>
+
+            {promptHistory.length > 0 && (
+              <View style={styles.historyContainer}>
+                <ThemedText style={styles.historyLabel}>Recent</ThemedText>
+                <View style={styles.historyScrollWrapper}>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.historyScroll}
+                  >
+                    {promptHistory.slice(0, 5).map((item) => (
+                      <Pressable
+                        key={item.id}
+                        style={styles.historyChip}
+                        onPress={() => {
+                          Haptics.impactAsync(
+                            Haptics.ImpactFeedbackStyle.Light,
+                          );
+                          setCustomScene(item.prompt);
+                          setSelectedScene("");
+                          setShowSceneError(false);
+                        }}
+                      >
+                        <Feather
+                          name="clock"
+                          size={12}
+                          color={Colors.editing.textSecondary}
+                        />
+                        <ThemedText
+                          style={styles.historyChipText}
+                          numberOfLines={1}
+                        >
+                          {item.prompt.length > 30
+                            ? item.prompt.slice(0, 30) + "..."
+                            : item.prompt}
+                        </ThemedText>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                  {promptHistory.length > 2 && (
+                    <ScrollIndicator direction="right" delay={1500} />
                   )}
                 </View>
-              ))}
-              <Pressable style={styles.addMoreBatchButton} onPress={handlePickImage}>
-                <Feather name="plus" size={24} color={Colors.editing.primary} />
-                <ThemedText style={styles.addMoreBatchText}>Add</ThemedText>
-              </Pressable>
-            </View>
-          ) : (
-            <Pressable onPress={handlePickImage} style={styles.imageWrapper}>
-              {imageUri ? (
-                <View style={styles.imageContainer}>
-                  <Image source={{ uri: imageUri }} style={styles.previewImage} />
-                  <View style={styles.changeImageBadge}>
-                    <Feather
-                      name="camera"
-                      size={14}
-                      color={Colors.editing.text}
-                    />
-                    <ThemedText style={styles.changeImageText}>Change</ThemedText>
-                  </View>
-                </View>
-              ) : (
-                <GlassCard theme="light" padding="xl" borderRadius="xl">
-                  <View style={styles.placeholderContainer}>
-                    <Feather
-                      name="image"
-                      size={48}
-                      color={Colors.editing.textTertiary}
-                    />
-                    <ThemedText style={styles.placeholderText}>
-                      Select a product image
-                    </ThemedText>
-                  </View>
-                </GlassCard>
-              )}
-            </Pressable>
-          )}
-          {isBatchMode && (
-            <ThemedText style={styles.batchCountText}>
-              {selectedImages.length} images selected
-            </ThemedText>
-          )}
-        </Animated.View>
-
-        {/* Scene Description Input */}
-        <Animated.View
-          entering={FadeInDown.delay(200).duration(400)}
-          style={styles.section}
-        >
-          <View style={styles.sectionHeader}>
-            <Feather name="edit-3" size={18} color={Colors.editing.primary} />
-            <ThemedText style={styles.sectionTitle}>
-              Describe Your Scene
-            </ThemedText>
-          </View>
-          <ThemedText style={styles.sectionSubtitle}>
-            Be descriptive for the best results
-          </ThemedText>
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.textInput}
-              placeholder="e.g., On a marble countertop next to a plant"
-              placeholderTextColor={Colors.editing.textTertiary}
-              value={customScene}
-              onChangeText={(text) => {
-                setCustomScene(text);
-                if (text.trim()) setShowSceneError(false);
-              }}
-              multiline={false}
-              returnKeyType="done"
-            />
-          </View>
-          
-          {promptHistory.length > 0 && (
-            <View style={styles.historyContainer}>
-              <ThemedText style={styles.historyLabel}>Recent</ThemedText>
-              <View style={styles.historyScrollWrapper}>
-                <ScrollView 
-                  horizontal 
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.historyScroll}
-                >
-                  {promptHistory.slice(0, 5).map((item) => (
-                    <Pressable
-                      key={item.id}
-                      style={styles.historyChip}
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setCustomScene(item.prompt);
-                        setSelectedScene("");
-                        setShowSceneError(false);
-                      }}
-                    >
-                      <Feather name="clock" size={12} color={Colors.editing.textSecondary} />
-                      <ThemedText style={styles.historyChipText} numberOfLines={1}>
-                        {item.prompt.length > 30 ? item.prompt.slice(0, 30) + "..." : item.prompt}
-                      </ThemedText>
-                    </Pressable>
-                  ))}
-                </ScrollView>
-                {promptHistory.length > 2 && <ScrollIndicator direction="right" delay={1500} />}
               </View>
-            </View>
-          )}
-        </Animated.View>
+            )}
+          </Animated.View>
 
-        {/* Product Keywords Input */}
-        <Animated.View
-          entering={FadeInDown.delay(300).duration(400)}
-          style={styles.section}
-        >
-          <View style={styles.sectionHeader}>
-            <Feather name="tag" size={18} color={Colors.editing.secondary} />
-            <ThemedText style={styles.sectionTitle}>
-              Product Keywords
+          {/* Product Keywords Input */}
+          <Animated.View
+            entering={FadeInDown.delay(300).duration(400)}
+            style={styles.section}
+          >
+            <View style={styles.sectionHeader}>
+              <Feather name="tag" size={18} color={Colors.editing.secondary} />
+              <ThemedText style={styles.sectionTitle}>
+                Product Keywords
+              </ThemedText>
+              <ThemedText style={styles.optionalBadge}>Optional</ThemedText>
+            </View>
+            <ThemedText style={styles.sectionSubtitle}>
+              Helps the AI understand your product better
             </ThemedText>
-            <ThemedText style={styles.optionalBadge}>Optional</ThemedText>
-          </View>
-          <ThemedText style={styles.sectionSubtitle}>
-            Helps the AI understand your product better
-          </ThemedText>
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.textInput}
-              placeholder="e.g., red glossy lipstick"
-              placeholderTextColor={Colors.editing.textTertiary}
-              value={productKeywords}
-              onChangeText={setProductKeywords}
-              multiline={false}
-              returnKeyType="done"
-            />
-          </View>
-        </Animated.View>
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.textInput}
+                placeholder="e.g., red glossy lipstick"
+                placeholderTextColor={Colors.editing.textTertiary}
+                value={productKeywords}
+                onChangeText={setProductKeywords}
+                multiline={false}
+                returnKeyType="done"
+              />
+            </View>
+          </Animated.View>
 
-        {/* Shadow Control */}
-        <Animated.View
-          entering={FadeInDown.delay(350).duration(400)}
-          style={styles.section}
-        >
-          <View style={styles.sectionHeader}>
-            <Feather name="sun" size={18} color={Colors.editing.primary} />
-            <ThemedText style={styles.sectionTitle}>Shadow Style</ThemedText>
-          </View>
-          <View style={styles.shadowGrid}>
-            {shadowOptions.map((option) => (
-              <Pressable
-                key={option.id}
-                style={[
-                  styles.shadowChip,
-                  selectedShadowControl === option.id &&
-                    styles.shadowChipSelected,
-                ]}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setSelectedShadowControl(option.id);
-                }}
-              >
-                <ThemedText
+          {/* Shadow Control */}
+          <Animated.View
+            entering={FadeInDown.delay(350).duration(400)}
+            style={styles.section}
+          >
+            <View style={styles.sectionHeader}>
+              <Feather name="sun" size={18} color={Colors.editing.primary} />
+              <ThemedText style={styles.sectionTitle}>Shadow Style</ThemedText>
+            </View>
+            <View style={styles.shadowGrid}>
+              {shadowOptions.map((option) => (
+                <Pressable
+                  key={option.id}
                   style={[
-                    styles.shadowChipText,
+                    styles.shadowChip,
                     selectedShadowControl === option.id &&
-                      styles.shadowChipTextSelected,
+                      styles.shadowChipSelected,
                   ]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setSelectedShadowControl(option.id);
+                  }}
                 >
-                  {option.label}
-                </ThemedText>
-              </Pressable>
-            ))}
-          </View>
-        </Animated.View>
+                  <ThemedText
+                    style={[
+                      styles.shadowChipText,
+                      selectedShadowControl === option.id &&
+                        styles.shadowChipTextSelected,
+                    ]}
+                  >
+                    {option.label}
+                  </ThemedText>
+                </Pressable>
+              ))}
+            </View>
+          </Animated.View>
 
-        {/* Scene Presets */}
-        <Animated.View
-          entering={FadeInDown.delay(400).duration(400)}
-          style={styles.section}
-        >
-          <View style={styles.sectionHeader}>
-            <Feather name="grid" size={18} color={Colors.editing.primary} />
-            <ThemedText style={styles.sectionTitle}>Or Choose a Preset</ThemedText>
-          </View>
-          <ThemedText style={styles.sectionSubtitle}>
-            Quick-start with popular scene styles
-          </ThemedText>
-          <View style={styles.scenesContainer}>
-            <FlatList
-              ref={flatListRef}
-              data={SCENES}
-              renderItem={({ item, index }) => (
-                <SceneCard
-                  scene={item}
-                  selected={selectedScene === item.id}
-                  onPress={() => handleSelectSceneCard(item.id)}
-                  index={index}
-                />
-              )}
-              keyExtractor={(item) => item.id}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.scenesGrid}
-            />
-            <ScrollIndicator direction="right" delay={1000} />
-          </View>
-        </Animated.View>
-      </ScrollView>
-
-      {/* Bottom Action Bar */}
-      <Animated.View
-        entering={FadeInUp.delay(500).duration(400)}
-        style={[styles.bottomBar, { paddingBottom: insets.bottom + Spacing.md }]}
-      >
-        <View style={styles.bottomContent}>
-          {showSceneError && (
-            <View style={styles.errorMessage}>
-              <Feather name="alert-circle" size={14} color={Colors.editing.error} />
-              <ThemedText style={styles.errorText}>
-                Please describe your scene or choose a preset
+          {/* Scene Presets */}
+          <Animated.View
+            entering={FadeInDown.delay(400).duration(400)}
+            style={styles.section}
+          >
+            <View style={styles.sectionHeader}>
+              <Feather name="grid" size={18} color={Colors.editing.primary} />
+              <ThemedText style={styles.sectionTitle}>
+                Or Choose a Preset
               </ThemedText>
             </View>
-          )}
-          <GradientButton
-            title={
-              isProcessing 
-                ? "Generating..." 
-                : isBatchMode 
-                  ? `Generate ${selectedImages.length} Scenes` 
-                  : "Generate Lifestyle Scene"
-            }
-            onPress={handleGenerate}
-            disabled={selectedImages.length === 0 || isProcessing}
-            loading={isProcessing}
-            icon="zap"
-            fullWidth
-          />
-        </View>
-      </Animated.View>
+            <ThemedText style={styles.sectionSubtitle}>
+              Quick-start with popular scene styles
+            </ThemedText>
+            <View style={styles.scenesContainer}>
+              <FlatList
+                ref={flatListRef}
+                data={SCENES}
+                renderItem={({ item, index }) => (
+                  <SceneCard
+                    scene={item}
+                    selected={selectedScene === item.id}
+                    onPress={() => handleSelectSceneCard(item.id)}
+                    index={index}
+                  />
+                )}
+                keyExtractor={(item) => item.id}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.scenesGrid}
+              />
+              <ScrollIndicator direction="right" delay={1000} />
+            </View>
+          </Animated.View>
+        </ScrollView>
 
-      {/* Processing Overlay */}
-      {isProcessing && (
+        {/* Bottom Action Bar */}
         <Animated.View
-          entering={FadeIn.duration(200)}
-          style={styles.processingOverlay}
+          entering={FadeInUp.delay(500).duration(400)}
+          style={[
+            styles.bottomBar,
+            { paddingBottom: insets.bottom + Spacing.md },
+          ]}
         >
-          <GlassCard theme="light" padding="xl" borderRadius="2xl">
-            <View style={styles.processingContent}>
-              <ProgressRing
-                progress={0.7}
-                size={80}
-                strokeWidth={6}
-                color={Colors.editing.primary}
-                backgroundColor="rgba(255, 255, 255, 0.1)"
-              >
+          <View style={styles.bottomContent}>
+            {showSceneError && (
+              <View style={styles.errorMessage}>
                 <Feather
-                  name="zap"
-                  size={28}
-                  color={Colors.editing.primary}
+                  name="alert-circle"
+                  size={14}
+                  color={Colors.editing.error}
                 />
-              </ProgressRing>
-              <ThemedText style={styles.processingTitle}>
-                Creating Your Scene
-              </ThemedText>
-              <ThemedText style={styles.processingHint}>
-                This may take up to 30 seconds
-              </ThemedText>
-            </View>
-          </GlassCard>
+                <ThemedText style={styles.errorText}>
+                  Please describe your scene or choose a preset
+                </ThemedText>
+              </View>
+            )}
+            <GradientButton
+              title={
+                isProcessing
+                  ? "Generating..."
+                  : isBatchMode
+                    ? `Generate ${selectedImages.length} Scenes`
+                    : "Generate Lifestyle Scene"
+              }
+              onPress={handleGenerate}
+              disabled={selectedImages.length === 0 || isProcessing}
+              loading={isProcessing}
+              icon="zap"
+              fullWidth
+            />
+          </View>
         </Animated.View>
-      )}
+
+        {/* Processing Overlay */}
+        {isProcessing && (
+          <Animated.View
+            entering={FadeIn.duration(200)}
+            style={styles.processingOverlay}
+          >
+            <GlassCard theme="light" padding="xl" borderRadius="2xl">
+              <View style={styles.processingContent}>
+                <ProgressRing
+                  progress={0.7}
+                  size={80}
+                  strokeWidth={6}
+                  color={Colors.editing.primary}
+                  backgroundColor="rgba(255, 255, 255, 0.1)"
+                >
+                  <Feather
+                    name="zap"
+                    size={28}
+                    color={Colors.editing.primary}
+                  />
+                </ProgressRing>
+                <ThemedText style={styles.processingTitle}>
+                  Creating Your Scene
+                </ThemedText>
+                <ThemedText style={styles.processingHint}>
+                  This may take up to 30 seconds
+                </ThemedText>
+              </View>
+            </GlassCard>
+          </Animated.View>
+        )}
       </View>
     </GradientBackground>
   );

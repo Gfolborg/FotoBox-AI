@@ -43,7 +43,7 @@ export async function savePreset(
   name: string,
   adjustments: PresetAdjustments,
   backgroundColor: string,
-  aiSettings?: EditingPreset['aiSettings'], // Add aiSettings parameter
+  aiSettings?: EditingPreset["aiSettings"], // Add aiSettings parameter
 ): Promise<EditingPreset> {
   const storage = await getStorage();
   const now = new Date().toISOString();

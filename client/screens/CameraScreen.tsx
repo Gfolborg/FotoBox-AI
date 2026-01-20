@@ -27,6 +27,7 @@ import Animated, {
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 
+import { ThemedHeader } from "@/components/ThemedHeader";
 import { ThemedText } from "@/components/ThemedText";
 import { IconButton } from "@/components/IconButton";
 import { GlassPill } from "@/components/GlassPill";
@@ -118,7 +119,6 @@ export default function CameraScreen() {
     }
   };
 
-  
   if (!permission) {
     return (
       <GradientBackground theme="home" style={styles.centered}>
@@ -129,10 +129,19 @@ export default function CameraScreen() {
 
   if (!permission.granted) {
     return (
-      <GradientBackground theme="home" style={[styles.centered, styles.permissionContainer]}>
+      <GradientBackground
+        theme="home"
+        style={[styles.centered, styles.permissionContainer]}
+      >
         <StatusBar style="dark" />
-        <Animated.View entering={FadeIn.duration(500)} style={styles.permissionContent}>
-          <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.permissionIconContainer}>
+        <Animated.View
+          entering={FadeIn.duration(500)}
+          style={styles.permissionContent}
+        >
+          <Animated.View
+            entering={FadeInDown.delay(100).duration(400)}
+            style={styles.permissionIconContainer}
+          >
             <Feather
               name={permission.status === "denied" ? "camera-off" : "camera"}
               size={56}
@@ -141,7 +150,9 @@ export default function CameraScreen() {
           </Animated.View>
           <Animated.View entering={FadeInDown.delay(200).duration(400)}>
             <ThemedText type="h3" style={styles.permissionTitle}>
-              {permission.status === "denied" ? "Camera Access Required" : "Enable Camera"}
+              {permission.status === "denied"
+                ? "Camera Access Required"
+                : "Enable Camera"}
             </ThemedText>
           </Animated.View>
           <Animated.View entering={FadeInDown.delay(300).duration(400)}>
@@ -151,7 +162,10 @@ export default function CameraScreen() {
                 : "To capture product photos, we need access to your camera."}
             </ThemedText>
           </Animated.View>
-          <Animated.View entering={FadeInDown.delay(400).duration(400)} style={styles.permissionButtonContainer}>
+          <Animated.View
+            entering={FadeInDown.delay(400).duration(400)}
+            style={styles.permissionButtonContainer}
+          >
             {permission.status === "denied" && !permission.canAskAgain ? (
               Platform.OS !== "web" && (
                 <GradientButton
@@ -167,7 +181,11 @@ export default function CameraScreen() {
                 />
               )
             ) : (
-              <GradientButton title="Enable Camera" icon="camera" onPress={requestPermission} />
+              <GradientButton
+                title="Enable Camera"
+                icon="camera"
+                onPress={requestPermission}
+              />
             )}
           </Animated.View>
         </Animated.View>
@@ -205,7 +223,10 @@ export default function CameraScreen() {
         {/* Bottom controls */}
         <Animated.View
           entering={FadeInUp.delay(200).duration(400)}
-          style={[styles.bottomControls, { paddingBottom: insets.bottom + Spacing.xl }]}
+          style={[
+            styles.bottomControls,
+            { paddingBottom: insets.bottom + Spacing.xl },
+          ]}
         >
           {/* Gallery buttons */}
           <View style={styles.sideButton}>
@@ -222,10 +243,15 @@ export default function CameraScreen() {
 
           {/* Capture button */}
           <Pressable onPress={handleCapture} disabled={isCapturing}>
-            <Animated.View style={[styles.captureButtonOuter, captureAnimatedStyle]}>
+            <Animated.View
+              style={[styles.captureButtonOuter, captureAnimatedStyle]}
+            >
               <View style={styles.captureButtonInner}>
                 {isCapturing ? (
-                  <ActivityIndicator color={Colors.editing.backgroundRoot} size="small" />
+                  <ActivityIndicator
+                    color={Colors.editing.backgroundRoot}
+                    size="small"
+                  />
                 ) : (
                   <View style={styles.captureButtonCenter} />
                 )}
@@ -257,8 +283,14 @@ export default function CameraScreen() {
         transparent={true}
         onRequestClose={() => setShowTips(false)}
       >
-        <Pressable style={styles.modalOverlay} onPress={() => setShowTips(false)}>
-          <Animated.View entering={FadeIn.duration(200)} style={styles.tipsModal}>
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setShowTips(false)}
+        >
+          <Animated.View
+            entering={FadeIn.duration(200)}
+            style={styles.tipsModal}
+          >
             <BlurView intensity={60} tint="dark" style={styles.tipsBlur} />
             <View style={styles.tipsContent}>
               <View style={styles.tipsHeader}>
@@ -279,11 +311,19 @@ export default function CameraScreen() {
                 {RETAKE_TIPS.map((tip, index) => (
                   <View key={index} style={styles.tipItem}>
                     <View style={styles.tipIconContainer}>
-                      <Feather name={tip.icon} size={18} color={Colors.editing.primary} />
+                      <Feather
+                        name={tip.icon}
+                        size={18}
+                        color={Colors.editing.primary}
+                      />
                     </View>
                     <View style={styles.tipTextContent}>
-                      <ThemedText style={styles.tipTitle}>{tip.title}</ThemedText>
-                      <ThemedText style={styles.tipDescription}>{tip.description}</ThemedText>
+                      <ThemedText style={styles.tipTitle}>
+                        {tip.title}
+                      </ThemedText>
+                      <ThemedText style={styles.tipDescription}>
+                        {tip.description}
+                      </ThemedText>
                     </View>
                   </View>
                 ))}

@@ -168,9 +168,11 @@ export function getPlatformById(id: string): PlatformRequirement | undefined {
 /**
  * Get platforms by aspect ratio
  */
-export function getPlatformsByAspectRatio(ratio: number): PlatformRequirement[] {
+export function getPlatformsByAspectRatio(
+  ratio: number,
+): PlatformRequirement[] {
   const tolerance = 0.01;
   return getAllPlatforms().filter(
-    (p) => Math.abs(p.aspectRatio - ratio) < tolerance
+    (p) => Math.abs(p.aspectRatio - ratio) < tolerance,
   );
 }

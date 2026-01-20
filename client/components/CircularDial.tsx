@@ -90,7 +90,12 @@ export function CircularDial({
         <View style={styles.labelContainer}>
           <ThemedText style={styles.label}>{label}</ThemedText>
         </View>
-        <View style={[styles.valueContainer, !isDefault && styles.valueContainerActive]}>
+        <View
+          style={[
+            styles.valueContainer,
+            !isDefault && styles.valueContainerActive,
+          ]}
+        >
           <ThemedText style={[styles.value, isDefault && styles.valueDefault]}>
             {displayValue}
           </ThemedText>

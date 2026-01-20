@@ -116,7 +116,14 @@ export const MOCKUP_CATEGORIES: MockupCategory[] = [
         label: "T-Shirt",
         description: "Classic crew neck t-shirt",
         hasColorPicker: true,
-        defaultColors: ["#FFFFFF", "#000000", "#1F2937", "#DC2626", "#2563EB", "#059669"],
+        defaultColors: [
+          "#FFFFFF",
+          "#000000",
+          "#1F2937",
+          "#DC2626",
+          "#2563EB",
+          "#059669",
+        ],
         image: tshirtImage,
         blurhash: BLURHASH.tshirt,
       },
@@ -304,7 +311,8 @@ export const SCENE_VIBES: SceneVibe[] = [
   {
     id: "dynamic",
     label: "Dynamic",
-    description: "Action, sports, outdoor adventure - perfect for energy drinks, fitness gear",
+    description:
+      "Action, sports, outdoor adventure - perfect for energy drinks, fitness gear",
     icon: "zap",
     image: dynamicVibeImage,
     blurhash: BLURHASH.dynamic,
@@ -312,7 +320,8 @@ export const SCENE_VIBES: SceneVibe[] = [
   {
     id: "professional",
     label: "Professional",
-    description: "Office, business meeting, clean desk - great for corporate products",
+    description:
+      "Office, business meeting, clean desk - great for corporate products",
     icon: "briefcase",
     image: professionalVibeImage,
     blurhash: BLURHASH.professional,
@@ -320,7 +329,8 @@ export const SCENE_VIBES: SceneVibe[] = [
   {
     id: "casual",
     label: "Casual",
-    description: "Coffee shop, home, urban street - ideal for lifestyle products",
+    description:
+      "Coffee shop, home, urban street - ideal for lifestyle products",
     icon: "home",
     image: casualVibeImage,
     blurhash: BLURHASH.casual,
@@ -336,7 +346,8 @@ export const SCENE_VIBES: SceneVibe[] = [
   {
     id: "fun",
     label: "Fun",
-    description: "Bright colors, party scenes, beach vibes - great for playful brands",
+    description:
+      "Bright colors, party scenes, beach vibes - great for playful brands",
     icon: "sun",
     image: funVibeImage,
     blurhash: BLURHASH.fun,
@@ -443,48 +454,62 @@ export function getMockupPrompt(
   cameraOption: CameraOption,
   mockupColor?: string,
   customDescription?: string,
-  modelOption?: ModelOption
+  modelOption?: ModelOption,
 ): string {
   const isCustomProduct = mockupItem.id === "custom";
   const productName = mockupItem.label.toLowerCase();
-  const colorDesc = mockupColor ? `The ${productName} color is ${mockupColor}.` : "";
-  
+  const colorDesc = mockupColor
+    ? `The ${productName} color is ${mockupColor}.`
+    : "";
+
   const vibeDescriptions: Record<string, string> = {
-    dynamic: "in an energetic, action-packed setting with dynamic lighting and motion. Think extreme sports, fitness, adventure. High energy and exciting.",
-    professional: "in a clean, professional business environment. Modern office, meeting room, or executive desk. Sophisticated and corporate.",
-    casual: "in a relaxed, everyday lifestyle setting. Cozy coffee shop, comfortable home, or casual urban street scene. Warm and inviting.",
-    premium: "in a luxurious, high-end studio setting. Perfect lighting, marble or elegant surfaces, premium aesthetic. Sophisticated and aspirational.",
+    dynamic:
+      "in an energetic, action-packed setting with dynamic lighting and motion. Think extreme sports, fitness, adventure. High energy and exciting.",
+    professional:
+      "in a clean, professional business environment. Modern office, meeting room, or executive desk. Sophisticated and corporate.",
+    casual:
+      "in a relaxed, everyday lifestyle setting. Cozy coffee shop, comfortable home, or casual urban street scene. Warm and inviting.",
+    premium:
+      "in a luxurious, high-end studio setting. Perfect lighting, marble or elegant surfaces, premium aesthetic. Sophisticated and aspirational.",
     fun: "in a vibrant, playful setting with bright colors. Party atmosphere, beach vibes, or colorful backdrop. Joyful and energetic.",
   };
 
   const cameraDescriptions: Record<string, string> = {
     closeup: "Shot as a close-up detail shot focusing on the product details.",
-    medium: "Shot as a medium shot showing the product with some environmental context.",
+    medium:
+      "Shot as a medium shot showing the product with some environmental context.",
     wide: "Shot as a wide environmental shot showing the full scene with the product.",
     flatlay: "Shot as a flat lay from directly above, top-down perspective.",
-    action: "Shot with motion blur and dynamic angles conveying energy and movement.",
+    action:
+      "Shot with motion blur and dynamic angles conveying energy and movement.",
     handheld: "Shot showing someone holding or actively using the product.",
   };
 
   const modelDescriptions: Record<string, string> = {
     none: "",
-    female: "Feature an attractive adult woman wearing or using the product naturally. She should look confident and authentic, like in a lifestyle advertisement. Professional model-quality appearance.",
+    female:
+      "Feature an attractive adult woman wearing or using the product naturally. She should look confident and authentic, like in a lifestyle advertisement. Professional model-quality appearance.",
     male: "Feature an attractive adult man wearing or using the product naturally. He should look confident and authentic, like in a lifestyle advertisement. Professional model-quality appearance.",
-    diverse: "Feature a diverse group of attractive adults wearing or using the product together. They should look natural and authentic, like in a lifestyle advertisement for an inclusive brand.",
-    hands: "Show just human hands holding or using the product naturally. Focus on the hands and product interaction without showing the full person.",
+    diverse:
+      "Feature a diverse group of attractive adults wearing or using the product together. They should look natural and authentic, like in a lifestyle advertisement for an inclusive brand.",
+    hands:
+      "Show just human hands holding or using the product naturally. Focus on the hands and product interaction without showing the full person.",
   };
 
-  const productInstruction = isCustomProduct 
+  const productInstruction = isCustomProduct
     ? `IMPORTANT: The user specifically wants their design/logo placed on a "${productName}". Create a realistic ${productName} with their design.`
     : `Create a realistic product mockup of the provided design/logo placed on a ${productName}.`;
 
-  const modelInstruction = modelOption && modelOption.id !== "none" 
-    ? ` ${modelDescriptions[modelOption.id]}` 
-    : "";
+  const modelInstruction =
+    modelOption && modelOption.id !== "none"
+      ? ` ${modelDescriptions[modelOption.id]}`
+      : "";
 
   const basePrompt = `${productInstruction} ${colorDesc}${modelInstruction} The scene should be ${vibeDescriptions[sceneVibe.id] || vibeDescriptions.casual} ${cameraDescriptions[cameraOption.id] || cameraDescriptions.medium}`;
 
-  const customAddition = customDescription ? ` Additional context: ${customDescription}` : "";
+  const customAddition = customDescription
+    ? ` Additional context: ${customDescription}`
+    : "";
 
   return `${basePrompt}${customAddition} The product placement should look natural and realistic with proper perspective, lighting, and shadows. High quality, photorealistic result.`;
 }

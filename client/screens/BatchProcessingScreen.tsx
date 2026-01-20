@@ -1,10 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import {
-  View,
-  StyleSheet,
-  ScrollView,
-  Image,
-} from "react-native";
+import { View, StyleSheet, ScrollView, Image } from "react-native";
 import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
@@ -54,7 +49,7 @@ export default function BatchProcessingScreen() {
       originalUri: uri,
       resultUri: null,
       status: "pending" as const,
-    }))
+    })),
   );
   const [isComplete, setIsComplete] = useState(false);
   const resultsRef = useRef<ProcessingResult[]>(results);
@@ -85,7 +80,7 @@ export default function BatchProcessingScreen() {
     const limit = pLimit(5);
 
     const processingPromises = imageUris.map((uri, i) =>
-      limit(() => processImage(uri, i))
+      limit(() => processImage(uri, i)),
     );
 
     await Promise.all(processingPromises);
@@ -97,8 +92,8 @@ export default function BatchProcessingScreen() {
   const processImage = async (imageUri: string, index: number) => {
     setResults((prev) =>
       prev.map((r, idx) =>
-        idx === index ? { ...r, status: "processing" as const } : r
-      )
+        idx === index ? { ...r, status: "processing" as const } : r,
+      ),
     );
 
     try {
@@ -139,8 +134,8 @@ export default function BatchProcessingScreen() {
 
       setResults((prev) =>
         prev.map((r, idx) =>
-          idx === index ? { ...r, resultUri, status: "completed" as const } : r
-        )
+          idx === index ? { ...r, resultUri, status: "completed" as const } : r,
+        ),
       );
     } catch (error) {
       const errorMessage =
@@ -150,8 +145,8 @@ export default function BatchProcessingScreen() {
         prev.map((r, idx) =>
           idx === index
             ? { ...r, status: "failed" as const, error: errorMessage }
-            : r
-        )
+            : r,
+        ),
       );
     }
   };
@@ -166,7 +161,7 @@ export default function BatchProcessingScreen() {
     pulseOpacity.value = withRepeat(
       withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
       -1,
-      true
+      true,
     );
   }, [pulseOpacity]);
 
@@ -190,7 +185,10 @@ export default function BatchProcessingScreen() {
       </Animated.View>
 
       {/* Progress Ring Section */}
-      <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.progressSection}>
+      <Animated.View
+        entering={FadeInDown.delay(100).duration(500)}
+        style={styles.progressSection}
+      >
         <ProgressRing
           progress={progress}
           size={140}
@@ -227,7 +225,12 @@ export default function BatchProcessingScreen() {
             key={result.originalUri}
             entering={FadeInUp.delay(200 + index * 60).duration(400)}
           >
-            <GlassCard theme="light" padding="md" borderRadius="lg" style={styles.imageCard}>
+            <GlassCard
+              theme="light"
+              padding="md"
+              borderRadius="lg"
+              style={styles.imageCard}
+            >
               <View style={styles.imageRow}>
                 <Image
                   source={{ uri: result.originalUri }}
@@ -240,31 +243,52 @@ export default function BatchProcessingScreen() {
                   {result.status === "pending" && (
                     <View style={styles.statusRow}>
                       <View style={styles.pendingDot} />
-                      <ThemedText style={styles.statusText}>Waiting...</ThemedText>
+                      <ThemedText style={styles.statusText}>
+                        Waiting...
+                      </ThemedText>
                     </View>
                   )}
                   {result.status === "processing" && (
                     <View style={styles.statusRow}>
                       <Animated.View style={pulseStyle}>
-                        <Feather name="loader" size={14} color={Colors.editing.primary} />
+                        <Feather
+                          name="loader"
+                          size={14}
+                          color={Colors.editing.primary}
+                        />
                       </Animated.View>
-                      <ThemedText style={[styles.statusText, styles.processingText]}>
+                      <ThemedText
+                        style={[styles.statusText, styles.processingText]}
+                      >
                         Processing...
                       </ThemedText>
                     </View>
                   )}
                   {result.status === "completed" && (
                     <View style={styles.statusRow}>
-                      <Feather name="check-circle" size={16} color={Colors.editing.success} />
-                      <ThemedText style={[styles.statusText, styles.successText]}>
+                      <Feather
+                        name="check-circle"
+                        size={16}
+                        color={Colors.editing.success}
+                      />
+                      <ThemedText
+                        style={[styles.statusText, styles.successText]}
+                      >
                         Complete
                       </ThemedText>
                     </View>
                   )}
                   {result.status === "failed" && (
                     <View style={styles.statusRow}>
-                      <Feather name="x-circle" size={16} color={Colors.editing.error} />
-                      <ThemedText style={[styles.statusText, styles.errorText]} numberOfLines={1}>
+                      <Feather
+                        name="x-circle"
+                        size={16}
+                        color={Colors.editing.error}
+                      />
+                      <ThemedText
+                        style={[styles.statusText, styles.errorText]}
+                        numberOfLines={1}
+                      >
                         {result.error || "Failed"}
                       </ThemedText>
                     </View>

@@ -1,11 +1,5 @@
 import React, { useState } from "react";
-import {
-  StyleSheet,
-  View,
-  FlatList,
-  Pressable,
-  Alert,
-} from "react-native";
+import { StyleSheet, View, FlatList, Pressable, Alert } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -13,7 +7,11 @@ import * as ImagePicker from "expo-image-picker";
 import { Feather } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import * as Haptics from "expo-haptics";
-import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+} from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 
 import { ThemedText } from "@/components/ThemedText";
@@ -34,7 +32,9 @@ export default function PresetSelectionScreen() {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
   const { presets, isLoading, removePreset, isDeleting } = usePresets();
-  const [selectedPreset, setSelectedPreset] = useState<EditingPreset | null>(null);
+  const [selectedPreset, setSelectedPreset] = useState<EditingPreset | null>(
+    null,
+  );
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
@@ -64,7 +64,7 @@ export default function PresetSelectionScreen() {
                 style: "destructive",
                 onPress: () => removePreset(preset.id),
               },
-            ]
+            ],
           );
         },
       },
@@ -98,25 +98,33 @@ export default function PresetSelectionScreen() {
           style={styles.emptyIconContainer}
         >
           <LinearGradient
-            colors={[Colors.editing.primarySubtle, Colors.editing.backgroundSecondary]}
+            colors={[
+              Colors.editing.primarySubtle,
+              Colors.editing.backgroundSecondary,
+            ]}
             style={styles.emptyIconGradient}
           >
-            <Feather name="bookmark" size={48} color={Colors.editing.textTertiary} />
+            <Feather
+              name="bookmark"
+              size={48}
+              color={Colors.editing.textTertiary}
+            />
           </LinearGradient>
         </Animated.View>
-        
+
         <Animated.View entering={FadeInDown.delay(200).duration(400)}>
           <ThemedText type="h3" style={styles.emptyTitle}>
             No Saved Presets
           </ThemedText>
         </Animated.View>
-        
+
         <Animated.View entering={FadeInDown.delay(300).duration(400)}>
           <ThemedText style={styles.emptyDescription}>
-            Create presets by editing an image and tapping the bookmark icon to save your adjustments.
+            Create presets by editing an image and tapping the bookmark icon to
+            save your adjustments.
           </ThemedText>
         </Animated.View>
-        
+
         <Animated.View entering={FadeInDown.delay(400).duration(400)}>
           <GradientButton
             title="Take a Photo"
@@ -152,81 +160,95 @@ export default function PresetSelectionScreen() {
 
       <View style={[styles.container, { paddingTop: insets.top }]}>
         {/* Header */}
-        <Animated.View
-          entering={FadeIn.duration(300)}
-          style={styles.header}
-        >
+        <Animated.View entering={FadeIn.duration(300)} style={styles.header}>
           <View style={styles.headerContent}>
-          <Pressable
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Feather name="chevron-left" size={24} color={Colors.editing.text} />
-          </Pressable>
+            <Pressable
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+            >
+              <Feather
+                name="chevron-left"
+                size={24}
+                color={Colors.editing.text}
+              />
+            </Pressable>
 
-          <GlassPill>
-            <Feather name="bookmark" size={16} color={Colors.editing.primary} />
-            <ThemedText style={styles.headerTitle}>Presets</ThemedText>
-          </GlassPill>
+            <GlassPill>
+              <Feather
+                name="bookmark"
+                size={16}
+                color={Colors.editing.primary}
+              />
+              <ThemedText style={styles.headerTitle}>Presets</ThemedText>
+            </GlassPill>
 
-          <View style={styles.countBadge}>
-            <ThemedText style={styles.countText}>{presets.length}</ThemedText>
+            <View style={styles.countBadge}>
+              <ThemedText style={styles.countText}>{presets.length}</ThemedText>
+            </View>
           </View>
-        </View>
-      </Animated.View>
+        </Animated.View>
 
-      {presets.length === 0 ? (
-        renderEmptyState()
-      ) : (
-        <>
-          <FlatList
-            data={presets}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item, index }) => (
-              <Animated.View entering={FadeInDown.delay(index * 80).duration(400)}>
-                <PresetCard
-                  preset={item}
-                  onPress={() => handlePresetPress(item)}
-                  onLongPress={() => handlePresetLongPress(item)}
-                  selected={selectedPreset?.id === item.id}
-                />
+        {presets.length === 0 ? (
+          renderEmptyState()
+        ) : (
+          <>
+            <FlatList
+              data={presets}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item, index }) => (
+                <Animated.View
+                  entering={FadeInDown.delay(index * 80).duration(400)}
+                >
+                  <PresetCard
+                    preset={item}
+                    onPress={() => handlePresetPress(item)}
+                    onLongPress={() => handlePresetLongPress(item)}
+                    selected={selectedPreset?.id === item.id}
+                  />
+                </Animated.View>
+              )}
+              contentContainerStyle={[
+                styles.listContent,
+                { paddingBottom: insets.bottom + 120 },
+              ]}
+              ItemSeparatorComponent={() => <View style={styles.separator} />}
+              showsVerticalScrollIndicator={false}
+              style={styles.list}
+            />
+
+            {selectedPreset && (
+              <Animated.View
+                entering={FadeInUp.duration(300)}
+                style={[
+                  styles.bottomAction,
+                  { paddingBottom: insets.bottom + Spacing.md },
+                ]}
+              >
+                <GlassCard theme="light" padding="md" borderRadius="xl">
+                  <View style={styles.bottomContent}>
+                    <View style={styles.selectedInfo}>
+                      <Feather
+                        name="check-circle"
+                        size={18}
+                        color={Colors.editing.primary}
+                      />
+                      <ThemedText style={styles.selectedName} numberOfLines={1}>
+                        {selectedPreset.name}
+                      </ThemedText>
+                    </View>
+                    <GradientButton
+                      title="Apply to Photo"
+                      onPress={handleApplyPreset}
+                      disabled={isDeleting}
+                      icon="check"
+                      fullWidth
+                    />
+                  </View>
+                </GlassCard>
               </Animated.View>
             )}
-            contentContainerStyle={[
-              styles.listContent,
-              { paddingBottom: insets.bottom + 120 },
-            ]}
-            ItemSeparatorComponent={() => <View style={styles.separator} />}
-            showsVerticalScrollIndicator={false}
-            style={styles.list}
-          />
-
-          {selectedPreset && (
-            <Animated.View
-              entering={FadeInUp.duration(300)}
-              style={[styles.bottomAction, { paddingBottom: insets.bottom + Spacing.md }]}
-            >
-              <GlassCard theme="light" padding="md" borderRadius="xl">
-                <View style={styles.bottomContent}>
-                  <View style={styles.selectedInfo}>
-                    <Feather name="check-circle" size={18} color={Colors.editing.primary} />
-                    <ThemedText style={styles.selectedName} numberOfLines={1}>
-                      {selectedPreset.name}
-                    </ThemedText>
-                  </View>
-                  <GradientButton
-                    title="Apply to Photo"
-                    onPress={handleApplyPreset}
-                    disabled={isDeleting}
-                    icon="check"
-                    fullWidth
-                  />
-                </View>
-              </GlassCard>
-            </Animated.View>
-          )}
-        </>
-      )}
+          </>
+        )}
       </View>
     </GradientBackground>
   );

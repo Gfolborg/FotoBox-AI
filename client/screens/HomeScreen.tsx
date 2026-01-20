@@ -99,8 +99,6 @@ export default function HomeScreen() {
           </ThemedText>
         </Animated.View>
       </ScrollView>
-
-
     </GradientBackground>
   );
 }

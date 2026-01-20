@@ -5,7 +5,11 @@ import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
-import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+} from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 
 import { ThemedHeader } from "@/components/ThemedHeader";
@@ -17,7 +21,10 @@ import { RootStackParamList } from "@/navigation/RootStackNavigator";
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const IMAGE_PREVIEW_SIZE = Math.min(SCREEN_WIDTH - Spacing.xl * 2, 220);
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList, "PhotoAction">;
+type NavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  "PhotoAction"
+>;
 type RouteProps = RouteProp<RootStackParamList, "PhotoAction">;
 
 interface ActionCardProps {
@@ -29,9 +36,19 @@ interface ActionCardProps {
   delay: number;
 }
 
-function ActionCard({ icon, title, description, color, onPress, delay }: ActionCardProps) {
+function ActionCard({
+  icon,
+  title,
+  description,
+  color,
+  onPress,
+  delay,
+}: ActionCardProps) {
   return (
-    <Animated.View entering={FadeInDown.delay(delay).duration(400)} style={styles.cardWrapper}>
+    <Animated.View
+      entering={FadeInDown.delay(delay).duration(400)}
+      style={styles.cardWrapper}
+    >
       <Pressable
         style={styles.actionCard}
         onPress={() => {
@@ -39,12 +56,21 @@ function ActionCard({ icon, title, description, color, onPress, delay }: ActionC
           onPress();
         }}
       >
-        <View style={[styles.actionIconContainer, { backgroundColor: color + "15" }]}>
+        <View
+          style={[
+            styles.actionIconContainer,
+            { backgroundColor: color + "15" },
+          ]}
+        >
           <Feather name={icon} size={24} color={color} />
         </View>
         <View style={styles.actionTextContainer}>
-          <ThemedText style={styles.actionTitle} numberOfLines={2}>{title}</ThemedText>
-          <ThemedText style={styles.actionDescription} numberOfLines={2}>{description}</ThemedText>
+          <ThemedText style={styles.actionTitle} numberOfLines={2}>
+            {title}
+          </ThemedText>
+          <ThemedText style={styles.actionDescription} numberOfLines={2}>
+            {description}
+          </ThemedText>
         </View>
       </Pressable>
     </Animated.View>
@@ -80,45 +106,53 @@ export default function PhotoActionScreen() {
       <StatusBar style="dark" />
       <ThemedHeader title="Choose Enhancement" />
       <View style={[styles.container, { paddingTop: insets.top + 54 }]}>
-        <View style={[styles.content, { paddingBottom: insets.bottom + Spacing.xl }]}>
-        <Animated.View
-          entering={FadeIn.delay(100).duration(400)}
-          style={styles.imagePreviewContainer}
+        <View
+          style={[
+            styles.content,
+            { paddingBottom: insets.bottom + Spacing.xl },
+          ]}
         >
-          <Image source={{ uri: imageUri }} style={styles.imagePreview} />
-          <View style={styles.imageOverlay} />
-        </Animated.View>
+          <Animated.View
+            entering={FadeIn.delay(100).duration(400)}
+            style={styles.imagePreviewContainer}
+          >
+            <Image source={{ uri: imageUri }} style={styles.imagePreview} />
+            <View style={styles.imageOverlay} />
+          </Animated.View>
 
-        <Animated.View entering={FadeInUp.delay(200).duration(400)} style={styles.promptContainer}>
-          <ThemedText style={styles.promptText}>Enhance with AI</ThemedText>
-        </Animated.View>
+          <Animated.View
+            entering={FadeInUp.delay(200).duration(400)}
+            style={styles.promptContainer}
+          >
+            <ThemedText style={styles.promptText}>Enhance with AI</ThemedText>
+          </Animated.View>
 
-        <View style={styles.actionsContainer}>
-          <ActionCard
-            icon="scissors"
-            title="Remove Background"
-            description="Clean cutout with transparent bg"
-            color={Colors.editing.primary}
-            onPress={handleRemoveBackground}
-            delay={300}
-          />
-          <ActionCard
-            icon="image"
-            title="Lifestyle Scene"
-            description="Place in AI environments"
-            color="#10B981"
-            onPress={handleCreateLifestyle}
-            delay={400}
-          />
-          <ActionCard
-            icon="box"
-            title="Product Mockup"
-            description="Realistic product displays"
-            color="#A78BFA"
-            onPress={handleCreateMockup}
-            delay={500}
-          />
-        </View>
+          <View style={styles.actionsContainer}>
+            <ActionCard
+              icon="scissors"
+              title="Remove Background"
+              description="Clean cutout with transparent bg"
+              color={Colors.editing.primary}
+              onPress={handleRemoveBackground}
+              delay={300}
+            />
+            <ActionCard
+              icon="image"
+              title="Lifestyle Scene"
+              description="Place in AI environments"
+              color="#10B981"
+              onPress={handleCreateLifestyle}
+              delay={400}
+            />
+            <ActionCard
+              icon="box"
+              title="Product Mockup"
+              description="Realistic product displays"
+              color="#A78BFA"
+              onPress={handleCreateMockup}
+              delay={500}
+            />
+          </View>
 
           <View style={styles.retakeContainer} />
         </View>
@@ -167,7 +201,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   actionsContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Spacing.sm,
   },
   cardWrapper: {
@@ -175,8 +209,8 @@ const styles = StyleSheet.create({
   },
   actionCard: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: Colors.editing.backgroundSecondary,
     borderRadius: BorderRadius.lg,
     padding: Spacing.sm,
@@ -194,20 +228,20 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   actionTextContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingHorizontal: 4,
   },
   actionTitle: {
     color: Colors.editing.text,
     fontSize: 14,
     fontWeight: "600",
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 3,
   },
   actionDescription: {
     color: Colors.editing.textSecondary,
     fontSize: 11,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 14,
   },
   retakeContainer: {

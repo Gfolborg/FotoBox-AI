@@ -13,7 +13,11 @@ import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
-import Animated, { FadeInDown, FadeInRight, FadeOutLeft } from "react-native-reanimated";
+import Animated, {
+  FadeInDown,
+  FadeInRight,
+  FadeOutLeft,
+} from "react-native-reanimated";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
@@ -58,19 +62,25 @@ export default function MockupSelectionScreen() {
   const initialImageUri = route.params?.imageUri;
 
   const [imageUris, setImageUris] = useState<string[]>(
-    initialImageUri ? [initialImageUri] : initialImageUris
+    initialImageUri ? [initialImageUri] : initialImageUris,
   );
   const [activeTab, setActiveTab] = useState<TabType>("product");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState<MockupItem | null>(null);
   const [selectedColor, setSelectedColor] = useState<string>("#FFFFFF");
   const [selectedVibe, setSelectedVibe] = useState<SceneVibe>(SCENE_VIBES[0]);
-  const [selectedCamera, setSelectedCamera] = useState<CameraOption>(CAMERA_OPTIONS[0]);
-  const [selectedModel, setSelectedModel] = useState<ModelOption>(MODEL_OPTIONS[0]);
+  const [selectedCamera, setSelectedCamera] = useState<CameraOption>(
+    CAMERA_OPTIONS[0],
+  );
+  const [selectedModel, setSelectedModel] = useState<ModelOption>(
+    MODEL_OPTIONS[0],
+  );
   const [customDescription, setCustomDescription] = useState("");
   const [customProductName, setCustomProductName] = useState("");
   // Track visited tabs for lazy rendering - only render tabs that have been visited
-  const [visitedTabs, setVisitedTabs] = useState<Set<TabType>>(new Set(["product"]));
+  const [visitedTabs, setVisitedTabs] = useState<Set<TabType>>(
+    new Set(["product"]),
+  );
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
@@ -90,14 +100,12 @@ export default function MockupSelectionScreen() {
         ...MODEL_OPTIONS.map((model) => model.image),
         // Prefetch product images from all categories
         ...MOCKUP_CATEGORIES.flatMap((category) =>
-          category.items.map((item) => item.image)
+          category.items.map((item) => item.image),
         ),
       ].filter(Boolean);
 
       // Prefetch all images in parallel
-      await Promise.all(
-        allImages.map((image) => Image.prefetch(image))
-      );
+      await Promise.all(allImages.map((image) => Image.prefetch(image)));
     };
 
     prefetchImages();
@@ -131,14 +139,16 @@ export default function MockupSelectionScreen() {
     }
   };
 
-  const customMockupItem: MockupItem | null = customProductName.trim() ? {
-    id: "custom",
-    label: customProductName.trim(),
-    description: `Custom product: ${customProductName.trim()}`,
-    hasColorPicker: true,
-    defaultColors: ["#FFFFFF", "#000000", "#F97316", "#0EA5E9", "#22C55E"],
-    image: null,
-  } : null;
+  const customMockupItem: MockupItem | null = customProductName.trim()
+    ? {
+        id: "custom",
+        label: customProductName.trim(),
+        description: `Custom product: ${customProductName.trim()}`,
+        hasColorPicker: true,
+        defaultColors: ["#FFFFFF", "#000000", "#F97316", "#0EA5E9", "#22C55E"],
+        image: null,
+      }
+    : null;
 
   const handleItemSelect = (item: MockupItem) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -205,10 +215,11 @@ export default function MockupSelectionScreen() {
   };
 
   const selectedCategoryData = MOCKUP_CATEGORIES.find(
-    (c) => c.id === selectedCategory
+    (c) => c.id === selectedCategory,
   );
 
-  const effectiveItem = selectedCategory === "custom" ? customMockupItem : selectedItem;
+  const effectiveItem =
+    selectedCategory === "custom" ? customMockupItem : selectedItem;
   const canGenerate = effectiveItem && imageUris.length > 0;
 
   const renderProductTab = () => (
@@ -245,7 +256,8 @@ export default function MockupSelectionScreen() {
             <ThemedText
               style={[
                 styles.categoryLabel,
-                selectedCategory === category.id && styles.categoryLabelSelected,
+                selectedCategory === category.id &&
+                  styles.categoryLabelSelected,
               ]}
             >
               {category.label}
@@ -283,7 +295,9 @@ export default function MockupSelectionScreen() {
 
       {selectedCategory === "custom" && (
         <Animated.View entering={FadeInDown.duration(300)}>
-          <ThemedText style={styles.sectionTitle}>Describe Your Product</ThemedText>
+          <ThemedText style={styles.sectionTitle}>
+            Describe Your Product
+          </ThemedText>
           <GlassCard style={styles.inputCard}>
             <TextInput
               style={styles.textInput}
@@ -313,7 +327,11 @@ export default function MockupSelectionScreen() {
                     ]}
                   >
                     {selectedColor === color && (
-                      <Feather name="check" size={16} color={color === "#FFFFFF" ? "#000" : "#FFF"} />
+                      <Feather
+                        name="check"
+                        size={16}
+                        color={color === "#FFFFFF" ? "#000" : "#FFF"}
+                      />
                     )}
                   </Pressable>
                 ))}
@@ -362,7 +380,11 @@ export default function MockupSelectionScreen() {
                 </View>
                 {selectedItem?.id === item.id && (
                   <View style={styles.selectedCheckmark}>
-                    <Feather name="check" size={16} color={Colors.light.white} />
+                    <Feather
+                      name="check"
+                      size={16}
+                      color={Colors.light.white}
+                    />
                   </View>
                 )}
               </Pressable>
@@ -390,7 +412,11 @@ export default function MockupSelectionScreen() {
                   <Feather
                     name="check"
                     size={18}
-                    color={color === "#FFFFFF" || color === "#F5F5DC" ? "#000" : "#FFF"}
+                    color={
+                      color === "#FFFFFF" || color === "#F5F5DC"
+                        ? "#000"
+                        : "#FFF"
+                    }
                   />
                 )}
               </Pressable>
@@ -547,9 +573,7 @@ export default function MockupSelectionScreen() {
               placeholder={{ blurhash: model.blurhash }}
             />
             <View style={styles.modelCardOverlay}>
-              <ThemedText style={styles.modelLabel}>
-                {model.label}
-              </ThemedText>
+              <ThemedText style={styles.modelLabel}>{model.label}</ThemedText>
             </View>
             {selectedModel.id === model.id && (
               <View style={styles.selectedCheckmark}>
@@ -612,7 +636,8 @@ export default function MockupSelectionScreen() {
         </ScrollView>
         {imageUris.length > 0 && (
           <ThemedText style={styles.imageCount}>
-            {imageUris.length} image{imageUris.length > 1 ? "s" : ""} selected (max 10)
+            {imageUris.length} image{imageUris.length > 1 ? "s" : ""} selected
+            (max 10)
           </ThemedText>
         )}
 
@@ -628,10 +653,10 @@ export default function MockupSelectionScreen() {
                   tab === "product"
                     ? "box"
                     : tab === "style"
-                    ? "sun"
-                    : tab === "camera"
-                    ? "aperture"
-                    : "users"
+                      ? "sun"
+                      : tab === "camera"
+                        ? "aperture"
+                        : "users"
                 }
                 size={16}
                 color={
@@ -649,10 +674,10 @@ export default function MockupSelectionScreen() {
                 {tab === "product"
                   ? "Product"
                   : tab === "style"
-                  ? "Style"
-                  : tab === "camera"
-                  ? "Camera"
-                  : "Model"}
+                    ? "Style"
+                    : tab === "camera"
+                      ? "Camera"
+                      : "Model"}
               </ThemedText>
             </Pressable>
           ))}
@@ -692,7 +717,10 @@ export default function MockupSelectionScreen() {
         <View style={styles.selectionSummary}>
           {effectiveItem && (
             <ThemedText style={styles.summaryText}>
-              {effectiveItem.label} • {selectedVibe.label} • {selectedModel.id !== "none" ? selectedModel.label : selectedCamera.label}
+              {effectiveItem.label} • {selectedVibe.label} •{" "}
+              {selectedModel.id !== "none"
+                ? selectedModel.label
+                : selectedCamera.label}
             </ThemedText>
           )}
         </View>

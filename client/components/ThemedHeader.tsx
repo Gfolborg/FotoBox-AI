@@ -33,7 +33,11 @@ export function ThemedHeader({ title }: ThemedHeaderProps) {
                 navigation.goBack();
               }}
             >
-              <Feather name="chevron-left" size={24} color={Colors.editing.text} />
+              <Feather
+                name="chevron-left"
+                size={24}
+                color={Colors.editing.text}
+              />
               <ThemedText style={styles.headerButtonText}>Back</ThemedText>
             </Pressable>
           )}
@@ -63,7 +67,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
-    height: 54
+    height: 54,
   },
   leftHeaderItem: {
     position: "absolute",

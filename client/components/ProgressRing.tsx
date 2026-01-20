@@ -8,7 +8,9 @@ import Animated, {
 import Svg, { Circle, CircleProps } from "react-native-svg";
 import { Colors, Animations } from "@/constants/theme";
 
-const AnimatedCircle = Animated.createAnimatedComponent(Circle) as React.ComponentType<
+const AnimatedCircle = Animated.createAnimatedComponent(
+  Circle,
+) as React.ComponentType<
   CircleProps & { animatedProps?: Partial<CircleProps> }
 >;
 
@@ -35,13 +37,10 @@ export function ProgressRing({
 
   const animatedProps = useAnimatedProps(() => {
     const clampedProgress = Math.min(Math.max(progress, 0), 1);
-    const strokeDashoffset = withTiming(
-      circumference * (1 - clampedProgress),
-      {
-        duration: Animations.timing.normal,
-        easing: Easing.bezier(0.4, 0, 0.2, 1),
-      }
-    );
+    const strokeDashoffset = withTiming(circumference * (1 - clampedProgress), {
+      duration: Animations.timing.normal,
+      easing: Easing.bezier(0.4, 0, 0.2, 1),
+    });
     return {
       strokeDashoffset,
     };

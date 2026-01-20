@@ -1,11 +1,5 @@
 import React from "react";
-import {
-  Modal,
-  View,
-  StyleSheet,
-  Pressable,
-  ScrollView,
-} from "react-native";
+import { Modal, View, StyleSheet, Pressable, ScrollView } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
@@ -52,7 +46,12 @@ function ActionCard({
           onPress();
         }}
       >
-        <View style={[styles.actionIconContainer, { backgroundColor: color + "20" }]}>
+        <View
+          style={[
+            styles.actionIconContainer,
+            { backgroundColor: color + "20" },
+          ]}
+        >
           <Feather name={icon} size={24} color={color} />
         </View>
         <View style={styles.actionTextContainer}>
@@ -64,7 +63,9 @@ function ActionCard({
               </View>
             )}
           </View>
-          <ThemedText style={styles.actionDescription}>{description}</ThemedText>
+          <ThemedText style={styles.actionDescription}>
+            {description}
+          </ThemedText>
         </View>
         <View style={styles.arrowContainer}>
           <Feather name="chevron-right" size={20} color="#9CA3AF" />
@@ -133,7 +134,9 @@ export function SaveOrEnhanceModal({
 
             <View style={styles.divider}>
               <View style={styles.dividerLine} />
-              <ThemedText style={styles.dividerText}>or enhance with AI</ThemedText>
+              <ThemedText style={styles.dividerText}>
+                or enhance with AI
+              </ThemedText>
               <View style={styles.dividerLine} />
             </View>
 

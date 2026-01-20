@@ -33,7 +33,7 @@ export function usePresets() {
       name: string;
       adjustments: PresetAdjustments;
       backgroundColor: string;
-      aiSettings?: EditingPreset['aiSettings']; // Added aiSettings type
+      aiSettings?: EditingPreset["aiSettings"]; // Added aiSettings type
     }) => savePreset(name, adjustments, backgroundColor, aiSettings), // Pass aiSettings
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: PRESETS_QUERY_KEY });
@@ -74,7 +74,7 @@ export function usePresets() {
       warmth: state.warmth,
     };
 
-    const aiSettings: EditingPreset['aiSettings'] = {
+    const aiSettings: EditingPreset["aiSettings"] = {
       environment: state.aiEnvironment,
       isCustom: state.aiIsCustom,
       productDescription: state.aiProductDescription,
@@ -111,7 +111,10 @@ export function usePresets() {
     if (preset.aiSettings) {
       updateAdjustment("aiEnvironment", preset.aiSettings.environment);
       updateAdjustment("aiIsCustom", preset.aiSettings.isCustom);
-      updateAdjustment("aiProductDescription", preset.aiSettings.productDescription);
+      updateAdjustment(
+        "aiProductDescription",
+        preset.aiSettings.productDescription,
+      );
       updateAdjustment("aiShadowControl", preset.aiSettings.shadowControl);
     }
   };

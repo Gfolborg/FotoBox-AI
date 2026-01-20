@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import { View, StyleSheet, ScrollView, Pressable } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import Animated, { 
-  FadeIn, 
-  FadeOut, 
+import Animated, {
+  FadeIn,
+  FadeOut,
   FadeInRight,
   FadeOutLeft,
   Layout,
@@ -43,7 +43,11 @@ interface ToolConfig {
   format?: (val: number) => string;
 }
 
-const TABS: { key: TabType; label: string; icon: keyof typeof Feather.glyphMap }[] = [
+const TABS: {
+  key: TabType;
+  label: string;
+  icon: keyof typeof Feather.glyphMap;
+}[] = [
   { key: "adjust", label: "Adjust", icon: "sliders" },
   { key: "fineTune", label: "Fine Tune", icon: "settings" },
   { key: "transform", label: "Transform", icon: "move" },
@@ -59,7 +63,8 @@ const TOOLS: ToolConfig[] = [
     max: 1,
     step: 0.05,
     defaultValue: 0,
-    format: (v) => v > 0 ? `+${(v * 100).toFixed(0)}%` : `${(v * 100).toFixed(0)}%`,
+    format: (v) =>
+      v > 0 ? `+${(v * 100).toFixed(0)}%` : `${(v * 100).toFixed(0)}%`,
   },
   {
     key: "contrast",
@@ -103,7 +108,8 @@ const TOOLS: ToolConfig[] = [
     max: 1,
     step: 0.05,
     defaultValue: 0,
-    format: (v) => v > 0 ? `+${(v * 100).toFixed(0)}` : `${(v * 100).toFixed(0)}`,
+    format: (v) =>
+      v > 0 ? `+${(v * 100).toFixed(0)}` : `${(v * 100).toFixed(0)}`,
   },
   {
     key: "shadows",
@@ -114,7 +120,8 @@ const TOOLS: ToolConfig[] = [
     max: 1,
     step: 0.05,
     defaultValue: 0,
-    format: (v) => v > 0 ? `+${(v * 100).toFixed(0)}` : `${(v * 100).toFixed(0)}`,
+    format: (v) =>
+      v > 0 ? `+${(v * 100).toFixed(0)}` : `${(v * 100).toFixed(0)}`,
   },
   {
     key: "warmth",
@@ -125,7 +132,8 @@ const TOOLS: ToolConfig[] = [
     max: 1,
     step: 0.05,
     defaultValue: 0,
-    format: (v) => v > 0 ? `+${(v * 100).toFixed(0)}` : `${(v * 100).toFixed(0)}`,
+    format: (v) =>
+      v > 0 ? `+${(v * 100).toFixed(0)}` : `${(v * 100).toFixed(0)}`,
   },
   {
     key: "rotate",
@@ -174,18 +182,23 @@ export function DialToolbar({
   onToggleFlipVertical,
 }: DialToolbarProps) {
   const [activeTab, setActiveTab] = useState<TabType>("adjust");
-  const [selectedTool, setSelectedTool] = useState<ToolKey | null>("brightness");
+  const [selectedTool, setSelectedTool] = useState<ToolKey | null>(
+    "brightness",
+  );
 
   const handleTabChange = (tab: TabType) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setActiveTab(tab);
     const firstToolInTab = TOOLS.find((t) => t.tab === tab);
     setSelectedTool(firstToolInTab?.key || null);
-    
+
     if (tab === "transform" && firstToolInTab?.key === "crop") {
       onUpdateAdjustment("activeTab", "crop");
     } else {
-      onUpdateAdjustment("activeTab", tab === "adjust" || tab === "fineTune" ? "adjust" : "transform");
+      onUpdateAdjustment(
+        "activeTab",
+        tab === "adjust" || tab === "fineTune" ? "adjust" : "transform",
+      );
     }
   };
 
@@ -198,7 +211,10 @@ export function DialToolbar({
       if (tool.key === "crop") {
         onUpdateAdjustment("activeTab", "crop");
       } else {
-        onUpdateAdjustment("activeTab", tool.tab === "transform" ? "transform" : "adjust");
+        onUpdateAdjustment(
+          "activeTab",
+          tool.tab === "transform" ? "transform" : "adjust",
+        );
       }
     }
   };
@@ -206,7 +222,9 @@ export function DialToolbar({
   const getToolModified = (tool: ToolConfig): boolean => {
     if (tool.min !== undefined) {
       const value = state[tool.key as keyof ImageEditingState] as number;
-      return Math.abs(value - (tool.defaultValue || 0)) > (tool.step || 0.01) / 2;
+      return (
+        Math.abs(value - (tool.defaultValue || 0)) > (tool.step || 0.01) / 2
+      );
     }
     if (tool.key === "rotate") {
       return state.rotation !== 0;
@@ -236,7 +254,7 @@ export function DialToolbar({
         {TABS.map((tab) => {
           const isActive = activeTab === tab.key;
           const hasModifications = getTabHasModifications(tab.key);
-          
+
           return (
             <Pressable
               key={tab.key}
@@ -246,18 +264,26 @@ export function DialToolbar({
               <Feather
                 name={tab.icon}
                 size={16}
-                color={isActive ? Colors.editing.primary : Colors.editing.textSecondary}
+                color={
+                  isActive
+                    ? Colors.editing.primary
+                    : Colors.editing.textSecondary
+                }
               />
-              <ThemedText style={[styles.tabText, isActive && styles.tabTextActive]}>
+              <ThemedText
+                style={[styles.tabText, isActive && styles.tabTextActive]}
+              >
                 {tab.label}
               </ThemedText>
-              {hasModifications && !isActive && <View style={styles.tabModifiedDot} />}
+              {hasModifications && !isActive && (
+                <View style={styles.tabModifiedDot} />
+              )}
             </Pressable>
           );
         })}
       </View>
 
-      <Animated.View 
+      <Animated.View
         key={activeTab}
         entering={FadeInRight.duration(200)}
         exiting={FadeOutLeft.duration(150)}
@@ -300,7 +326,10 @@ export function DialToolbar({
             label={currentTool.label}
             formatValue={currentTool.format}
             onValueChange={(val) =>
-              onUpdateAdjustment(currentTool.key as keyof ImageEditingState, val as never)
+              onUpdateAdjustment(
+                currentTool.key as keyof ImageEditingState,
+                val as never,
+              )
             }
           />
         </Animated.View>
@@ -382,17 +411,23 @@ export function DialToolbar({
             <AspectButton
               label="1:1"
               active={state.aspectRatio === "square"}
-              onPress={() => handleAspectRatio("square", state, onUpdateAdjustment)}
+              onPress={() =>
+                handleAspectRatio("square", state, onUpdateAdjustment)
+              }
             />
             <AspectButton
               label="4:3"
               active={state.aspectRatio === "4:3"}
-              onPress={() => handleAspectRatio("4:3", state, onUpdateAdjustment)}
+              onPress={() =>
+                handleAspectRatio("4:3", state, onUpdateAdjustment)
+              }
             />
             <AspectButton
               label="16:9"
               active={state.aspectRatio === "16:9"}
-              onPress={() => handleAspectRatio("16:9", state, onUpdateAdjustment)}
+              onPress={() =>
+                handleAspectRatio("16:9", state, onUpdateAdjustment)
+              }
             />
           </View>
 
@@ -497,7 +532,9 @@ function ToolChip({
         <Feather
           name={icon}
           size={14}
-          color={active ? Colors.editing.buttonText : Colors.editing.textSecondary}
+          color={
+            active ? Colors.editing.buttonText : Colors.editing.textSecondary
+          }
         />
         <ThemedText style={[styles.chipText, active && styles.chipTextActive]}>
           {label}

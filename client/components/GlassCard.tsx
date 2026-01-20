@@ -1,7 +1,12 @@
 import React from "react";
 import { View, StyleSheet, ViewStyle, StyleProp } from "react-native";
 import { BlurView } from "expo-blur";
-import { Colors, BorderRadius, Glassmorphism, Spacing } from "@/constants/theme";
+import {
+  Colors,
+  BorderRadius,
+  Glassmorphism,
+  Spacing,
+} from "@/constants/theme";
 
 interface GlassCardProps {
   children: React.ReactNode;
@@ -23,24 +28,27 @@ export function GlassCard({
   borderRadius = "xl",
 }: GlassCardProps) {
   const glassStyle = Glassmorphism[theme];
-  const variantStyle = variant === "solid" 
-    ? glassStyle.cardSolid 
-    : variant === "subtle" 
-    ? glassStyle.cardSubtle 
-    : glassStyle.card;
+  const variantStyle =
+    variant === "solid"
+      ? glassStyle.cardSolid
+      : variant === "subtle"
+        ? glassStyle.cardSubtle
+        : glassStyle.card;
 
   const paddingValue = typeof padding === "number" ? padding : Spacing[padding];
-  const borderRadiusValue = typeof borderRadius === "number" ? borderRadius : BorderRadius[borderRadius];
+  const borderRadiusValue =
+    typeof borderRadius === "number"
+      ? borderRadius
+      : BorderRadius[borderRadius];
 
   return (
-    <View style={[styles.container, { borderRadius: borderRadiusValue }, style]}>
+    <View
+      style={[styles.container, { borderRadius: borderRadiusValue }, style]}
+    >
       <BlurView
         intensity={intensity}
         tint={theme === "dark" ? "dark" : "light"}
-        style={[
-          styles.blur,
-          { borderRadius: borderRadiusValue },
-        ]}
+        style={[styles.blur, { borderRadius: borderRadiusValue }]}
       />
       <View
         style={[

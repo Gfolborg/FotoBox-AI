@@ -13,7 +13,11 @@ import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
-import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+} from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 
@@ -45,8 +49,11 @@ export default function BatchPreviewScreen() {
   const { imageUris } = route.params;
 
   const [selectedImages, setSelectedImages] = useState<string[]>(imageUris);
-  const [selectedBackgroundColor, setSelectedBackgroundColor] = useState("#FFFFFF");
-  const [selectedPreset, setSelectedPreset] = useState<EditingPreset | null>(null);
+  const [selectedBackgroundColor, setSelectedBackgroundColor] =
+    useState("#FFFFFF");
+  const [selectedPreset, setSelectedPreset] = useState<EditingPreset | null>(
+    null,
+  );
 
   const { presets } = usePresets();
 
@@ -106,192 +113,217 @@ export default function BatchPreviewScreen() {
 
       <View style={[styles.container, { paddingTop: insets.top }]}>
         {/* Header */}
-        <Animated.View
-          entering={FadeIn.duration(300)}
-          style={styles.header}
-        >
+        <Animated.View entering={FadeIn.duration(300)} style={styles.header}>
           <View style={styles.headerContent}>
-          <IconButton
-            icon="chevron-left"
-            onPress={() => navigation.goBack()}
-            size={44}
-            iconSize={24}
-            variant="ghost"
-            color={Colors.editing.text}
-          />
+            <IconButton
+              icon="chevron-left"
+              onPress={() => navigation.goBack()}
+              size={44}
+              iconSize={24}
+              variant="ghost"
+              color={Colors.editing.text}
+            />
 
-          <GlassPill>
-            <Feather name="layers" size={16} color={Colors.editing.text} />
-            <ThemedText style={styles.headerTitle}>Batch Edit</ThemedText>
-          </GlassPill>
+            <GlassPill>
+              <Feather name="layers" size={16} color={Colors.editing.text} />
+              <ThemedText style={styles.headerTitle}>Batch Edit</ThemedText>
+            </GlassPill>
 
-          <View style={styles.countBadge}>
-            <ThemedText style={styles.countText}>{selectedImages.length}</ThemedText>
+            <View style={styles.countBadge}>
+              <ThemedText style={styles.countText}>
+                {selectedImages.length}
+              </ThemedText>
+            </View>
           </View>
-        </View>
-      </Animated.View>
+        </Animated.View>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Image Grid */}
-        <View style={styles.gridContainer}>
-          {selectedImages.map((item, index) => (
-            <Animated.View
-              key={item}
-              entering={FadeInDown.delay(index * 60).duration(400)}
-              style={styles.imageCard}
-            >
-              <Image source={{ uri: item }} style={styles.image} />
-              <View style={styles.imageOverlay} />
-              <Pressable
-                style={styles.removeButton}
-                onPress={() => handleRemoveImage(item)}
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Image Grid */}
+          <View style={styles.gridContainer}>
+            {selectedImages.map((item, index) => (
+              <Animated.View
+                key={item}
+                entering={FadeInDown.delay(index * 60).duration(400)}
+                style={styles.imageCard}
               >
-                <Feather name="x" size={14} color={Colors.editing.text} />
-              </Pressable>
-              <View style={styles.indexBadge}>
-                <ThemedText style={styles.indexText}>{index + 1}</ThemedText>
-              </View>
-            </Animated.View>
-          ))}
-          
-          {selectedImages.length < 10 && (
-            <Animated.View
-              entering={FadeInDown.delay(selectedImages.length * 60).duration(400)}
-            >
-              <Pressable style={styles.addMoreCard} onPress={handleAddMore}>
-                <View style={styles.addMoreContent}>
-                  <Feather name="plus" size={28} color={Colors.editing.primary} />
-                  <ThemedText style={styles.addMoreText}>Add More</ThemedText>
-                  <ThemedText style={styles.addMoreLimit}>
-                    {10 - selectedImages.length} remaining
-                  </ThemedText>
-                </View>
-              </Pressable>
-            </Animated.View>
-          )}
-        </View>
-
-        {/* Preset Selector */}
-        {presets.length > 0 && (
-          <Animated.View
-            entering={FadeInUp.delay(200).duration(400)}
-            style={styles.section}
-          >
-            <ThemedText style={styles.sectionLabel}>Apply Preset</ThemedText>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.presetScroll}
-            >
-              <Pressable
-                style={[
-                  styles.presetChip,
-                  !selectedPreset && styles.presetChipSelected,
-                ]}
-                onPress={() => handleSelectPreset(null)}
-              >
-                <ThemedText
-                  style={[
-                    styles.presetChipText,
-                    !selectedPreset && styles.presetChipTextSelected,
-                  ]}
-                >
-                  None
-                </ThemedText>
-              </Pressable>
-              {presets.map((preset) => (
+                <Image source={{ uri: item }} style={styles.image} />
+                <View style={styles.imageOverlay} />
                 <Pressable
-                  key={preset.id}
+                  style={styles.removeButton}
+                  onPress={() => handleRemoveImage(item)}
+                >
+                  <Feather name="x" size={14} color={Colors.editing.text} />
+                </Pressable>
+                <View style={styles.indexBadge}>
+                  <ThemedText style={styles.indexText}>{index + 1}</ThemedText>
+                </View>
+              </Animated.View>
+            ))}
+
+            {selectedImages.length < 10 && (
+              <Animated.View
+                entering={FadeInDown.delay(selectedImages.length * 60).duration(
+                  400,
+                )}
+              >
+                <Pressable style={styles.addMoreCard} onPress={handleAddMore}>
+                  <View style={styles.addMoreContent}>
+                    <Feather
+                      name="plus"
+                      size={28}
+                      color={Colors.editing.primary}
+                    />
+                    <ThemedText style={styles.addMoreText}>Add More</ThemedText>
+                    <ThemedText style={styles.addMoreLimit}>
+                      {10 - selectedImages.length} remaining
+                    </ThemedText>
+                  </View>
+                </Pressable>
+              </Animated.View>
+            )}
+          </View>
+
+          {/* Preset Selector */}
+          {presets.length > 0 && (
+            <Animated.View
+              entering={FadeInUp.delay(200).duration(400)}
+              style={styles.section}
+            >
+              <ThemedText style={styles.sectionLabel}>Apply Preset</ThemedText>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.presetScroll}
+              >
+                <Pressable
                   style={[
                     styles.presetChip,
-                    selectedPreset?.id === preset.id && styles.presetChipSelected,
+                    !selectedPreset && styles.presetChipSelected,
                   ]}
-                  onPress={() => handleSelectPreset(preset)}
+                  onPress={() => handleSelectPreset(null)}
                 >
-                  <View
-                    style={[
-                      styles.presetChipColor,
-                      { backgroundColor: preset.backgroundColor },
-                    ]}
-                  />
                   <ThemedText
                     style={[
                       styles.presetChipText,
-                      selectedPreset?.id === preset.id && styles.presetChipTextSelected,
+                      !selectedPreset && styles.presetChipTextSelected,
                     ]}
-                    numberOfLines={1}
                   >
-                    {preset.name}
+                    None
                   </ThemedText>
                 </Pressable>
-              ))}
-            </ScrollView>
-          </Animated.View>
-        )}
+                {presets.map((preset) => (
+                  <Pressable
+                    key={preset.id}
+                    style={[
+                      styles.presetChip,
+                      selectedPreset?.id === preset.id &&
+                        styles.presetChipSelected,
+                    ]}
+                    onPress={() => handleSelectPreset(preset)}
+                  >
+                    <View
+                      style={[
+                        styles.presetChipColor,
+                        { backgroundColor: preset.backgroundColor },
+                      ]}
+                    />
+                    <ThemedText
+                      style={[
+                        styles.presetChipText,
+                        selectedPreset?.id === preset.id &&
+                          styles.presetChipTextSelected,
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {preset.name}
+                    </ThemedText>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </Animated.View>
+          )}
 
-        {/* Background Color */}
-        <Animated.View
-          entering={FadeInUp.delay(300).duration(400)}
-          style={styles.section}
-        >
-          <ThemedText style={styles.sectionLabel}>Background Color</ThemedText>
-          <BackgroundColorPicker
-            selectedColor={selectedBackgroundColor}
-            onColorSelect={(color) => {
-              setSelectedBackgroundColor(color);
-              setSelectedPreset(null);
-            }}
-          />
-        </Animated.View>
-      </ScrollView>
-
-      {/* Bottom Action Bar */}
-      <Animated.View
-        entering={FadeInUp.delay(400).duration(400)}
-        style={[styles.bottomBar, { paddingBottom: insets.bottom + Spacing.md }]}
-      >
-        <GlassCard theme="light" padding="md" borderRadius="xl">
-          <View style={styles.bottomContent}>
-            <View style={styles.summaryRow}>
-              <View style={styles.summaryItem}>
-                <Feather name="image" size={16} color={Colors.editing.textSecondary} />
-                <ThemedText style={styles.summaryText}>
-                  {selectedImages.length} {selectedImages.length === 1 ? "image" : "images"}
-                </ThemedText>
-              </View>
-              <View style={styles.summaryDot} />
-              <View style={styles.summaryItem}>
-                <View
-                  style={[
-                    styles.colorDot,
-                    { backgroundColor: selectedBackgroundColor },
-                  ]}
-                />
-                <ThemedText style={styles.summaryText}>
-                  {selectedBackgroundColor === "#FFFFFF" ? "White" : selectedBackgroundColor}
-                </ThemedText>
-              </View>
-              <View style={styles.summaryDot} />
-              <View style={styles.summaryItem}>
-                <Feather name="clock" size={14} color={Colors.editing.textSecondary} />
-                <ThemedText style={styles.summaryText}>{getEstimatedTime()}</ThemedText>
-              </View>
-            </View>
-
-            <GradientButton
-              title={`Generate ${selectedImages.length} ${selectedImages.length === 1 ? "Image" : "Images"}`}
-              onPress={handleGenerate}
-              disabled={selectedImages.length === 0}
-              icon="zap"
-              fullWidth
+          {/* Background Color */}
+          <Animated.View
+            entering={FadeInUp.delay(300).duration(400)}
+            style={styles.section}
+          >
+            <ThemedText style={styles.sectionLabel}>
+              Background Color
+            </ThemedText>
+            <BackgroundColorPicker
+              selectedColor={selectedBackgroundColor}
+              onColorSelect={(color) => {
+                setSelectedBackgroundColor(color);
+                setSelectedPreset(null);
+              }}
             />
-          </View>
-        </GlassCard>
-      </Animated.View>
+          </Animated.View>
+        </ScrollView>
+
+        {/* Bottom Action Bar */}
+        <Animated.View
+          entering={FadeInUp.delay(400).duration(400)}
+          style={[
+            styles.bottomBar,
+            { paddingBottom: insets.bottom + Spacing.md },
+          ]}
+        >
+          <GlassCard theme="light" padding="md" borderRadius="xl">
+            <View style={styles.bottomContent}>
+              <View style={styles.summaryRow}>
+                <View style={styles.summaryItem}>
+                  <Feather
+                    name="image"
+                    size={16}
+                    color={Colors.editing.textSecondary}
+                  />
+                  <ThemedText style={styles.summaryText}>
+                    {selectedImages.length}{" "}
+                    {selectedImages.length === 1 ? "image" : "images"}
+                  </ThemedText>
+                </View>
+                <View style={styles.summaryDot} />
+                <View style={styles.summaryItem}>
+                  <View
+                    style={[
+                      styles.colorDot,
+                      { backgroundColor: selectedBackgroundColor },
+                    ]}
+                  />
+                  <ThemedText style={styles.summaryText}>
+                    {selectedBackgroundColor === "#FFFFFF"
+                      ? "White"
+                      : selectedBackgroundColor}
+                  </ThemedText>
+                </View>
+                <View style={styles.summaryDot} />
+                <View style={styles.summaryItem}>
+                  <Feather
+                    name="clock"
+                    size={14}
+                    color={Colors.editing.textSecondary}
+                  />
+                  <ThemedText style={styles.summaryText}>
+                    {getEstimatedTime()}
+                  </ThemedText>
+                </View>
+              </View>
+
+              <GradientButton
+                title={`Generate ${selectedImages.length} ${selectedImages.length === 1 ? "Image" : "Images"}`}
+                onPress={handleGenerate}
+                disabled={selectedImages.length === 0}
+                icon="zap"
+                fullWidth
+              />
+            </View>
+          </GlassCard>
+        </Animated.View>
       </View>
     </GradientBackground>
   );

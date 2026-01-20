@@ -19,7 +19,12 @@ export function Notification({ message, type }: NotificationProps) {
 
   return (
     <View style={[styles.container, { backgroundColor }]}>
-      <Feather name={iconName} size={24} color={iconColor} style={styles.icon} />
+      <Feather
+        name={iconName}
+        size={24}
+        color={iconColor}
+        style={styles.icon}
+      />
       <ThemedText style={styles.message}>{message}</ThemedText>
     </View>
   );
