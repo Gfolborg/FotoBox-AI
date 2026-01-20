@@ -132,34 +132,31 @@ export default function EditImageScreen() {
           return;
         }
         
-        // Native platforms: Convert image to JPEG for Skia compatibility
+        // Native platforms: Convert image to JPEG data URI for Skia compatibility
+        // Using base64 data URI is more reliable than file paths across platforms
         const manipResult = await ImageManipulator.manipulateAsync(
           imageUri,
           [],
-          { compress: 0.95, format: ImageManipulator.SaveFormat.JPEG }
+          { compress: 0.95, format: ImageManipulator.SaveFormat.JPEG, base64: true }
         );
 
-        // Copy to documents directory
-        const filename = `edit_temp_${Date.now()}.jpg`;
-        const tempUri = `${FileSystem.documentDirectory}${filename}`;
-
-        await FileSystem.copyAsync({
-          from: manipResult.uri,
-          to: tempUri,
-        });
-
-        // Remove file:// prefix for Skia on native
-        const skiaUri = tempUri.replace("file://", "");
-        console.log("[EditImageScreen] Native: Prepared URI:", skiaUri.substring(0, 50));
-        setPreparedUri(skiaUri);
-        setCurrentImageUri(skiaUri);
+        if (manipResult.base64) {
+          const dataUri = `data:image/jpeg;base64,${manipResult.base64}`;
+          console.log("[EditImageScreen] Native: Created data URI, length:", dataUri.length);
+          setPreparedUri(dataUri);
+          setCurrentImageUri(dataUri);
+        } else {
+          // Fallback to the file URI (keep file:// prefix for Skia)
+          console.log("[EditImageScreen] Native: Using file URI:", manipResult.uri.substring(0, 50));
+          setPreparedUri(manipResult.uri);
+          setCurrentImageUri(manipResult.uri);
+        }
       } catch (error) {
         console.error("[EditImageScreen] Failed to prepare image:", error);
-        // Fallback: try the original URI
-        const fallbackUri = Platform.OS === "web" ? imageUri : imageUri.replace("file://", "");
-        console.log("[EditImageScreen] Fallback URI:", fallbackUri.substring(0, 50));
-        setPreparedUri(fallbackUri);
-        setCurrentImageUri(fallbackUri);
+        // Fallback: try the original URI as-is
+        console.log("[EditImageScreen] Fallback URI:", imageUri.substring(0, 50));
+        setPreparedUri(imageUri);
+        setCurrentImageUri(imageUri);
       }
     };
 
