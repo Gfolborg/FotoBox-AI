@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
-import { View, StyleSheet, Pressable, Dimensions } from "react-native";
+import * as React from "react";
+import { View, StyleSheet, Pressable, Dimensions, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -50,8 +50,8 @@ import { getPresetById } from "@/lib/preset-storage";
 import { useNotification } from "@/context/NotificationContext";
 import { saveToFotoBoxAlbum } from "@/lib/save-to-album";
 import * as FileSystem from "expo-file-system/legacy";
+import * as ImageManipulator from "expo-image-manipulator";
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const DRAG_SENSITIVITY = 0.004;
 
 type NavigationProp = NativeStackNavigationProp<
@@ -73,27 +73,65 @@ type ToolKey =
   | "crop";
 
 export default function EditImageScreen() {
+  const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<EditImageRouteProp>();
   const { showNotification } = useNotification();
   const { imageUri, presetId } = route.params;
 
-  const imageRef = useRef<SkiaEditableImageRef>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [showSavePresetModal, setShowSavePresetModal] = useState(false);
-  const [showSaveOrEnhanceModal, setShowSaveOrEnhanceModal] = useState(false);
-  const [editedImageUri, setEditedImageUri] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [selectedTool, setSelectedTool] = useState<ToolKey | null>(
+  const imageRef = React.useRef<SkiaEditableImageRef>(null);
+  const [isProcessing, setIsProcessing] = React.useState(false);
+  const [showSavePresetModal, setShowSavePresetModal] = React.useState(false);
+  const [showSaveOrEnhanceModal, setShowSaveOrEnhanceModal] = React.useState(false);
+  const [editedImageUri, setEditedImageUri] = React.useState<string | null>(null);
+  const [isSaving, setIsSaving] = React.useState(false);
+  const [selectedTool, setSelectedTool] = React.useState<ToolKey | null>(
     "brightness",
   );
-  const [cropSnapshot, setCropSnapshot] = useState<{
+  const [cropSnapshot, setCropSnapshot] = React.useState<{
     crop: any;
     aspectRatio: any;
   } | null>(null);
-  const [isToolbarHidden, setIsToolbarHidden] = useState(false);
-  const [currentImageUri, setCurrentImageUri] = useState(imageUri); // Track current image (original or cropped)
+  const [isToolbarHidden, setIsToolbarHidden] = React.useState(false);
+  const [preparedUri, setPreparedUri] = React.useState<string | null>(null);
+  const [currentImageUri, setCurrentImageUri] = React.useState<string | null>(null); // Track current image (original or cropped)
+
+  // Prepare image for Skia compatibility on mount
+  React.useEffect(() => {
+    const prepareImage = async () => {
+      try {
+        // Convert image to JPEG for Skia compatibility
+        const manipResult = await ImageManipulator.manipulateAsync(
+          imageUri,
+          [],
+          { compress: 0.95, format: ImageManipulator.SaveFormat.JPEG }
+        );
+
+        // Copy to documents directory
+        const filename = `edit_temp_${Date.now()}.jpg`;
+        const tempUri = `${FileSystem.documentDirectory}${filename}`;
+
+        await FileSystem.copyAsync({
+          from: manipResult.uri,
+          to: tempUri,
+        });
+
+        // Remove file:// prefix for Skia
+        const skiaUri = tempUri.replace("file://", "");
+        setPreparedUri(skiaUri);
+        setCurrentImageUri(skiaUri);
+      } catch (error) {
+        console.error("[EditImageScreen] Failed to prepare image:", error);
+        // Fallback to original URI with file:// removed
+        const fallbackUri = imageUri.replace("file://", "");
+        setPreparedUri(fallbackUri);
+        setCurrentImageUri(fallbackUri);
+      }
+    };
+
+    prepareImage();
+  }, [imageUri]);
 
   const {
     state,
@@ -119,7 +157,7 @@ export default function EditImageScreen() {
   const indicatorScale = useSharedValue(0.8);
   const currentDisplayValue = useSharedValue("");
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (presetId) {
       getPresetById(presetId).then((preset) => {
         if (preset) {
@@ -129,7 +167,7 @@ export default function EditImageScreen() {
     }
   }, [presetId]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     // Save crop state when entering crop mode
     if (selectedTool === "crop" && !cropSnapshot) {
       setCropSnapshot({
@@ -338,6 +376,20 @@ export default function EditImageScreen() {
     opacity: indicatorOpacity.value,
     transform: [{ scale: indicatorScale.value }],
   }));
+
+  // Show loading while image is being prepared for Skia
+  if (!preparedUri || !currentImageUri) {
+    return (
+      <GestureHandlerRootView style={styles.container}>
+        <GradientBackground theme="home" style={styles.container}>
+          <StatusBar style="dark" />
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={Colors.editing.primary} />
+          </View>
+        </GradientBackground>
+      </GestureHandlerRootView>
+    );
+  }
 
   return (
     <GestureHandlerRootView style={styles.container}>
@@ -813,6 +865,11 @@ export default function EditImageScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   mainContainer: {
     flex: 1,

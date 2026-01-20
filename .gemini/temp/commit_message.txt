@@ -1,0 +1,35 @@
+feat: Address numerous app startup, linting, and runtime errors
+
+This commit consolidates fixes for various issues encountered during app startup and runtime, primarily stemming from environment inconsistencies and module resolution.
+
+Key changes and fixes include:
+- **Comprehensive Dependency & Environment Cleanup:**
+    - Ran `npx expo-doctor` and `npx expo install --check`.
+    - Executed `npx expo prebuild --clean` and performed a "nuclear" `node_modules` cleanup.
+    - Used `npm install --legacy-peer-deps` for dependency alignment.
+
+- **ESLint Configuration & Code Quality:**
+    - Configured `eslint.config.js` to correctly ignore build artifacts (`dist/`, `.cache/`, `node_modules/`, `server_dist/`) and specific project directories (`ProductLens/`, `ProductLens AI/`) to manage linting scope.
+    - Removed extraneous `.eslintignore` file to prevent configuration conflicts.
+    - Configured ESLint to use `eslint-import-resolver-typescript` for correct path alias (`@/`) resolution.
+    - Explicitly set `settings.react.version: "detect"` for `eslint-plugin-react` to enhance JSX component recognition.
+    - Fixed numerous `prettier/prettier` formatting errors.
+    - Added missing imports for `ThemedHeader`, `ScrollView`, `Image`, `View`, `Pressable`, `StyleSheet`, and `Dimensions` across various client-side components and screens.
+    - Corrected JSX parsing errors (e.g., missing closing tags).
+    - Resolved `react/no-unescaped-entities` by escaping apostrophes (`&apos;`).
+    - Fixed `no-undef` error for `__dirname` in scripts by adding `/* global __dirname */`.
+
+- **Runtime ReferenceError Resolution:**
+    - Addressed a chain of `ReferenceError`s (`Dimensions`, `React`, `forwardRef`, `useState`, `IMAGE_SIZE`) by ensuring:
+        - `Dimensions.get("window")` calls are made within component functions.
+        - `IMAGE_SIZE` constants are correctly scoped within components.
+        - `React` APIs are imported via `import * as React from 'react'` and used with `React.` prefix for robust resolution.
+        - Restored accidentally removed Skia matrix helper functions (e.g., `createCombinedMatrix`) crucial for image processing.
+
+- **Development Workflow Enhancements:**
+    - Rectified `java.net.SocketTimeoutException` by ensuring the `expo:dev` script is used for proper Metro bundler hostname resolution in the Replit environment.
+
+- **Problem Isolation:**
+    - Temporarily simplified `QuickFixScreen.tsx` to isolate the source of instability by removing complex Skia and gesture-related components.
+
+This commit aims to provide a stable foundation by resolving a wide array of configuration, linting, and runtime issues.

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import * as React from "react";
 import {
   View,
   StyleSheet,
@@ -54,11 +54,11 @@ export default function BatchResultScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { results } = route.params;
 
-  const [savedUris, setSavedUris] = useState<Set<string>>(new Set());
-  const [savingUris, setSavingUris] = useState<Set<string>>(new Set());
-  const [showApplyAllModal, setShowApplyAllModal] = useState(false);
-  const [editedImages, setEditedImages] = useState<Set<string>>(new Set());
-  const [lastEditedUri, setLastEditedUri] = useState<string | null>(null);
+  const [savedUris, setSavedUris] = React.useState<Set<string>>(new Set());
+  const [savingUris, setSavingUris] = React.useState<Set<string>>(new Set());
+  const [showApplyAllModal, setShowApplyAllModal] = React.useState(false);
+  const [editedImages, setEditedImages] = React.useState<Set<string>>(new Set());
+  const [lastEditedUri, setLastEditedUri] = React.useState<string | null>(null);
 
   const {
     hasShownApplyAllPopup,
@@ -78,7 +78,7 @@ export default function BatchResultScreen() {
   }, [navigation]);
 
   useFocusEffect(
-    useCallback(() => {
+    React.useCallback(() => {
       if (
         lastEditedUri &&
         !hasShownApplyAllPopup &&

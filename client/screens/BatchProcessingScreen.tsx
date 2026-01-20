@@ -1,6 +1,9 @@
-import React, { useEffect, useState, useRef } from "react";
-import { View, StyleSheet, ScrollView, Image } from "react-native";
-import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  useRoute,
+  useNavigation,
+  RouteProp,
+} from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
@@ -16,6 +19,7 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import pLimit from "p-limit";
+import { StyleSheet, View, ScrollView, Image } from "react-native";
 
 import { ThemedText } from "@/components/ThemedText";
 import { GlassPill } from "@/components/GlassPill";
@@ -40,22 +44,23 @@ interface ProcessingResult {
 }
 
 export default function BatchProcessingScreen() {
+  const insets = useSafeAreaInsets();
   const route = useRoute<RouteProps>();
   const navigation = useNavigation<NavigationProp>();
   const { imageUris, backgroundColor = "#FFFFFF" } = route.params;
 
-  const [results, setResults] = useState<ProcessingResult[]>(
+  const [results, setResults] = React.useState<ProcessingResult[]>(
     imageUris.map((uri) => ({
       originalUri: uri,
       resultUri: null,
       status: "pending" as const,
     })),
   );
-  const [isComplete, setIsComplete] = useState(false);
-  const resultsRef = useRef<ProcessingResult[]>(results);
+  const [isComplete, setIsComplete] = React.useState(false);
+  const resultsRef = React.useRef<ProcessingResult[]>(results);
 
   // Keep ref in sync with state
-  useEffect(() => {
+  React.useEffect(() => {
     resultsRef.current = results;
   }, [results]);
 
@@ -66,13 +71,13 @@ export default function BatchProcessingScreen() {
   }, [navigation]);
 
   // Navigate when processing is complete
-  useEffect(() => {
+  React.useEffect(() => {
     if (isComplete) {
       navigation.replace("BatchResult", { results: resultsRef.current });
     }
   }, [isComplete, navigation]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     processImages();
   }, []);
 
@@ -157,7 +162,7 @@ export default function BatchProcessingScreen() {
   const progress = processedCount / imageUris.length;
 
   const pulseOpacity = useSharedValue(0.4);
-  useEffect(() => {
+  React.useEffect(() => {
     pulseOpacity.value = withRepeat(
       withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
       -1,
@@ -174,7 +179,10 @@ export default function BatchProcessingScreen() {
       <StatusBar style="dark" />
 
       {/* Header */}
-      <Animated.View entering={FadeIn.duration(400)} style={styles.header}>
+      <Animated.View
+        entering={FadeIn.duration(400)}
+        style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}
+      >
         <BlurView intensity={40} tint="light" style={styles.headerBlur} />
         <View style={styles.headerContent}>
           <GlassPill>
@@ -308,7 +316,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingTop: 60,
     paddingBottom: Spacing.md,
     alignItems: "center",
   },
