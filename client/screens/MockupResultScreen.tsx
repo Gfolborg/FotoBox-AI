@@ -104,6 +104,15 @@ export default function MockupResultScreen() {
   const handleEditImage = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
+    // On web, pass the data URI directly
+    if (Platform.OS === "web") {
+      navigation.navigate("EditImage", {
+        imageUri: resultUri,
+        originalUri,
+      });
+      return;
+    }
+
     let imageUri = resultUri;
 
     if (resultUri.startsWith("data:")) {

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { StyleSheet, View, Image, ScrollView, Pressable } from "react-native";
+import { StyleSheet, View, Image, ScrollView, Pressable, Platform } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -61,6 +61,15 @@ export default function BatchMockupResultScreen() {
     if (!currentResult?.resultUri) return;
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    // On web, pass the data URI directly
+    if (Platform.OS === "web") {
+      navigation.navigate("EditImage", {
+        imageUri: currentResult.resultUri,
+        originalUri: currentResult.originalUri,
+      });
+      return;
+    }
 
     let imageUri = currentResult.resultUri;
 

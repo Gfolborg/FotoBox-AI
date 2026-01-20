@@ -28,6 +28,8 @@ import { ThemedHeader } from "@/components/ThemedHeader";
 import { ThemedText } from "@/components/ThemedText";
 import { GradientButton } from "@/components/GradientButton";
 import { GlassCard } from "@/components/GlassCard";
+import { GlassPill } from "@/components/GlassPill";
+import { IconButton } from "@/components/IconButton";
 import { BeforeAfterSlider } from "@/components/BeforeAfterSlider";
 import { GradientBackground } from "@/components/GradientBackground";
 import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
@@ -110,6 +112,15 @@ export default function LifestyleResultScreen() {
 
   const handleEditImage = async () => {
     try {
+      // On web, pass the data URI directly
+      if (Platform.OS === "web") {
+        navigation.navigate("EditImage", {
+          imageUri: resultUri,
+          originalUri: originalUri,
+        });
+        return;
+      }
+      
       const filename = `edit_temp_${Date.now()}.jpg`;
       const fileUri = FileSystem.documentDirectory + filename;
 

@@ -86,6 +86,16 @@ export default function ResultScreen() {
 
   const handleEdit = async () => {
     try {
+      // On web, pass the data URI directly - FileSystem doesn't work reliably
+      if (Platform.OS === "web") {
+        navigation.navigate("EditImage", {
+          imageUri: resultUri, // Pass data URI directly on web
+          originalUri: originalUri,
+        });
+        return;
+      }
+      
+      // On native, save to file first
       const filename = `edit_temp_${Date.now()}.jpg`;
       const fileUri = FileSystem.documentDirectory + filename;
 

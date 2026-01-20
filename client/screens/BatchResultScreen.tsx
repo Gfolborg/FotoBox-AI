@@ -120,6 +120,16 @@ export default function BatchResultScreen() {
 
   const handleEditImage = async (resultUri: string, originalUri: string) => {
     try {
+      // On web, pass the data URI directly
+      if (Platform.OS === "web") {
+        setLastEditedUri(originalUri);
+        navigation.navigate("EditImage", {
+          imageUri: resultUri,
+          originalUri: originalUri,
+        });
+        return;
+      }
+      
       const filename = `edit_temp_${Date.now()}.jpg`;
       const fileUri = FileSystem.documentDirectory + filename;
 
