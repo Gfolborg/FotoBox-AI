@@ -114,6 +114,22 @@ function warmthMatrix(value: number): number[] {
   const w = value * 0.3;
   return [1 + w, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1 - w, 0, 0, 0, 0, 0, 1, 0];
 }
+// Shadows: Adds offset to lift shadows (affects darker tones more visually)
+function shadowsMatrix(value: number): number[] {
+  // value range: -1 to 1, scale to reasonable offset
+  const s = value * 0.3;
+  return [1, 0, 0, 0, s, 0, 1, 0, 0, s, 0, 0, 1, 0, s, 0, 0, 0, 1, 0];
+}
+// Highlights: Multiplier that affects brighter areas more noticeably
+function highlightsMatrix(value: number): number[] {
+  // value range: -1 to 1
+  // Positive: increase brightness of highlights
+  // Negative: decrease brightness of highlights
+  const h = 1 + value * 0.3;
+  // Slight contrast boost/reduction combined with brightness
+  const offset = value * -0.15; // compensate to keep midtones stable
+  return [h, 0, 0, 0, offset, 0, h, 0, 0, offset, 0, 0, h, 0, offset, 0, 0, 0, 1, 0];
+}
 function multiplyColorMatrices(a: number[], b: number[]): number[] {
   const result: number[] = new Array(20).fill(0);
   for (let row = 0; row < 4; row++) {
@@ -162,6 +178,15 @@ function createCombinedMatrix(
   }
   if (adjustments.warmth !== 0) {
     matrix = multiplyColorMatrices(warmthMatrix(adjustments.warmth), matrix);
+  }
+  if (adjustments.shadows !== 0) {
+    matrix = multiplyColorMatrices(shadowsMatrix(adjustments.shadows), matrix);
+  }
+  if (adjustments.highlights !== 0) {
+    matrix = multiplyColorMatrices(
+      highlightsMatrix(adjustments.highlights),
+      matrix,
+    );
   }
   return matrix;
 }
