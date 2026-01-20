@@ -131,33 +131,57 @@ export default function QuickFixScreen() {
   React.useEffect(() => {
     const prepareImage = async () => {
       try {
+        console.log("[QuickFix] Preparing image, Platform:", Platform.OS);
+        console.log("[QuickFix] Original imageUri:", imageUri.substring(0, 100));
+        
         // If already a data URI, use directly
         if (imageUri.startsWith("data:")) {
-          console.log("[QuickFix] Using data URI directly");
+          console.log("[QuickFix] Using data URI directly, length:", imageUri.length);
           setPreparedUri(imageUri);
           return;
         }
 
-        // Convert image to JPEG data URI for Skia compatibility
-        // Using base64 data URI is more reliable than file paths across platforms
-        const manipResult = await ImageManipulator.manipulateAsync(
-          imageUri,
-          [],
-          { compress: 0.95, format: ImageManipulator.SaveFormat.JPEG, base64: true }
-        );
+        // Platform-specific handling:
+        // - Web: Convert to data URI for Skia web
+        // - Native: Keep as file URI (Skia can load file URIs directly on native)
+        if (Platform.OS === "web") {
+          // On web, convert to data URI
+          const manipResult = await ImageManipulator.manipulateAsync(
+            imageUri,
+            [],
+            { compress: 0.95, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+          );
 
-        if (manipResult.base64) {
-          const dataUri = `data:image/jpeg;base64,${manipResult.base64}`;
-          console.log("[QuickFix] Created data URI, length:", dataUri.length);
-          setPreparedUri(dataUri);
+          if (manipResult.base64) {
+            const dataUri = `data:image/jpeg;base64,${manipResult.base64}`;
+            console.log("[QuickFix] Created data URI for web, length:", dataUri.length);
+            setPreparedUri(dataUri);
+          } else {
+            console.log("[QuickFix] Web fallback to manipulated URI:", manipResult.uri);
+            setPreparedUri(manipResult.uri);
+          }
         } else {
-          // Fallback to file URI as-is
-          console.log("[QuickFix] Using file URI:", manipResult.uri);
-          setPreparedUri(manipResult.uri);
+          // On native (Android/iOS), convert to a clean file URI that Skia can load
+          const manipResult = await ImageManipulator.manipulateAsync(
+            imageUri,
+            [],
+            { compress: 0.95, format: ImageManipulator.SaveFormat.JPEG }
+          );
+          
+          // Skia's useImage on native can load file:// URIs directly
+          // Make sure URI has file:// prefix
+          let fileUri = manipResult.uri;
+          if (!fileUri.startsWith("file://")) {
+            fileUri = `file://${fileUri}`;
+          }
+          
+          console.log("[QuickFix] Using file URI for native:", fileUri);
+          setPreparedUri(fileUri);
         }
       } catch (error) {
         console.error("[QuickFix] Failed to prepare image:", error);
         // Fallback to original URI as-is
+        console.log("[QuickFix] Falling back to original URI");
         setPreparedUri(imageUri);
       }
     };
