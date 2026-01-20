@@ -1,5 +1,11 @@
 import * as React from "react";
-import { View, StyleSheet, Dimensions, Platform } from "react-native";
+import { StyleSheet, Dimensions, Platform } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+} from "react-native-reanimated";
 import {
   Canvas,
   Image,
@@ -246,10 +252,14 @@ export const SkiaEditableImage = React.forwardRef<
     },
     ref,
   ) => {
-    // Calculate container size based on image aspect ratio and constraints
+    // Animated container size for smooth transitions
+    const animatedWidth = useSharedValue(maxWidth);
+    const animatedHeight = useSharedValue(maxWidth);
+
+    // Keep track of current container size for calculations
     const [containerSize, setContainerSize] = React.useState({
       width: maxWidth,
-      height: maxWidth, // Start square, will update when image loads
+      height: maxWidth,
     });
 
     const [imageLayout, setImageLayout] = React.useState({
@@ -266,13 +276,65 @@ export const SkiaEditableImage = React.forwardRef<
 
     // Use Skia's useImage hook directly - handles file:// URIs on native
     const image = useImage(originalUri);
-    
+
     const canvasRef = React.useRef<any>(null);
 
-    // Calculate container size and image dimensions when image loads
+    // Animated style for smooth container resizing
+    const animatedContainerStyle = useAnimatedStyle(() => ({
+      width: animatedWidth.value,
+      height: animatedHeight.value,
+    }));
+
+    // Helper function to calculate container size for a given aspect ratio
+    const calculateContainerSize = React.useCallback((aspectRatio: number) => {
+      let containerWidth = maxWidth;
+      let containerHeight = maxWidth / aspectRatio;
+
+      // If height exceeds max, scale down
+      if (containerHeight > maxHeight) {
+        containerHeight = maxHeight;
+        containerWidth = maxHeight * aspectRatio;
+      }
+
+      // Ensure width doesn't exceed max
+      if (containerWidth > maxWidth) {
+        containerWidth = maxWidth;
+        containerHeight = maxWidth / aspectRatio;
+      }
+
+      return { width: containerWidth, height: containerHeight };
+    }, [maxWidth, maxHeight]);
+
+    // Calculate the effective aspect ratio based on image and crop
+    const getEffectiveAspectRatio = React.useCallback(() => {
+      if (!image) return 1;
+
+      const imgWidth = image.width();
+      const imgHeight = image.height();
+
+      // If we're showing crop overlay, use the full image aspect ratio
+      // so user can see the entire image while cropping
+      if (showCropOverlay) {
+        return imgWidth / imgHeight;
+      }
+
+      // If there's an active crop (not in overlay mode), calculate cropped aspect ratio
+      if (crop && crop.width > 0 && crop.height > 0) {
+        const croppedWidth = imgWidth * crop.width;
+        const croppedHeight = imgHeight * crop.height;
+        return croppedWidth / croppedHeight;
+      }
+
+      // Default to original image aspect ratio
+      return imgWidth / imgHeight;
+    }, [image, crop, showCropOverlay]);
+
+    // Calculate container size and image dimensions when image loads or crop changes
     React.useEffect(() => {
       if (!image) {
         setContainerSize({ width: maxWidth, height: maxWidth });
+        animatedWidth.value = withTiming(maxWidth, { duration: 250, easing: Easing.out(Easing.cubic) });
+        animatedHeight.value = withTiming(maxWidth, { duration: 250, easing: Easing.out(Easing.cubic) });
         setActualImageDimensions({
           width: maxWidth,
           height: maxWidth,
@@ -284,33 +346,27 @@ export const SkiaEditableImage = React.forwardRef<
 
       const imgWidth = image.width();
       const imgHeight = image.height();
-      const imageAspect = imgWidth / imgHeight;
+      const effectiveAspect = getEffectiveAspectRatio();
 
-      // Calculate container size that fits within constraints while preserving aspect ratio
-      let containerWidth = maxWidth;
-      let containerHeight = maxWidth / imageAspect;
+      // Calculate container size based on effective aspect ratio
+      const newContainerSize = calculateContainerSize(effectiveAspect);
 
-      // If height exceeds max, scale down
-      if (containerHeight > maxHeight) {
-        containerHeight = maxHeight;
-        containerWidth = maxHeight * imageAspect;
-      }
+      setContainerSize(newContainerSize);
 
-      // Ensure width doesn't exceed max
-      if (containerWidth > maxWidth) {
-        containerWidth = maxWidth;
-        containerHeight = maxWidth / imageAspect;
-      }
-
-      setContainerSize({
-        width: containerWidth,
-        height: containerHeight,
+      // Animate the container size change for smooth transitions
+      animatedWidth.value = withTiming(newContainerSize.width, {
+        duration: 250,
+        easing: Easing.out(Easing.cubic)
+      });
+      animatedHeight.value = withTiming(newContainerSize.height, {
+        duration: 250,
+        easing: Easing.out(Easing.cubic)
       });
 
       // Image fills container exactly (no letterboxing needed with dynamic sizing)
       setActualImageDimensions({
-        width: containerWidth,
-        height: containerHeight,
+        width: newContainerSize.width,
+        height: newContainerSize.height,
         offsetX: 0,
         offsetY: 0,
       });
@@ -320,10 +376,10 @@ export const SkiaEditableImage = React.forwardRef<
         onImageDimensionsChange({
           width: imgWidth,
           height: imgHeight,
-          aspectRatio: imageAspect,
+          aspectRatio: effectiveAspect,
         });
       }
-    }, [image, maxWidth, maxHeight, onImageDimensionsChange]);
+    }, [image, crop, showCropOverlay, maxWidth, maxHeight, calculateContainerSize, getEffectiveAspectRatio, onImageDimensionsChange, animatedWidth, animatedHeight]);
 
     React.useImperativeHandle(ref, () => ({
       snapshot: async (): Promise<string | null> => {
@@ -483,11 +539,11 @@ export const SkiaEditableImage = React.forwardRef<
 
     if (!image) {
       return (
-        <View style={[styles.container, { width: containerSize.width, height: containerSize.height }]}>
-          <View style={styles.imageContainer}>
-            <View style={styles.placeholder} />
-          </View>
-        </View>
+        <Animated.View style={[styles.container, animatedContainerStyle]}>
+          <Animated.View style={styles.imageContainer}>
+            <Animated.View style={styles.placeholder} />
+          </Animated.View>
+        </Animated.View>
       );
     }
 
@@ -502,8 +558,8 @@ export const SkiaEditableImage = React.forwardRef<
     const scaleY = adjustments.flipVertical ? -1 : 1;
 
     return (
-      <View style={[styles.container, { width: containerSize.width, height: containerSize.height }]}>
-        <View
+      <Animated.View style={[styles.container, animatedContainerStyle]}>
+        <Animated.View
           style={styles.imageContainer}
           onLayout={(e) => {
             const { width, height } = e.nativeEvent.layout;
@@ -536,7 +592,7 @@ export const SkiaEditableImage = React.forwardRef<
               <ColorMatrix matrix={colorMatrix} />
             </Image>
           </Canvas>
-        </View>
+        </Animated.View>
 
         {showCropOverlay && imageLayout.width > 0 && (
           <CropOverlay
@@ -551,7 +607,7 @@ export const SkiaEditableImage = React.forwardRef<
             onCropChange={onCropChange}
           />
         )}
-      </View>
+      </Animated.View>
     );
   },
 );
