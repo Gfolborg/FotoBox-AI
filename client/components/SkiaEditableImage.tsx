@@ -20,9 +20,6 @@ import type { ImageEditingState } from "@/hooks/useImageEditing";
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const IMAGE_SIZE = SCREEN_WIDTH * 0.75;
 
-// No longer needed - using file URIs on native, data URIs on web
-// Skia's useImage handles both cases natively
-
 export interface SkiaEditableImageRef {
   snapshot: () => Promise<string | null>;
 }
@@ -197,22 +194,8 @@ export const SkiaEditableImage = React.forwardRef<
       offsetY: 0,
     });
 
-    // Use Skia's useImage hook directly - it handles both file URIs and data URIs
-    // On native: receives file:// URI from QuickFixScreen
-    // On web: receives data: URI from QuickFixScreen
+    // Use Skia's useImage hook directly - handles file:// URIs on native
     const image = useImage(originalUri);
-    
-    // Debug logging
-    React.useEffect(() => {
-      const isDataUri = originalUri?.startsWith("data:");
-      console.log("[SkiaEditableImage] Platform:", Platform.OS);
-      console.log("[SkiaEditableImage] originalUri type:", isDataUri ? "data URI" : "file URI");
-      console.log("[SkiaEditableImage] originalUri:", originalUri?.substring(0, 80));
-      console.log("[SkiaEditableImage] image loaded:", !!image);
-      if (image) {
-        console.log("[SkiaEditableImage] image dimensions:", image.width(), "x", image.height());
-      }
-    }, [originalUri, image]);
     
     const canvasRef = React.useRef<any>(null);
 
