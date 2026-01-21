@@ -599,7 +599,8 @@ export const SkiaEditableImage = React.forwardRef<
             );
 
             // Upscale if the cropped image is smaller than minimum target size
-            const MIN_OUTPUT_SIZE = 2000;
+            // 3000px ensures high quality for e-commerce and print
+            const MIN_OUTPUT_SIZE = 3000;
             const snapshotWidth = croppedSnapshot.width();
             const snapshotHeight = croppedSnapshot.height();
             const maxDimension = Math.max(snapshotWidth, snapshotHeight);
@@ -791,7 +792,8 @@ export const SkiaEditableImage = React.forwardRef<
             }
 
             // Upscale if the cropped image is smaller than minimum target size
-            const MIN_OUTPUT_SIZE = 2000;
+            // 3000px ensures high quality for e-commerce and print
+            const MIN_OUTPUT_SIZE = 3000;
             const croppedWidth = croppedImage.width();
             const croppedHeight = croppedImage.height();
             const maxDimension = Math.max(croppedWidth, croppedHeight);
