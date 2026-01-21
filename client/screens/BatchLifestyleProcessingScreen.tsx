@@ -16,7 +16,7 @@ import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getApiUrl } from "@/lib/query-client";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const PREVIEW_SIZE = Math.min(SCREEN_WIDTH * 0.5, 200);
+const PREVIEW_SIZE = Math.min(SCREEN_WIDTH * 0.5, 300);
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, "BatchLifestyleProcessing">;

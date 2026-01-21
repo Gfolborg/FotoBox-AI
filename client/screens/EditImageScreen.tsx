@@ -1,5 +1,12 @@
 import * as React from "react";
-import { View, StyleSheet, Pressable, Dimensions, ActivityIndicator, Platform } from "react-native";
+import {
+  View,
+  StyleSheet,
+  Pressable,
+  Dimensions,
+  ActivityIndicator,
+  Platform,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -20,6 +27,7 @@ import Animated, {
   withSpring,
   withTiming,
   runOnJS,
+  withSequence,
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 
@@ -73,7 +81,8 @@ type ToolKey =
   | "crop";
 
 export default function EditImageScreen() {
-  const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+  const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } =
+    Dimensions.get("window");
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<EditImageRouteProp>();
@@ -83,8 +92,11 @@ export default function EditImageScreen() {
   const imageRef = React.useRef<SkiaEditableImageRef>(null);
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [showSavePresetModal, setShowSavePresetModal] = React.useState(false);
-  const [showSaveOrEnhanceModal, setShowSaveOrEnhanceModal] = React.useState(false);
-  const [editedImageUri, setEditedImageUri] = React.useState<string | null>(null);
+  const [showSaveOrEnhanceModal, setShowSaveOrEnhanceModal] =
+    React.useState(false);
+  const [editedImageUri, setEditedImageUri] = React.useState<string | null>(
+    null,
+  );
   const [isSaving, setIsSaving] = React.useState(false);
   const [selectedTool, setSelectedTool] = React.useState<ToolKey | null>(
     "brightness",
@@ -95,7 +107,15 @@ export default function EditImageScreen() {
   } | null>(null);
   const [isToolbarHidden, setIsToolbarHidden] = React.useState(false);
   const [preparedUri, setPreparedUri] = React.useState<string | null>(null);
-  const [currentImageUri, setCurrentImageUri] = React.useState<string | null>(null); // Track current image (original or cropped)
+  const [currentImageUri, setCurrentImageUri] = React.useState<string | null>(
+    null,
+  ); // Track current image (original or cropped)
+  const [imageLayout, setImageLayout] = React.useState({ width: 0, height: 0 });
+
+  // Animation values for crop zoom
+  const imageScale = useSharedValue(1);
+  const imageTranslateX = useSharedValue(0);
+  const imageTranslateY = useSharedValue(0);
 
   // Dynamic image sizing - calculate max constraints based on screen
   const imageMaxWidth = SCREEN_WIDTH - Spacing.lg * 2; // Account for padding
@@ -117,7 +137,7 @@ export default function EditImageScreen() {
         const manipResult = await ImageManipulator.manipulateAsync(
           imageUri,
           [],
-          { compress: 0.95, format: ImageManipulator.SaveFormat.JPEG }
+          { compress: 0.95, format: ImageManipulator.SaveFormat.JPEG },
         );
 
         // Ensure URI has file:// prefix for Skia compatibility
@@ -383,6 +403,14 @@ export default function EditImageScreen() {
     transform: [{ scale: indicatorScale.value }],
   }));
 
+  const imageAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: imageScale.value },
+      { translateX: imageTranslateX.value },
+      { translateY: imageTranslateY.value },
+    ],
+  }));
+
   // Show loading while image is being prepared for Skia
   if (!preparedUri || !currentImageUri) {
     return (
@@ -448,7 +476,8 @@ export default function EditImageScreen() {
           <GestureDetector gesture={panGesture}>
             <Animated.View
               entering={FadeIn.duration(400)}
-              style={styles.imageContainer}
+              style={[styles.imageContainer, imageAnimatedStyle]}
+              onLayout={(e) => setImageLayout(e.nativeEvent.layout)}
             >
               <SkiaEditableImage
                 ref={imageRef}
@@ -728,12 +757,10 @@ export default function EditImageScreen() {
                         state.crop,
                       );
 
-                      const croppedImageUri = await imageRef.current.snapshot();
+                      // Get cropped image and SkImage together using snapshotWithImage
+                      const result = await imageRef.current.snapshotWithImage();
 
-                      if (
-                        !croppedImageUri ||
-                        !croppedImageUri.startsWith("data:image/")
-                      ) {
+                      if (!result || !result.uri.startsWith("data:image/")) {
                         console.error(
                           "[EditImage] Failed to get a valid crop snapshot.",
                         );
@@ -744,12 +771,22 @@ export default function EditImageScreen() {
                         return;
                       }
 
+                      const { uri: croppedUri, image: croppedSkImage } = result;
+
                       console.log(
                         "[EditImage] Crop snapshot taken successfully, length:",
-                        croppedImageUri.length,
+                        croppedUri.length,
                       );
 
-                      setCurrentImageUri(croppedImageUri);
+                      // Set the working image directly (no async loading needed)
+                      // This bypasses useImage's async reload and prevents race conditions
+                      // NOTE: We intentionally do NOT update currentImageUri here because
+                      // changing originalUri would trigger the reset effect in SkiaEditableImage
+                      // that clears workingImage. The working image will be used for display
+                      // and the snapshot function will use it when "Done" is pressed.
+                      imageRef.current.setWorkingImage(croppedSkImage);
+
+                      // Reset crop to full image (crop is now "baked in")
                       updateAdjustment("crop", {
                         x: 0,
                         y: 0,
@@ -758,6 +795,12 @@ export default function EditImageScreen() {
                       });
                       updateAdjustment("aspectRatio", "free");
 
+                      // Reset any animation values
+                      imageScale.value = 1;
+                      imageTranslateX.value = 0;
+                      imageTranslateY.value = 0;
+
+                      // Exit crop mode
                       setSelectedTool(null);
                       setCropSnapshot(null);
 

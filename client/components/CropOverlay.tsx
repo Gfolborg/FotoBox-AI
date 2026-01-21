@@ -5,6 +5,7 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   runOnJS,
+  withSpring,
 } from "react-native-reanimated";
 
 import { Colors } from "@/constants/theme";
@@ -63,6 +64,12 @@ export function CropOverlay({
   const lastAppliedAspectRatio = useRef<string | null>(null);
   // Track if this is the first render
   const isFirstRender = useRef(true);
+
+  // Handle scale animations
+  const tlHandleScale = useSharedValue(1);
+  const trHandleScale = useSharedValue(1);
+  const blHandleScale = useSharedValue(1);
+  const brHandleScale = useSharedValue(1);
 
   // Helper to update shared values and report change
   const applyAndReportCrop = (
@@ -237,6 +244,15 @@ export function CropOverlay({
 
   // Corner handle gestures with aspect ratio support
   const createCornerGesture = (corner: "tl" | "tr" | "bl" | "br") => {
+    const handleScale =
+      corner === "tl"
+        ? tlHandleScale
+        : corner === "tr"
+          ? trHandleScale
+          : corner === "bl"
+            ? blHandleScale
+            : brHandleScale;
+
     return Gesture.Pan()
       .minDistance(3) // Add small threshold
       .onStart(() => {
@@ -244,6 +260,7 @@ export function CropOverlay({
         startY.value = y.value;
         startWidth.value = width.value;
         startHeight.value = height.value;
+        handleScale.value = withSpring(1.2);
       })
       .onUpdate((e) => {
         // Calculate raw new dimensions based on corner being dragged
@@ -316,6 +333,7 @@ export function CropOverlay({
         }
       })
       .onEnd(() => {
+        handleScale.value = withSpring(1);
         // Report back as percentages using runOnJS
         runOnJS(reportCropChange)(x.value, y.value, width.value, height.value);
       });
@@ -349,6 +367,19 @@ export function CropOverlay({
   const bottomOverlayStyle = useAnimatedStyle(() => ({
     top: y.value + height.value,
     height: canvasHeight - (y.value + height.value),
+  }));
+
+  const tlHandleStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: tlHandleScale.value }],
+  }));
+  const trHandleStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: trHandleScale.value }],
+  }));
+  const blHandleStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: blHandleScale.value }],
+  }));
+  const brHandleStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: brHandleScale.value }],
   }));
 
   return (
@@ -398,16 +429,24 @@ export function CropOverlay({
 
           {/* Corner handles */}
           <GestureDetector gesture={createCornerGesture("tl")}>
-            <Animated.View style={[styles.handle, styles.handleTopLeft]} />
+            <Animated.View
+              style={[styles.handle, styles.handleTopLeft, tlHandleStyle]}
+            />
           </GestureDetector>
           <GestureDetector gesture={createCornerGesture("tr")}>
-            <Animated.View style={[styles.handle, styles.handleTopRight]} />
+            <Animated.View
+              style={[styles.handle, styles.handleTopRight, trHandleStyle]}
+            />
           </GestureDetector>
           <GestureDetector gesture={createCornerGesture("bl")}>
-            <Animated.View style={[styles.handle, styles.handleBottomLeft]} />
+            <Animated.View
+              style={[styles.handle, styles.handleBottomLeft, blHandleStyle]}
+            />
           </GestureDetector>
           <GestureDetector gesture={createCornerGesture("br")}>
-            <Animated.View style={[styles.handle, styles.handleBottomRight]} />
+            <Animated.View
+              style={[styles.handle, styles.handleBottomRight, brHandleStyle]}
+            />
           </GestureDetector>
         </Animated.View>
       </GestureDetector>

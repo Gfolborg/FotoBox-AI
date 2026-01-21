@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: 0,
   },
   header: {
     marginBottom: Spacing.lg,

@@ -366,8 +366,8 @@ const styles = StyleSheet.create({
   },
   imagePreviewContainer: {
     alignSelf: "center",
-    width: 200,
-    height: 200,
+    width: 300,
+    height: 300,
     borderRadius: BorderRadius.xl,
     overflow: "hidden",
     backgroundColor: Colors.editing.backgroundSecondary,

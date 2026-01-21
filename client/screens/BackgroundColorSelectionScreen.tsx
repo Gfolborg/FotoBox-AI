@@ -1,5 +1,12 @@
 import React, { useState } from "react";
-import { View, StyleSheet, Pressable, Image, Dimensions } from "react-native";
+import {
+  View,
+  StyleSheet,
+  Pressable,
+  Image,
+  Dimensions,
+  ScrollView,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -19,8 +26,13 @@ import { GradientBackground } from "@/components/GradientBackground";
 import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const IMAGE_PREVIEW_SIZE = Math.min(SCREEN_WIDTH - Spacing.xl * 2, 200);
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+// Smaller preview size to ensure all content fits on screen
+const IMAGE_PREVIEW_SIZE = Math.min(
+  SCREEN_WIDTH - Spacing.lg * 2,
+  SCREEN_HEIGHT * 0.3,
+  280,
+);
 
 type NavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -65,17 +77,15 @@ export default function BackgroundColorSelectionScreen() {
       <StatusBar style="dark" />
       <ThemedHeader title="Background Color" />
       <View style={[styles.container, { paddingTop: insets.top + 54 }]}>
-        <View style={styles.content}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Image preview with neutral background - NOT the selected color */}
           <Animated.View
             entering={FadeIn.delay(100).duration(400)}
-            style={[
-              styles.imagePreviewContainer,
-              {
-                backgroundColor: BACKGROUND_COLORS.find(
-                  (c) => c.id === selectedColor,
-                )?.color,
-              },
-            ]}
+            style={styles.imagePreviewContainer}
           >
             <Image source={{ uri: imageUri }} style={styles.imagePreview} />
           </Animated.View>
@@ -88,7 +98,8 @@ export default function BackgroundColorSelectionScreen() {
               Choose background color
             </ThemedText>
             <ThemedText style={styles.promptSubtext}>
-              AI will remove the background and place your product on this color
+              AI will remove the existing background and replace it with your
+              selected color
             </ThemedText>
           </Animated.View>
 
@@ -96,7 +107,7 @@ export default function BackgroundColorSelectionScreen() {
             entering={FadeInDown.delay(300).duration(400)}
             style={styles.colorsContainer}
           >
-            {BACKGROUND_COLORS.map((item, index) => (
+            {BACKGROUND_COLORS.map((item) => (
               <Pressable
                 key={item.id}
                 style={[
@@ -132,6 +143,7 @@ export default function BackgroundColorSelectionScreen() {
             ))}
           </Animated.View>
 
+          {/* Selected color name */}
           <Animated.View
             entering={FadeInUp.delay(400).duration(400)}
             style={styles.selectedLabel}
@@ -140,7 +152,7 @@ export default function BackgroundColorSelectionScreen() {
               {BACKGROUND_COLORS.find((c) => c.id === selectedColor)?.name}
             </ThemedText>
           </Animated.View>
-        </View>
+        </ScrollView>
 
         <Animated.View
           entering={FadeInUp.delay(500).duration(400)}
@@ -162,10 +174,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  content: {
+  scrollView: {
     flex: 1,
+  },
+  scrollContent: {
     paddingHorizontal: Spacing.lg,
     alignItems: "center",
+    paddingBottom: Spacing.md,
   },
   imagePreviewContainer: {
     width: IMAGE_PREVIEW_SIZE,
@@ -175,6 +190,7 @@ const styles = StyleSheet.create({
     ...Shadows.lg,
     borderWidth: 1,
     borderColor: "rgba(0, 0, 0, 0.1)",
+    backgroundColor: "#FFFFFF",
   },
   imagePreview: {
     width: "100%",
@@ -182,8 +198,8 @@ const styles = StyleSheet.create({
     resizeMode: "contain",
   },
   promptContainer: {
-    marginTop: Spacing.xl,
-    marginBottom: Spacing.lg,
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.md,
     alignItems: "center",
   },
   promptText: {
@@ -211,7 +227,6 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     alignItems: "center",
     justifyContent: "center",
-    ...Shadows.md,
   },
   colorButtonBorder: {
     borderWidth: 1,

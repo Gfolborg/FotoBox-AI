@@ -27,7 +27,7 @@ import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const PREVIEW_SIZE = 60;
+const PREVIEW_SIZE = 100;
 
 type NavigationProp = NativeStackNavigationProp<
   RootStackParamList,

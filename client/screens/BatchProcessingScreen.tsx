@@ -374,8 +374,8 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   thumbnail: {
-    width: 56,
-    height: 56,
+    width: 80,
+    height: 80,
     borderRadius: BorderRadius.md,
     backgroundColor: Colors.editing.backgroundSecondary,
   },
