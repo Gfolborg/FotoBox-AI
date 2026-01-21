@@ -250,24 +250,28 @@ export default function EditImageScreen() {
   const handleSaveToGallery = async () => {
     if (!editedImageUri) return;
 
-    setIsSaving(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setShowSaveOrEnhanceModal(false);
 
-    const result = await saveToFotoBoxAlbum(editedImageUri, "product_image");
+    // Navigate to platform selection for proper resizing before save
+    // First, save the base64 to a temp file for the platform optimizer
+    try {
+      const filename = `edited_${Date.now()}.jpg`;
+      const fileUri = FileSystem.documentDirectory + filename;
+      const base64Data = editedImageUri.split(",")[1];
 
-    if (result.success) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      showNotification("Image saved to gallery", "success");
-      setShowSaveOrEnhanceModal(false);
-      // Navigate back to home after short delay
-      setTimeout(() => {
-        navigation.popToTop();
-      }, 500);
-    } else {
-      showNotification(result.error || "Failed to save image", "error");
+      await FileSystem.writeAsStringAsync(fileUri, base64Data, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      navigation.navigate("PlatformSelection", {
+        imageUri: fileUri,
+        originalUri: originalUri || imageUri,
+      });
+    } catch (error) {
+      console.error("Failed to prepare image for platform selection:", error);
+      showNotification("Failed to prepare image. Please try again.", "error");
     }
-
-    setIsSaving(false);
   };
 
   const handleRemoveBackground = async () => {
