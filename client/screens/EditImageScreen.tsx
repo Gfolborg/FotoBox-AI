@@ -235,18 +235,9 @@ export default function EditImageScreen() {
         return;
       }
 
-      // Save the edited image to a temp file and navigate to Platform Selection
-      const filename = `edited_${Date.now()}.jpg`;
-      const fileUri = FileSystem.documentDirectory + filename;
-      const base64Data = snapshotUri.split(",")[1];
-
-      await FileSystem.writeAsStringAsync(fileUri, base64Data, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-
-      // Navigate to platform selection for proper resizing before save
-      navigation.navigate("PlatformSelection", {
-        imageUri: fileUri,
+      // Navigate back to Result screen with the edited image
+      navigation.navigate("Result", {
+        resultUri: snapshotUri,
         originalUri: originalUri || imageUri,
       });
     } catch (err) {
