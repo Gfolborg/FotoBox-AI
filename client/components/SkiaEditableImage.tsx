@@ -39,6 +39,15 @@ interface ImageDimensions {
   aspectRatio: number;
 }
 
+// Platform-specific output sizes for e-commerce
+export type PlatformType = "amazon" | "shopify" | "etsy";
+
+export const PLATFORM_OUTPUT_SIZES: Record<PlatformType, { width: number; height: number }> = {
+  amazon: { width: 2000, height: 2000 },
+  shopify: { width: 2048, height: 2048 },
+  etsy: { width: 3000, height: 2250 },
+};
+
 interface SkiaEditableImageProps {
   originalUri: string;
   adjustments: {
@@ -64,6 +73,8 @@ interface SkiaEditableImageProps {
   maxWidth?: number;
   /** Maximum height constraint for the image container */
   maxHeight?: number;
+  /** Target platform for output sizing (amazon, shopify, etsy) */
+  targetPlatform?: PlatformType;
 }
 
 function brightnessMatrix(value: number): number[] {
@@ -301,6 +312,7 @@ export const SkiaEditableImage = React.forwardRef<
       onImageDimensionsChange,
       maxWidth = DEFAULT_IMAGE_SIZE,
       maxHeight = MAX_IMAGE_HEIGHT,
+      targetPlatform = "amazon",
     },
     ref,
   ) => {
@@ -598,18 +610,20 @@ export const SkiaEditableImage = React.forwardRef<
               croppedSnapshot.height(),
             );
 
-            // Upscale if the cropped image is smaller than minimum target size
-            // 3000px ensures high quality for e-commerce and print
-            const MIN_OUTPUT_SIZE = 3000;
+            // Upscale/resize to platform-specific dimensions
+            const platformSize = PLATFORM_OUTPUT_SIZES[targetPlatform] || PLATFORM_OUTPUT_SIZES.amazon;
+            const targetWidth = platformSize.width;
+            const targetHeight = platformSize.height;
             const snapshotWidth = croppedSnapshot.width();
             const snapshotHeight = croppedSnapshot.height();
             const maxDimension = Math.max(snapshotWidth, snapshotHeight);
+            const targetMaxDimension = Math.max(targetWidth, targetHeight);
 
             let finalSnapshot = croppedSnapshot;
 
-            if (maxDimension < MIN_OUTPUT_SIZE) {
-              // Calculate upscale factor to reach minimum size
-              const scaleFactor = MIN_OUTPUT_SIZE / maxDimension;
+            if (maxDimension < targetMaxDimension) {
+              // Calculate upscale factor to reach platform target size
+              const scaleFactor = targetMaxDimension / maxDimension;
               const upscaledWidth = Math.round(snapshotWidth * scaleFactor);
               const upscaledHeight = Math.round(snapshotHeight * scaleFactor);
 
@@ -791,17 +805,17 @@ export const SkiaEditableImage = React.forwardRef<
               return null;
             }
 
-            // Upscale if the cropped image is smaller than minimum target size
-            // 3000px ensures high quality for e-commerce and print
-            const MIN_OUTPUT_SIZE = 3000;
+            // Upscale/resize to platform-specific dimensions
+            const platformSize = PLATFORM_OUTPUT_SIZES[targetPlatform] || PLATFORM_OUTPUT_SIZES.amazon;
+            const targetMaxDimension = Math.max(platformSize.width, platformSize.height);
             const croppedWidth = croppedImage.width();
             const croppedHeight = croppedImage.height();
             const maxDimension = Math.max(croppedWidth, croppedHeight);
 
             let finalImage = croppedImage;
 
-            if (maxDimension < MIN_OUTPUT_SIZE) {
-              const scaleFactor = MIN_OUTPUT_SIZE / maxDimension;
+            if (maxDimension < targetMaxDimension) {
+              const scaleFactor = targetMaxDimension / maxDimension;
               const upscaledWidth = Math.round(croppedWidth * scaleFactor);
               const upscaledHeight = Math.round(croppedHeight * scaleFactor);
 
