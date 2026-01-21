@@ -878,7 +878,7 @@ export const SkiaEditableImage = React.forwardRef<
               y={drawY}
               width={drawWidth}
               height={drawHeight}
-              fit="contain"
+              fit="fill"
               transform={imageTransform}
             >
               <ColorMatrix matrix={colorMatrix} />
