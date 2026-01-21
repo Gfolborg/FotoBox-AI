@@ -213,34 +213,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const bgRgb = hexToRGB(backgroundColor);
 
-        let resizeOptions: {
-          width: number;
-          height: number;
-          fit: "contain" | "cover" | "fill" | "inside" | "outside";
-          background: { r: number; g: number; b: number };
-        } = {
-          width: 2000,
-          height: 2000,
-          fit: "contain",
-          background: { r: bgRgb.r, g: bgRgb.g, b: bgRgb.b },
-        };
+        // First, get the dimensions of the AI-generated image
+        const generatedMetadata = await sharp(generatedImageBuffer).metadata();
+        const genWidth = generatedMetadata.width || 1024;
+        const genHeight = generatedMetadata.height || 1024;
 
-        // Platform-specific resizing/formatting
+        // Determine target dimensions based on platform
+        let targetWidth = 2000;
+        let targetHeight = 2000;
+
         if (platform === "shopify") {
-          // Shopify recommends 2048x2048 for square, or flexible aspect ratios
-          resizeOptions.width = 2048;
-          resizeOptions.height = 2048;
+          targetWidth = 2048;
+          targetHeight = 2048;
         } else if (platform === "etsy") {
-          // Etsy recommends 4:3 aspect ratio, e.g., 3000x2250, or square
-          resizeOptions.width = 3000;
-          resizeOptions.height = 2250; // Will be adjusted by 'contain' if square
-          resizeOptions.fit = "contain";
+          targetWidth = 3000;
+          targetHeight = 2250;
         }
 
-        const finalBuffer = await sharp(generatedImageBuffer)
-          .resize(resizeOptions.width, resizeOptions.height, {
-            fit: resizeOptions.fit,
-            background: resizeOptions.background,
+        // Calculate the aspect ratios
+        const genAspect = genWidth / genHeight;
+        const targetAspect = targetWidth / targetHeight;
+
+        // Post-process to ensure uniform background color
+        // Extract raw pixel data and detect the actual background color from edges
+        const processedBuffer = await sharp(generatedImageBuffer)
+          .ensureAlpha()
+          .raw()
+          .toBuffer({ resolveWithObject: true });
+
+        const { data, info } = processedBuffer;
+        const width = info.width;
+        const height = info.height;
+
+        // Detect the most common color in the edge pixels (first/last 10 rows and columns)
+        const edgePixels: { r: number; g: number; b: number }[] = [];
+        const edgeThickness = Math.min(10, Math.floor(Math.min(width, height) * 0.05));
+
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x++) {
+            // Check if pixel is on the edge
+            const isEdge = x < edgeThickness || x >= width - edgeThickness || 
+                          y < edgeThickness || y >= height - edgeThickness;
+            if (isEdge) {
+              const idx = (y * width + x) * 4;
+              edgePixels.push({
+                r: data[idx],
+                g: data[idx + 1],
+                b: data[idx + 2],
+              });
+            }
+          }
+        }
+
+        // Find the most common edge color (likely the AI-generated background)
+        const colorCounts = new Map<string, { count: number; r: number; g: number; b: number }>();
+        for (const pixel of edgePixels) {
+          // Quantize colors to reduce noise (group similar colors)
+          const qr = Math.round(pixel.r / 10) * 10;
+          const qg = Math.round(pixel.g / 10) * 10;
+          const qb = Math.round(pixel.b / 10) * 10;
+          const key = `${qr},${qg},${qb}`;
+          
+          const existing = colorCounts.get(key);
+          if (existing) {
+            existing.count++;
+          } else {
+            colorCounts.set(key, { count: 1, r: qr, g: qg, b: qb });
+          }
+        }
+
+        // Get the most common edge color
+        let dominantEdgeColor = { r: 255, g: 255, b: 255 };
+        let maxCount = 0;
+        for (const [, value] of colorCounts) {
+          if (value.count > maxCount) {
+            maxCount = value.count;
+            dominantEdgeColor = { r: value.r, g: value.g, b: value.b };
+          }
+        }
+
+        console.log(`[Background Fix] Detected edge color: RGB(${dominantEdgeColor.r}, ${dominantEdgeColor.g}, ${dominantEdgeColor.b})`);
+        console.log(`[Background Fix] Target color: RGB(${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b})`);
+
+        const tolerance = 50; // Color tolerance for detecting background pixels
+
+        // Replace pixels close to the detected edge color with the requested background color
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+          
+          // Check if this pixel is close to the detected edge (background) color
+          const diffR = Math.abs(r - dominantEdgeColor.r);
+          const diffG = Math.abs(g - dominantEdgeColor.g);
+          const diffB = Math.abs(b - dominantEdgeColor.b);
+          
+          if (diffR <= tolerance && diffG <= tolerance && diffB <= tolerance) {
+            // Replace with the requested background color
+            data[i] = bgRgb.r;
+            data[i + 1] = bgRgb.g;
+            data[i + 2] = bgRgb.b;
+            data[i + 3] = 255; // Full opacity
+          }
+        }
+
+        // Reconstruct the image with corrected background
+        const correctedBuffer = await sharp(data, {
+          raw: { width: info.width, height: info.height, channels: 4 },
+        })
+          .removeAlpha()
+          .toBuffer();
+
+        // Now resize to target dimensions using 'cover' to avoid padding
+        // This will crop excess rather than add borders
+        const finalBuffer = await sharp(correctedBuffer)
+          .resize(targetWidth, targetHeight, {
+            fit: "cover",
+            position: "center",
           })
           .flatten({ background: { r: bgRgb.r, g: bgRgb.g, b: bgRgb.b } })
           .jpeg({ quality: 95 })
