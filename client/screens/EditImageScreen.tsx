@@ -235,9 +235,20 @@ export default function EditImageScreen() {
         return;
       }
 
-      // Store the edited image and show the modal
-      setEditedImageUri(snapshotUri);
-      setShowSaveOrEnhanceModal(true);
+      // Save the edited image to a temp file and navigate to Platform Selection
+      const filename = `edited_${Date.now()}.jpg`;
+      const fileUri = FileSystem.documentDirectory + filename;
+      const base64Data = snapshotUri.split(",")[1];
+
+      await FileSystem.writeAsStringAsync(fileUri, base64Data, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      // Navigate to platform selection for proper resizing before save
+      navigation.navigate("PlatformSelection", {
+        imageUri: fileUri,
+        originalUri: originalUri || imageUri,
+      });
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "An unexpected error occurred";
