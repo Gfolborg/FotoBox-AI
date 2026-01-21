@@ -112,24 +112,17 @@ function getGenericMainPrompt(
 - Use original product photo (no renderings/stock).`;
   }
 
-  return `Edit this product photo for a ${platform} main listing image.
+  return `Remove the background from this product photo and replace it with a solid RGB(${rgb.r}, ${rgb.g}, ${rgb.b}) color${isWhite ? " (pure white)" : ""}.
 
-CRITICAL INSTRUCTIONS:
-- PRESERVE the product's exact pose, angle, and orientation as shown in the original photo. Do NOT rotate, tilt, or reposition the product - keep it exactly as the photographer intended.
-- Keep the product's appearance EXACTLY the same (do not repaint, retouch, change colors, patterns, logos, labels, shape, or orientation).
-- Remove the entire background (walls, floors, tables, clutter, and any other non-product elements).
-- REPLACE the background with a solid color: RGB(${rgb.r}, ${rgb.g}, ${
-    rgb.b
-  })${isWhite ? " - pure white" : ""}.
-- The ENTIRE background must be this exact RGB color - no gradients, no variations.
-- Center the product in the frame while maintaining its original orientation.
-- Keep product edges clean with no halos, fringing, or artifacts.
+RULES:
+1. DO NOT move, rotate, resize, or reposition the product in any way
+2. DO NOT alter, enhance, retouch, or modify the product itself
+3. ONLY remove the background - everything that is not the product
+4. Replace ALL background pixels with exactly RGB(${rgb.r}, ${rgb.g}, ${rgb.b})
+5. Keep clean edges around the product with no halos or artifacts
 ${platformSpecificInstructions}
-- Photorealistic, no text, no watermark, no borders.
 
-REMEMBER: The background color is RGB(${rgb.r}, ${rgb.g}, ${
-    rgb.b
-  }) - apply this color to ALL background pixels. Maintain the product's original pose and angle exactly as photographed.`;
+The product must remain IDENTICAL to the original - same position, same angle, same size, same appearance. Only the background changes.`;
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
