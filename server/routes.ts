@@ -317,16 +317,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
-        // Reconstruct the image with corrected background
-        const correctedBuffer = await sharp(data, {
+        // Reconstruct the image with corrected background and resize in one step
+        const finalBuffer = await sharp(data, {
           raw: { width: info.width, height: info.height, channels: 4 },
         })
           .removeAlpha()
-          .toBuffer();
-
-        // Now resize to target dimensions using 'cover' to avoid padding
-        // This will crop excess rather than add borders
-        const finalBuffer = await sharp(correctedBuffer)
           .resize(targetWidth, targetHeight, {
             fit: "cover",
             position: "center",
