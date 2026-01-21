@@ -115,19 +115,21 @@ function getGenericMainPrompt(
   return `Edit this product photo for a ${platform} main listing image.
 
 CRITICAL INSTRUCTIONS:
-- Keep the product EXACTLY the same (do not repaint, retouch, change colors, patterns, logos, labels, or shape).
+- STRAIGHTEN the product: If the product is tilted or at an angle, rotate it so it appears level and professionally oriented (as if photographed straight-on for an e-commerce listing).
+- Keep the product's appearance EXACTLY the same (do not repaint, retouch, change colors, patterns, logos, labels, or shape) - only straighten its orientation.
 - Remove the entire background (walls, floors, tables, clutter, and any other non-product elements).
 - REPLACE the background with a solid color: RGB(${rgb.r}, ${rgb.g}, ${
     rgb.b
   })${isWhite ? " - pure white" : ""}.
 - The ENTIRE background must be this exact RGB color - no gradients, no variations.
+- Center the product in the frame with proper professional product photography composition.
 - Keep product edges clean with no halos, fringing, or artifacts.
 ${platformSpecificInstructions}
 - Photorealistic, no text, no watermark, no borders.
 
 REMEMBER: The background color is RGB(${rgb.r}, ${rgb.g}, ${
     rgb.b
-  }) - apply this color to ALL background pixels.`;
+  }) - apply this color to ALL background pixels. The product should look level and professionally positioned.`;
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
