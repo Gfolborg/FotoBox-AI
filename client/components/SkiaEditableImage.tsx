@@ -582,9 +582,9 @@ export const SkiaEditableImage = React.forwardRef<
             canvas.drawImageRect(workingImage, srcRect, dstRect, paint);
 
             // Get the snapshot from the surface
-            const snapshot = surface.makeImageSnapshot();
+            const croppedSnapshot = surface.makeImageSnapshot();
 
-            if (!snapshot) {
+            if (!croppedSnapshot) {
               console.error(
                 "[SkiaEditableImage] Failed to create snapshot from surface",
               );
@@ -592,16 +592,76 @@ export const SkiaEditableImage = React.forwardRef<
             }
 
             console.log(
-              "[SkiaEditableImage] HIGH-RES Snapshot dimensions:",
-              snapshot.width(),
+              "[SkiaEditableImage] Cropped snapshot dimensions:",
+              croppedSnapshot.width(),
               "x",
-              snapshot.height(),
+              croppedSnapshot.height(),
             );
+
+            // Upscale if the cropped image is smaller than minimum target size
+            const MIN_OUTPUT_SIZE = 2000;
+            const snapshotWidth = croppedSnapshot.width();
+            const snapshotHeight = croppedSnapshot.height();
+            const maxDimension = Math.max(snapshotWidth, snapshotHeight);
+
+            let finalSnapshot = croppedSnapshot;
+
+            if (maxDimension < MIN_OUTPUT_SIZE) {
+              // Calculate upscale factor to reach minimum size
+              const scaleFactor = MIN_OUTPUT_SIZE / maxDimension;
+              const upscaledWidth = Math.round(snapshotWidth * scaleFactor);
+              const upscaledHeight = Math.round(snapshotHeight * scaleFactor);
+
+              console.log(
+                "[SkiaEditableImage] Upscaling from",
+                snapshotWidth,
+                "x",
+                snapshotHeight,
+                "to",
+                upscaledWidth,
+                "x",
+                upscaledHeight,
+              );
+
+              // Create upscaled surface
+              const upscaleSurface = Skia.Surface.Make(
+                upscaledWidth,
+                upscaledHeight,
+              );
+
+              if (upscaleSurface) {
+                const upscaleCanvas = upscaleSurface.getCanvas();
+
+                // Draw cropped image scaled up to fill the larger surface
+                const upscaleSrcRect = rect(0, 0, snapshotWidth, snapshotHeight);
+                const upscaleDstRect = rect(0, 0, upscaledWidth, upscaledHeight);
+
+                // Use high-quality sampling for upscaling
+                const upscalePaint = Skia.Paint();
+                upscaleCanvas.drawImageRect(
+                  croppedSnapshot,
+                  upscaleSrcRect,
+                  upscaleDstRect,
+                  upscalePaint,
+                );
+
+                const upscaledSnapshot = upscaleSurface.makeImageSnapshot();
+                if (upscaledSnapshot) {
+                  finalSnapshot = upscaledSnapshot;
+                  console.log(
+                    "[SkiaEditableImage] Upscaled to:",
+                    finalSnapshot.width(),
+                    "x",
+                    finalSnapshot.height(),
+                  );
+                }
+              }
+            }
 
             // Encode to base64
             const format =
               Platform.OS === "web" ? ImageFormat.PNG : ImageFormat.JPEG;
-            const base64 = snapshot.encodeToBase64(format, 95);
+            const base64 = finalSnapshot.encodeToBase64(format, 95);
 
             if (!base64) {
               console.error(
@@ -721,19 +781,57 @@ export const SkiaEditableImage = React.forwardRef<
             canvas.drawImageRect(sourceImage, srcRect, dstRect, paint);
 
             // Get the snapshot from the surface
-            const snapshotImage = surface.makeImageSnapshot();
+            const croppedImage = surface.makeImageSnapshot();
 
-            if (!snapshotImage) {
+            if (!croppedImage) {
               console.error(
                 "[SkiaEditableImage] Failed to create snapshot from surface",
               );
               return null;
             }
 
+            // Upscale if the cropped image is smaller than minimum target size
+            const MIN_OUTPUT_SIZE = 2000;
+            const croppedWidth = croppedImage.width();
+            const croppedHeight = croppedImage.height();
+            const maxDimension = Math.max(croppedWidth, croppedHeight);
+
+            let finalImage = croppedImage;
+
+            if (maxDimension < MIN_OUTPUT_SIZE) {
+              const scaleFactor = MIN_OUTPUT_SIZE / maxDimension;
+              const upscaledWidth = Math.round(croppedWidth * scaleFactor);
+              const upscaledHeight = Math.round(croppedHeight * scaleFactor);
+
+              const upscaleSurface = Skia.Surface.Make(
+                upscaledWidth,
+                upscaledHeight,
+              );
+
+              if (upscaleSurface) {
+                const upscaleCanvas = upscaleSurface.getCanvas();
+                const upscaleSrcRect = rect(0, 0, croppedWidth, croppedHeight);
+                const upscaleDstRect = rect(0, 0, upscaledWidth, upscaledHeight);
+                const upscalePaint = Skia.Paint();
+
+                upscaleCanvas.drawImageRect(
+                  croppedImage,
+                  upscaleSrcRect,
+                  upscaleDstRect,
+                  upscalePaint,
+                );
+
+                const upscaledImage = upscaleSurface.makeImageSnapshot();
+                if (upscaledImage) {
+                  finalImage = upscaledImage;
+                }
+              }
+            }
+
             // Encode to base64
             const format =
               Platform.OS === "web" ? ImageFormat.PNG : ImageFormat.JPEG;
-            const base64 = snapshotImage.encodeToBase64(format, 95);
+            const base64 = finalImage.encodeToBase64(format, 95);
 
             if (!base64) {
               console.error(
@@ -745,7 +843,7 @@ export const SkiaEditableImage = React.forwardRef<
             const mimeType = Platform.OS === "web" ? "png" : "jpeg";
             const uri = `data:image/${mimeType};base64,${base64}`;
 
-            return { uri, image: snapshotImage };
+            return { uri, image: finalImage };
           } catch (error) {
             console.error(
               "[SkiaEditableImage] SnapshotWithImage error:",
