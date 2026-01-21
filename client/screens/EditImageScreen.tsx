@@ -56,6 +56,7 @@ import { useImageEditing } from "@/hooks/useImageEditing";
 import { usePresets } from "@/hooks/usePresets";
 import { getPresetById } from "@/lib/preset-storage";
 import { useNotification } from "@/context/NotificationContext";
+import { useBatchEdit } from "@/context/BatchEditContext";
 import { saveToFotoBoxAlbum } from "@/lib/save-to-album";
 import * as FileSystem from "expo-file-system/legacy";
 import * as ImageManipulator from "expo-image-manipulator";
@@ -87,6 +88,7 @@ export default function EditImageScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<EditImageRouteProp>();
   const { showNotification } = useNotification();
+  const { setPendingEditResult } = useBatchEdit();
   const { imageUri, presetId, originalUri } = route.params;
 
   const imageRef = React.useRef<SkiaEditableImageRef>(null);
@@ -235,11 +237,12 @@ export default function EditImageScreen() {
         return;
       }
 
-      // Navigate back to Result screen with the edited image
-      navigation.navigate("Result", {
-        resultUri: snapshotUri,
+      // Store the edited result in context and go back to previous screen
+      setPendingEditResult({
         originalUri: originalUri || imageUri,
+        editedUri: snapshotUri,
       });
+      navigation.goBack();
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "An unexpected error occurred";

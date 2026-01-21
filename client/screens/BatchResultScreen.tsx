@@ -67,10 +67,15 @@ export default function BatchResultScreen() {
     setHasShownApplyAllPopup,
     savedEditSettings,
     setSavedEditSettings,
+    pendingEditResult,
+    setPendingEditResult,
   } = useBatchEdit();
 
+  // State to track updated results (with edited images)
+  const [updatedResults, setUpdatedResults] = React.useState(results);
+
   // Filter out deleted results
-  const visibleResults = results.filter((r) => !deletedUris.has(r.originalUri));
+  const visibleResults = updatedResults.filter((r) => !deletedUris.has(r.originalUri));
   const successfulResults = visibleResults.filter((r) => r.resultUri !== null);
   const failedCount = visibleResults.filter((r) => r.resultUri === null).length;
   const uneditedCount = successfulResults.length - editedImages.size;
@@ -81,19 +86,31 @@ export default function BatchResultScreen() {
     });
   }, [navigation]);
 
+  // Process pending edit result when screen regains focus
   useFocusEffect(
     React.useCallback(() => {
-      if (
-        lastEditedUri &&
-        !hasShownApplyAllPopup &&
-        successfulResults.length > 1 &&
-        uneditedCount > 0
-      ) {
-        setEditedImages((prev) => new Set([...prev, lastEditedUri]));
-        setShowApplyAllModal(true);
-        setHasShownApplyAllPopup(true);
+      if (pendingEditResult) {
+        // Update the results with the edited image
+        setUpdatedResults((prev) =>
+          prev.map((item) =>
+            item.originalUri === pendingEditResult.originalUri
+              ? { ...item, resultUri: pendingEditResult.editedUri }
+              : item
+          )
+        );
+        setEditedImages((prev) => new Set([...prev, pendingEditResult.originalUri]));
+        setLastEditedUri(pendingEditResult.originalUri);
+        
+        // Clear the pending result
+        setPendingEditResult(null);
+
+        // Show apply to all modal if applicable
+        if (!hasShownApplyAllPopup && successfulResults.length > 1 && uneditedCount > 0) {
+          setShowApplyAllModal(true);
+          setHasShownApplyAllPopup(true);
+        }
       }
-    }, [lastEditedUri, hasShownApplyAllPopup, uneditedCount]),
+    }, [pendingEditResult, hasShownApplyAllPopup, uneditedCount, successfulResults.length]),
   );
 
   const handleSaveImage = async (resultUri: string, originalUri: string) => {

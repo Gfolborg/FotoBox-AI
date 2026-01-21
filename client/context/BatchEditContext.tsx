@@ -7,6 +7,11 @@ import React, {
 } from "react";
 import type { ImageEditingState } from "@/hooks/useImageEditing";
 
+interface EditResult {
+  originalUri: string;
+  editedUri: string;
+}
+
 interface BatchEditContextType {
   isBatchMode: boolean;
   setBatchMode: (value: boolean) => void;
@@ -21,6 +26,8 @@ interface BatchEditContextType {
   editedBatchImages: Set<string>;
   markImageAsEdited: (uri: string) => void;
   resetBatchSession: () => void;
+  pendingEditResult: EditResult | null;
+  setPendingEditResult: (result: EditResult | null) => void;
 }
 
 const BatchEditContext = createContext<BatchEditContextType | undefined>(
@@ -37,6 +44,9 @@ export function BatchEditProvider({ children }: { children: ReactNode }) {
   const [editedBatchImages, setEditedBatchImages] = useState<Set<string>>(
     new Set(),
   );
+  const [pendingEditResult, setPendingEditResult] = useState<EditResult | null>(
+    null,
+  );
 
   const markImageAsEdited = useCallback((uri: string) => {
     setEditedBatchImages((prev) => new Set([...prev, uri]));
@@ -49,6 +59,7 @@ export function BatchEditProvider({ children }: { children: ReactNode }) {
     setApplyToAllPending(false);
     setTotalBatchImages(0);
     setEditedBatchImages(new Set());
+    setPendingEditResult(null);
   }, []);
 
   const setBatchMode = useCallback(
@@ -78,6 +89,8 @@ export function BatchEditProvider({ children }: { children: ReactNode }) {
         editedBatchImages,
         markImageAsEdited,
         resetBatchSession,
+        pendingEditResult,
+        setPendingEditResult,
       }}
     >
       {children}

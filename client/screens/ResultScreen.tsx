@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   StyleSheet,
@@ -10,7 +10,7 @@ import {
   Pressable,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { useNavigation, useRoute, RouteProp, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
 import Animated, {
@@ -33,6 +33,7 @@ import { GradientBackground } from "@/components/GradientBackground";
 import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getApiUrl } from "@/lib/query-client";
+import { useBatchEdit } from "@/context/BatchEditContext";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "Result">;
 type ResultRouteProp = RouteProp<RootStackParamList, "Result">;
@@ -54,6 +55,18 @@ export default function ResultScreen() {
   const [resultUri, setResultUri] = useState(initialResultUri);
   const [isRetrying, setIsRetrying] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
+  
+  const { pendingEditResult, setPendingEditResult } = useBatchEdit();
+
+  // Process pending edit result when screen regains focus
+  useFocusEffect(
+    useCallback(() => {
+      if (pendingEditResult && pendingEditResult.originalUri === originalUri) {
+        setResultUri(pendingEditResult.editedUri);
+        setPendingEditResult(null);
+      }
+    }, [pendingEditResult, originalUri, setPendingEditResult])
+  );
 
   const handleContinue = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);

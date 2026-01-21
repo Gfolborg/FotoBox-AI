@@ -1,5 +1,5 @@
 /* eslint-disable react/jsx-no-undef */
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   StyleSheet,
@@ -11,7 +11,7 @@ import {
   ScrollView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { useNavigation, useRoute, RouteProp, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import * as FileSystem from "expo-file-system/legacy";
 import { Feather } from "@expo/vector-icons";
@@ -34,6 +34,7 @@ import { BeforeAfterSlider } from "@/components/BeforeAfterSlider";
 import { GradientBackground } from "@/components/GradientBackground";
 import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
+import { useBatchEdit } from "@/context/BatchEditContext";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const IMAGE_SIZE = SCREEN_WIDTH - Spacing.lg * 2;
@@ -67,13 +68,26 @@ export default function LifestyleResultScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
 
-  const { resultUri, originalUri, environment } = route.params as {
+  const { resultUri: initialResultUri, originalUri, environment } = route.params as {
     resultUri: string;
     originalUri: string;
     environment: string;
   };
 
+  const [resultUri, setResultUri] = useState(initialResultUri);
   const [showComparison, setShowComparison] = useState(false);
+  
+  const { pendingEditResult, setPendingEditResult } = useBatchEdit();
+
+  // Process pending edit result when screen regains focus
+  useFocusEffect(
+    useCallback(() => {
+      if (pendingEditResult && pendingEditResult.originalUri === originalUri) {
+        setResultUri(pendingEditResult.editedUri);
+        setPendingEditResult(null);
+      }
+    }, [pendingEditResult, originalUri, setPendingEditResult])
+  );
 
   const handleContinue = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);

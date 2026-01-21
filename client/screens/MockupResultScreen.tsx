@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   StyleSheet,
@@ -11,7 +11,7 @@ import {
   Share,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { useNavigation, useRoute, RouteProp, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import * as FileSystem from "expo-file-system/legacy";
 import { Feather } from "@expo/vector-icons";
@@ -30,6 +30,7 @@ import { GradientButton } from "@/components/GradientButton";
 import { GradientBackground } from "@/components/GradientBackground";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
+import { useBatchEdit } from "@/context/BatchEditContext";
 
 type MockupResultScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -48,7 +49,20 @@ export default function MockupResultScreen() {
   const route = useRoute<MockupResultScreenRouteProp>();
   const insets = useSafeAreaInsets();
 
-  const { resultUri, originalUri, mockupType } = route.params;
+  const { resultUri: initialResultUri, originalUri, mockupType } = route.params;
+  const [resultUri, setResultUri] = useState(initialResultUri);
+  
+  const { pendingEditResult, setPendingEditResult } = useBatchEdit();
+
+  // Process pending edit result when screen regains focus
+  useFocusEffect(
+    useCallback(() => {
+      if (pendingEditResult && pendingEditResult.originalUri === originalUri) {
+        setResultUri(pendingEditResult.editedUri);
+        setPendingEditResult(null);
+      }
+    }, [pendingEditResult, originalUri, setPendingEditResult])
+  );
 
   const handleContinue = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   StyleSheet,
@@ -8,7 +8,7 @@ import {
   Dimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
+import { useRoute, useNavigation, RouteProp, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
 import { Feather } from "@expo/vector-icons";
@@ -25,6 +25,7 @@ import { GradientButton } from "@/components/GradientButton";
 import { GradientBackground } from "@/components/GradientBackground";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
+import { useBatchEdit } from "@/context/BatchEditContext";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const GRID_PADDING = Spacing.lg;
@@ -39,7 +40,26 @@ export default function BatchLifestyleResultScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
-  const { results, environment } = route.params;
+  const { results: initialResults, environment } = route.params;
+
+  const [results, setResults] = useState(initialResults);
+  const { pendingEditResult, setPendingEditResult } = useBatchEdit();
+
+  // Process pending edit result when screen regains focus
+  useFocusEffect(
+    useCallback(() => {
+      if (pendingEditResult) {
+        setResults((prev) =>
+          prev.map((item) =>
+            item.originalUri === pendingEditResult.originalUri
+              ? { ...item, resultUri: pendingEditResult.editedUri }
+              : item
+          )
+        );
+        setPendingEditResult(null);
+      }
+    }, [pendingEditResult, setPendingEditResult])
+  );
 
   const successfulResults = results.filter(
     (r) => r.status === "completed" && r.resultUri,
