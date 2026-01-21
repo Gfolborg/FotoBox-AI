@@ -47,7 +47,7 @@ export default function QuickFixScreen() {
 
   // Dynamic image sizing - calculate max constraints based on screen
   const imageMaxWidth = SCREEN_WIDTH - Spacing.lg * 2; // Account for padding
-  const imageMaxHeight = SCREEN_HEIGHT * 0.42; // Leave room for toolbar and buttons
+  const imageMaxHeight = SCREEN_HEIGHT * 0.5; // Leave room for toolbar and buttons
 
   const {
     state,

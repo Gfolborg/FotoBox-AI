@@ -284,9 +284,9 @@ export const Typography = {
 export const Glassmorphism = {
   light: {
     card: {
-      backgroundColor: "rgba(255, 255, 255, 0.8)",
-      borderWidth: 1,
-      borderColor: "rgba(255, 255, 255, 0.5)",
+      backgroundColor: "rgba(255, 255, 255, 0)", // Fully transparent
+      borderWidth: 0,
+      borderColor: "rgba(255, 255, 255, 0)", // Fully transparent
     },
     cardSolid: {
       backgroundColor: pureWhite,

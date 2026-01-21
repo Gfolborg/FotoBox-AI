@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -27,12 +27,9 @@ import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
-// Smaller preview size to ensure all content fits on screen
-const IMAGE_PREVIEW_SIZE = Math.min(
-  SCREEN_WIDTH - Spacing.lg * 2,
-  SCREEN_HEIGHT * 0.3,
-  280,
-);
+// Max constraints for preview
+const IMAGE_MAX_WIDTH = SCREEN_WIDTH - Spacing.lg * 2;
+const IMAGE_MAX_HEIGHT = SCREEN_HEIGHT * 0.35;
 
 type NavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -57,6 +54,38 @@ export default function BackgroundColorSelectionScreen() {
   const route = useRoute<RouteProps>();
   const { imageUri } = route.params;
   const [selectedColor, setSelectedColor] = useState("white");
+  const [imageSize, setImageSize] = useState({
+    width: IMAGE_MAX_WIDTH,
+    height: IMAGE_MAX_WIDTH,
+  });
+
+  // Get image dimensions and calculate preview size
+  useEffect(() => {
+    Image.getSize(
+      imageUri,
+      (width, height) => {
+        const aspectRatio = width / height;
+        let previewWidth = IMAGE_MAX_WIDTH;
+        let previewHeight = previewWidth / aspectRatio;
+
+        // If height exceeds max, scale down
+        if (previewHeight > IMAGE_MAX_HEIGHT) {
+          previewHeight = IMAGE_MAX_HEIGHT;
+          previewWidth = previewHeight * aspectRatio;
+        }
+
+        setImageSize({ width: previewWidth, height: previewHeight });
+      },
+      (error) => {
+        console.error(
+          "[BackgroundColorSelection] Failed to get image size:",
+          error,
+        );
+        // Fallback to square
+        setImageSize({ width: IMAGE_MAX_WIDTH, height: IMAGE_MAX_WIDTH });
+      },
+    );
+  }, [imageUri]);
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
@@ -85,7 +114,10 @@ export default function BackgroundColorSelectionScreen() {
           {/* Image preview with neutral background - NOT the selected color */}
           <Animated.View
             entering={FadeIn.delay(100).duration(400)}
-            style={styles.imagePreviewContainer}
+            style={[
+              styles.imagePreviewContainer,
+              { width: imageSize.width, height: imageSize.height },
+            ]}
           >
             <Image source={{ uri: imageUri }} style={styles.imagePreview} />
           </Animated.View>
@@ -183,8 +215,6 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.md,
   },
   imagePreviewContainer: {
-    width: IMAGE_PREVIEW_SIZE,
-    height: IMAGE_PREVIEW_SIZE,
     borderRadius: BorderRadius.xl,
     overflow: "hidden",
     ...Shadows.lg,

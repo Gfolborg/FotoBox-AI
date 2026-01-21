@@ -29,7 +29,6 @@ import Animated, {
 
 import { ThemedText } from "@/components/ThemedText";
 import { GradientButton } from "@/components/GradientButton";
-import { GlassCard } from "@/components/GlassCard";
 import { GlassPill } from "@/components/GlassPill";
 import { IconButton } from "@/components/IconButton";
 import { ApplyToAllModal } from "@/components/ApplyToAllModal";
@@ -56,8 +55,11 @@ export default function BatchResultScreen() {
 
   const [savedUris, setSavedUris] = React.useState<Set<string>>(new Set());
   const [savingUris, setSavingUris] = React.useState<Set<string>>(new Set());
+  const [deletedUris, setDeletedUris] = React.useState<Set<string>>(new Set());
   const [showApplyAllModal, setShowApplyAllModal] = React.useState(false);
-  const [editedImages, setEditedImages] = React.useState<Set<string>>(new Set());
+  const [editedImages, setEditedImages] = React.useState<Set<string>>(
+    new Set(),
+  );
   const [lastEditedUri, setLastEditedUri] = React.useState<string | null>(null);
 
   const {
@@ -67,8 +69,10 @@ export default function BatchResultScreen() {
     setSavedEditSettings,
   } = useBatchEdit();
 
-  const successfulResults = results.filter((r) => r.resultUri !== null);
-  const failedCount = results.filter((r) => r.resultUri === null).length;
+  // Filter out deleted results
+  const visibleResults = results.filter((r) => !deletedUris.has(r.originalUri));
+  const successfulResults = visibleResults.filter((r) => r.resultUri !== null);
+  const failedCount = visibleResults.filter((r) => r.resultUri === null).length;
   const uneditedCount = successfulResults.length - editedImages.size;
 
   React.useLayoutEffect(() => {
@@ -129,7 +133,7 @@ export default function BatchResultScreen() {
         });
         return;
       }
-      
+
       const filename = `edit_temp_${Date.now()}.jpg`;
       const fileUri = FileSystem.documentDirectory + filename;
 
@@ -161,6 +165,41 @@ export default function BatchResultScreen() {
   };
 
   const handleSkipApplyAll = () => {};
+
+  const handleDeleteImage = (originalUri: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    if (Platform.OS !== "web") {
+      Alert.alert(
+        "Delete Image",
+        "Are you sure you want to remove this image from results?",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: () => {
+              setDeletedUris((prev) => new Set([...prev, originalUri]));
+              // Also remove from saved/edited states
+              setSavedUris((prev) => {
+                const newSet = new Set(prev);
+                newSet.delete(originalUri);
+                return newSet;
+              });
+              setEditedImages((prev) => {
+                const newSet = new Set(prev);
+                newSet.delete(originalUri);
+                return newSet;
+              });
+            },
+          },
+        ],
+      );
+    } else {
+      // On web, delete directly without confirmation
+      setDeletedUris((prev) => new Set([...prev, originalUri]));
+    }
+  };
 
   const handleExportAll = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -234,7 +273,7 @@ export default function BatchResultScreen() {
 
         {/* Image Grid */}
         <FlatList
-          data={results}
+          data={visibleResults}
           numColumns={2}
           keyExtractor={(item) => item.originalUri}
           contentContainerStyle={styles.grid}
@@ -257,6 +296,14 @@ export default function BatchResultScreen() {
                       source={{ uri: item.resultUri }}
                       style={styles.image}
                     />
+                  </Pressable>
+
+                  {/* Delete Button */}
+                  <Pressable
+                    style={styles.deleteButton}
+                    onPress={() => handleDeleteImage(item.originalUri)}
+                  >
+                    <Feather name="trash-2" size={14} color="#FFFFFF" />
                   </Pressable>
 
                   {/* Status Badge */}
@@ -334,24 +381,32 @@ export default function BatchResultScreen() {
             { paddingBottom: insets.bottom + Spacing.md },
           ]}
         >
-          <GlassCard theme="light" padding="xs" borderRadius="lg">
-            <View style={styles.bottomContent}>
-              {successfulResults.length > 0 && (
+          <View style={styles.bottomContent}>
+            {successfulResults.length > 0 ? (
+              <>
                 <GradientButton
                   title={`Save All (${successfulResults.length})`}
                   onPress={handleExportAll}
                   icon="download"
+                  style={styles.actionButton}
                 />
-              )}
-
+                <GradientButton
+                  title="New"
+                  onPress={handleGenerateMore}
+                  variant="secondary"
+                  icon="plus"
+                  style={styles.actionButton}
+                />
+              </>
+            ) : (
               <GradientButton
-                title="New"
+                title="Start New"
                 onPress={handleGenerateMore}
-                variant="glass"
                 icon="plus"
+                style={styles.singleActionButton}
               />
-            </View>
-          </GlassCard>
+            )}
+          </View>
         </Animated.View>
 
         {/* Apply to All Modal */}
@@ -427,7 +482,9 @@ const styles = StyleSheet.create({
     height: IMAGE_SIZE,
     borderRadius: BorderRadius.lg,
     overflow: "hidden",
-    backgroundColor: Colors.editing.backgroundSecondary,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "rgba(0, 0, 0, 0.08)",
   },
   imageContainer: {
     flex: 1,
@@ -436,6 +493,17 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     resizeMode: "contain",
+  },
+  deleteButton: {
+    position: "absolute",
+    top: Spacing.xs,
+    left: Spacing.xs,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   savedBadge: {
     position: "absolute",
@@ -499,11 +567,25 @@ const styles = StyleSheet.create({
   bottomBar: {
     position: "absolute",
     bottom: 0,
-    left: Spacing.md,
-    right: Spacing.md,
+    left: 0,
+    right: 0,
+    paddingHorizontal: Spacing.lg,
   },
   bottomContent: {
+    flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.xs,
+    justifyContent: "center",
+    gap: Spacing.md,
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.editing.border,
+  },
+  actionButton: {
+    flex: 1,
+  },
+  singleActionButton: {
+    minWidth: 200,
   },
 });

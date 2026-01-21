@@ -15,6 +15,7 @@ interface SaveOrEnhanceModalProps {
   onRemoveBackground: () => void;
   onCreateLifestyle: () => void;
   onCreateMockup: () => void;
+  onBackToResults?: () => void;
   isSaving?: boolean;
 }
 
@@ -82,6 +83,7 @@ export function SaveOrEnhanceModal({
   onRemoveBackground,
   onCreateLifestyle,
   onCreateMockup,
+  onBackToResults,
   isSaving = false,
 }: SaveOrEnhanceModalProps) {
   const handleClose = () => {
@@ -169,6 +171,29 @@ export function SaveOrEnhanceModal({
               onPress={onCreateMockup}
               delay={300}
             />
+
+            {onBackToResults && (
+              <Animated.View
+                entering={FadeInDown.delay(400).duration(400).springify()}
+              >
+                <Pressable
+                  style={styles.backToResultsButton}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    onBackToResults();
+                  }}
+                >
+                  <Feather
+                    name="arrow-left"
+                    size={18}
+                    color={Colors.editing.textSecondary}
+                  />
+                  <ThemedText style={styles.backToResultsText}>
+                    Back to Results
+                  </ThemedText>
+                </Pressable>
+              </Animated.View>
+            )}
           </ScrollView>
         </Animated.View>
       </View>
@@ -289,5 +314,20 @@ const styles = StyleSheet.create({
   },
   arrowContainer: {
     marginLeft: Spacing.sm,
+  },
+  backToResultsButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.sm,
+    paddingVertical: Spacing.md,
+    marginTop: Spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+  },
+  backToResultsText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: Colors.editing.textSecondary,
   },
 });

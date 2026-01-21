@@ -87,7 +87,7 @@ export default function EditImageScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<EditImageRouteProp>();
   const { showNotification } = useNotification();
-  const { imageUri, presetId } = route.params;
+  const { imageUri, presetId, originalUri } = route.params;
 
   const imageRef = React.useRef<SkiaEditableImageRef>(null);
   const [isProcessing, setIsProcessing] = React.useState(false);
@@ -331,6 +331,12 @@ export default function EditImageScreen() {
       console.error("Failed to prepare image:", error);
       showNotification("Failed to prepare image. Please try again.", "error");
     }
+  };
+
+  const handleBackToResults = () => {
+    setShowSaveOrEnhanceModal(false);
+    // Go back to the previous screen (BatchResultScreen)
+    navigation.goBack();
   };
 
   const getActiveToolConfig = (): ToolConfig | null => {
@@ -906,6 +912,7 @@ export default function EditImageScreen() {
           onRemoveBackground={handleRemoveBackground}
           onCreateLifestyle={handleCreateLifestyle}
           onCreateMockup={handleCreateMockup}
+          onBackToResults={originalUri ? handleBackToResults : undefined}
           isSaving={isSaving}
         />
       </GradientBackground>
