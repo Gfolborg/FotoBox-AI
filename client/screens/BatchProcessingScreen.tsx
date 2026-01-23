@@ -104,13 +104,11 @@ export default function BatchProcessingScreen() {
     );
 
     try {
-      // Preprocess image: resize if too large and normalize orientation
-      // This fixes issues with camera photos that may be very large or have EXIF rotation
-      const MAX_DIMENSION = 2000;
-      
+      // Preprocess image: normalize to JPEG format to fix EXIF orientation issues
+      // Only specify width to maintain aspect ratio (ImageManipulator scales proportionally)
       const manipulatedImage = await ImageManipulator.manipulateAsync(
         imageUri,
-        [{ resize: { width: MAX_DIMENSION, height: MAX_DIMENSION } }],
+        [], // No resize - just normalize format
         { 
           compress: 0.9, 
           format: ImageManipulator.SaveFormat.JPEG,
