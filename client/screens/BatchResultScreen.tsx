@@ -37,6 +37,7 @@ import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { saveToFotoBoxAlbum } from "@/lib/save-to-album";
 import { useBatchEdit } from "@/context/BatchEditContext";
+import { getApiUrl } from "@/lib/query-client";
 
 type NavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -51,11 +52,14 @@ export default function BatchResultScreen() {
   const insets = useSafeAreaInsets();
   const route = useRoute<RouteProps>();
   const navigation = useNavigation<NavigationProp>();
-  const { results } = route.params;
+  const { results, backgroundColor = "#FFFFFF" } = route.params;
 
   const [savedUris, setSavedUris] = React.useState<Set<string>>(new Set());
   const [savingUris, setSavingUris] = React.useState<Set<string>>(new Set());
   const [deletedUris, setDeletedUris] = React.useState<Set<string>>(new Set());
+  const [retryingUris, setRetryingUris] = React.useState<Set<string>>(
+    new Set(),
+  );
   const [showApplyAllModal, setShowApplyAllModal] = React.useState(false);
   const [editedImages, setEditedImages] = React.useState<Set<string>>(
     new Set(),
@@ -169,6 +173,96 @@ export default function BatchResultScreen() {
       if (Platform.OS !== "web") {
         Alert.alert("Error", "Could not prepare image for editing.");
       }
+    }
+  };
+
+  const handleRetryImage = async (originalUri: string) => {
+    if (retryingUris.has(originalUri)) {
+      return;
+    }
+
+    setRetryingUris((prev) => new Set([...prev, originalUri]));
+    setUpdatedResults((prev) =>
+      prev.map((item) =>
+        item.originalUri === originalUri
+          ? { ...item, status: "processing", error: undefined }
+          : item,
+      ),
+    );
+
+    try {
+      const formData = new FormData();
+      formData.append("file", {
+        uri: originalUri,
+        name: "product_photo.jpg",
+        type: "image/jpeg",
+      } as unknown as Blob);
+
+      const apiUrl = getApiUrl();
+      const bgColorParam = encodeURIComponent(backgroundColor);
+      const endpoint = `${apiUrl}api/main-image?backgroundColor=${bgColorParam}`;
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 300000);
+
+      let response: Response;
+      try {
+        response = await fetch(endpoint, {
+          method: "POST",
+          body: formData,
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to regenerate image");
+      }
+
+      const blob = await response.blob();
+      const reader = new FileReader();
+
+      const resultUri = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+
+      setUpdatedResults((prev) =>
+        prev.map((item) =>
+          item.originalUri === originalUri
+            ? {
+                ...item,
+                resultUri,
+                status: "completed",
+                error: undefined,
+              }
+            : item,
+        ),
+      );
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
+
+      setUpdatedResults((prev) =>
+        prev.map((item) =>
+          item.originalUri === originalUri
+            ? {
+                ...item,
+                status: "failed",
+                error: errorMessage,
+              }
+            : item,
+        ),
+      );
+    } finally {
+      setRetryingUris((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(originalUri);
+        return newSet;
+      });
     }
   };
 
@@ -301,91 +395,122 @@ export default function BatchResultScreen() {
               entering={FadeInDown.delay(200 + index * 60).duration(400)}
               style={styles.resultCard}
             >
-              {item.resultUri ? (
-                <>
-                  <Pressable
-                    style={styles.imageContainer}
-                    onPress={() =>
-                      handleEditImage(item.resultUri!, item.originalUri)
-                    }
-                  >
-                    <Image
-                      source={{ uri: item.resultUri }}
-                      style={styles.image}
-                    />
-                  </Pressable>
-
-                  {/* Delete Button */}
-                  <Pressable
-                    style={styles.deleteButton}
-                    onPress={() => handleDeleteImage(item.originalUri)}
-                  >
-                    <Feather name="trash-2" size={14} color="#FFFFFF" />
-                  </Pressable>
-
-                  {/* Status Badge */}
-                  {savedUris.has(item.originalUri) && (
-                    <View style={styles.savedBadge}>
-                      <Feather
-                        name="check"
-                        size={12}
-                        color={Colors.editing.buttonText}
-                      />
-                    </View>
-                  )}
-
-                  {/* Action Buttons */}
-                  <View style={styles.actionButtons}>
+              {(() => {
+                const isRetrying = retryingUris.has(item.originalUri);
+                return item.resultUri ? (
+                  <>
                     <Pressable
-                      style={styles.editButton}
+                      style={styles.imageContainer}
                       onPress={() =>
                         handleEditImage(item.resultUri!, item.originalUri)
                       }
                     >
-                      <ThemedText style={styles.buttonText}>Edit</ThemedText>
+                      <Image
+                        source={{ uri: item.resultUri }}
+                        style={styles.image}
+                      />
                     </Pressable>
+
+                    {/* Delete Button */}
                     <Pressable
-                      style={[
-                        styles.saveButton,
-                        savedUris.has(item.originalUri) &&
-                          styles.saveButtonSaved,
-                      ]}
-                      onPress={() =>
-                        handleSaveImage(item.resultUri!, item.originalUri)
-                      }
-                      disabled={
-                        savingUris.has(item.originalUri) ||
-                        savedUris.has(item.originalUri)
-                      }
+                      style={styles.deleteButton}
+                      onPress={() => handleDeleteImage(item.originalUri)}
                     >
-                      <ThemedText
-                        style={[
-                          styles.buttonText,
-                          savedUris.has(item.originalUri) &&
-                            styles.buttonTextSaved,
-                        ]}
+                      <Feather name="trash-2" size={14} color="#FFFFFF" />
+                    </Pressable>
+
+                    {/* Status Badge */}
+                    {savedUris.has(item.originalUri) && (
+                      <View style={styles.savedBadge}>
+                        <Feather
+                          name="check"
+                          size={12}
+                          color={Colors.editing.buttonText}
+                        />
+                      </View>
+                    )}
+
+                    {/* Action Buttons */}
+                    <View style={styles.actionButtons}>
+                      <Pressable
+                        style={styles.editButton}
+                        onPress={() =>
+                          handleEditImage(item.resultUri!, item.originalUri)
+                        }
                       >
-                        {savingUris.has(item.originalUri)
-                          ? "Saving..."
-                          : savedUris.has(item.originalUri)
-                            ? "Saved"
-                            : "Save"}
+                        <ThemedText style={styles.buttonText}>Edit</ThemedText>
+                      </Pressable>
+                      <Pressable
+                        style={styles.retryButton}
+                        onPress={() => handleRetryImage(item.originalUri)}
+                        disabled={isRetrying}
+                      >
+                        <Feather
+                          name={isRetrying ? "loader" : "refresh-cw"}
+                          size={14}
+                          color="#FFFFFF"
+                        />
+                        <ThemedText style={styles.buttonText}>
+                          {isRetrying ? "Retrying" : "Retry"}
+                        </ThemedText>
+                      </Pressable>
+                      <Pressable
+                        style={[
+                          styles.saveButton,
+                          savedUris.has(item.originalUri) &&
+                            styles.saveButtonSaved,
+                        ]}
+                        onPress={() =>
+                          handleSaveImage(item.resultUri!, item.originalUri)
+                        }
+                        disabled={
+                          savingUris.has(item.originalUri) ||
+                          savedUris.has(item.originalUri)
+                        }
+                      >
+                        <ThemedText
+                          style={[
+                            styles.buttonText,
+                            savedUris.has(item.originalUri) &&
+                              styles.buttonTextSaved,
+                          ]}
+                        >
+                          {savingUris.has(item.originalUri)
+                            ? "Saving..."
+                            : savedUris.has(item.originalUri)
+                              ? "Saved"
+                              : "Save"}
+                        </ThemedText>
+                      </Pressable>
+                    </View>
+                  </>
+                ) : (
+                  <View style={styles.failedCard}>
+                    <Feather
+                      name="alert-circle"
+                      size={28}
+                      color={Colors.editing.error}
+                    />
+                    <ThemedText style={styles.errorText} numberOfLines={2}>
+                      {item.error || "Failed"}
+                    </ThemedText>
+                    <Pressable
+                      style={[styles.retryButton, styles.retryButtonFailed]}
+                      onPress={() => handleRetryImage(item.originalUri)}
+                      disabled={isRetrying}
+                    >
+                      <Feather
+                        name={isRetrying ? "loader" : "refresh-cw"}
+                        size={14}
+                        color="#FFFFFF"
+                      />
+                      <ThemedText style={styles.buttonText}>
+                        {isRetrying ? "Retrying" : "Retry"}
                       </ThemedText>
                     </Pressable>
                   </View>
-                </>
-              ) : (
-                <View style={styles.failedCard}>
-                  <Feather
-                    name="alert-circle"
-                    size={28}
-                    color={Colors.editing.error}
-                  />
-                  <ThemedText style={styles.errorText} numberOfLines={2}>
-                    {item.error || "Failed"}
-                  </ThemedText>
-                </View>
-              )}
+                );
+              })()}
             </Animated.View>
           )}
         />
@@ -542,12 +667,25 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   editButton: {
-    paddingHorizontal: Spacing.md,
+    paddingHorizontal: Spacing.sm,
     height: 32,
     borderRadius: 16,
     backgroundColor: "rgba(0, 0, 0, 0.7)",
     justifyContent: "center",
     alignItems: "center",
+  },
+  retryButton: {
+    paddingHorizontal: Spacing.sm,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+    flexDirection: "row",
+    gap: Spacing.xs,
+  },
+  retryButtonFailed: {
+    marginTop: Spacing.sm,
   },
   saveButton: {
     flex: 1,

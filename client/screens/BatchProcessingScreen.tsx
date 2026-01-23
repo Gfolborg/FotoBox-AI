@@ -75,9 +75,12 @@ export default function BatchProcessingScreen() {
   // Navigate when processing is complete
   React.useEffect(() => {
     if (isComplete) {
-      navigation.replace("BatchResult", { results: resultsRef.current });
+      navigation.replace("BatchResult", {
+        results: resultsRef.current,
+        backgroundColor,
+      });
     }
-  }, [isComplete, navigation]);
+  }, [isComplete, navigation, backgroundColor]);
 
   React.useEffect(() => {
     processImages();

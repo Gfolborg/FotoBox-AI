@@ -174,9 +174,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const platform =
           (req.query.platform as string)?.toLowerCase() || "amazon";
 
-        const imageBuffer = req.file.buffer;
-        const base64Image = imageBuffer.toString("base64");
-        const mimeType = req.file.mimetype || "image/jpeg";
+        // Fix EXIF orientation by auto-rotating the image before processing
+        // This ensures the image is displayed correctly regardless of camera orientation
+        const normalizedBuffer = await sharp(req.file.buffer)
+          .rotate() // Auto-rotate based on EXIF orientation
+          .jpeg({ quality: 95 })
+          .toBuffer();
+        
+        const base64Image = normalizedBuffer.toString("base64");
+        const mimeType = "image/jpeg";
 
         // Generate prompt with the specified background color and platform
         const prompt = getGenericMainPrompt(backgroundColor, platform);
@@ -207,7 +213,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("[/api/main-image] Calling Gemini API...");
         console.log("[/api/main-image] Using base URL:", process.env.AI_INTEGRATIONS_GEMINI_BASE_URL);
         console.log("[/api/main-image] Prompt:", prompt);
-        console.log("[/api/main-image] Image size:", imageBuffer.length, "bytes, mimeType:", mimeType);
+        console.log("[/api/main-image] Image size:", normalizedBuffer.length, "bytes, mimeType:", mimeType);
         
         let response = await generateImage();
         let candidate = response.candidates?.[0];

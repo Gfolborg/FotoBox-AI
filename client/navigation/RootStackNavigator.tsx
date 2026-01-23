@@ -62,6 +62,7 @@ export type RootStackParamList = {
       error?: string;
       status: "pending" | "processing" | "completed" | "failed";
     }[];
+    backgroundColor?: string;
   };
 
   // Preset and Lifestyle flows

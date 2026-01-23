@@ -311,37 +311,56 @@ export default function ResultScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* Image Display */}
-          {showComparison ? (
-            <Animated.View
-              entering={FadeIn.duration(300)}
-              exiting={FadeOut.duration(200)}
+          <Animated.View
+            entering={FadeIn.duration(300)}
+            exiting={FadeOut.duration(200)}
+            style={[
+              styles.imageWrapper,
+              {
+                height: showComparison
+                  ? IMAGE_SIZE
+                  : imageDimensions
+                    ? (IMAGE_SIZE * imageDimensions.height) /
+                      imageDimensions.width
+                    : IMAGE_SIZE,
+              },
+            ]}
+          >
+            {showComparison ? (
+              <View style={styles.imageContainer}>
+                <BeforeAfterSlider
+                  beforeImage={originalUri}
+                  afterImage={resultUri}
+                  size={IMAGE_SIZE}
+                />
+              </View>
+            ) : (
+              <View style={styles.imageContainer}>
+                <Image
+                  source={{ uri: resultUri }}
+                  style={styles.image}
+                  resizeMode="contain"
+                />
+              </View>
+            )}
+
+            <Pressable
+              style={styles.retryPill}
+              onPress={handleRetry}
+              disabled={isRetrying}
             >
-              <BeforeAfterSlider
-                beforeImage={originalUri}
-                afterImage={resultUri}
-                size={IMAGE_SIZE}
-              />
-            </Animated.View>
-          ) : (
-            <Animated.View
-              entering={FadeIn.duration(400)}
-              exiting={FadeOut.duration(200)}
-              style={[
-                styles.imageContainer,
-                imageDimensions && {
-                  height:
-                    (IMAGE_SIZE * imageDimensions.height) /
-                    imageDimensions.width,
-                },
-              ]}
-            >
-              <Image
-                source={{ uri: resultUri }}
-                style={styles.image}
-                resizeMode="contain"
-              />
-            </Animated.View>
-          )}
+              <GlassPill style={styles.retryPillGlass}>
+                <Feather
+                  name={isRetrying ? "loader" : "refresh-cw"}
+                  size={14}
+                  color={Colors.editing.text}
+                />
+                <ThemedText style={styles.retryPillText}>
+                  {isRetrying ? "Retrying" : "Retry"}
+                </ThemedText>
+              </GlassPill>
+            </Pressable>
+          </Animated.View>
 
           {/* Image Specs Pill */}
           <Animated.View
@@ -424,24 +443,6 @@ export default function ResultScreen() {
                       disabled={isRetrying}
                     />
                     <ThemedText style={styles.actionLabel}>Edit</ThemedText>
-                  </Pressable>
-
-                  <Pressable
-                    style={styles.actionButton}
-                    onPress={handleRetry}
-                    disabled={isRetrying}
-                  >
-                    <IconButton
-                      icon={isRetrying ? "loader" : "refresh-cw"}
-                      onPress={handleRetry}
-                      size={48}
-                      iconSize={22}
-                      variant="glass"
-                      disabled={isRetrying}
-                    />
-                    <ThemedText style={styles.actionLabel}>
-                      {isRetrying ? "Retrying..." : "Retry"}
-                    </ThemedText>
                   </Pressable>
 
                   <Pressable
@@ -566,9 +567,13 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.lg,
     alignItems: "center",
   },
-  imageContainer: {
+  imageWrapper: {
     width: IMAGE_SIZE,
-    height: IMAGE_SIZE,
+    position: "relative",
+  },
+  imageContainer: {
+    width: "100%",
+    height: "100%",
     borderRadius: BorderRadius.xl,
     backgroundColor: Colors.editing.backgroundSecondary,
     overflow: "hidden",
@@ -579,6 +584,20 @@ const styles = StyleSheet.create({
   image: {
     width: "100%",
     height: "100%",
+  },
+  retryPill: {
+    position: "absolute",
+    top: Spacing.sm,
+    right: Spacing.sm,
+  },
+  retryPillGlass: {
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
+  },
+  retryPillText: {
+    color: Colors.editing.text,
+    fontSize: 12,
+    fontWeight: "600",
   },
   specContainer: {
     marginTop: Spacing.lg,
