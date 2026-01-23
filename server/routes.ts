@@ -259,10 +259,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
-        const generatedImageBuffer = Buffer.from(
+        let generatedImageBuffer = Buffer.from(
           imagePart.inlineData.data,
           "base64",
         );
+
+        // Check if the AI returned an image that's too similar to the input
+        // This detects when the AI fails to process and just returns the original
+        const inputSize = normalizedBuffer.length;
+        const outputSize = generatedImageBuffer.length;
+        const sizeDifference = Math.abs(inputSize - outputSize);
+        const sizeDifferencePercent = (sizeDifference / inputSize) * 100;
+        
+        console.log("[/api/main-image] Size comparison:", {
+          inputSize,
+          outputSize,
+          sizeDifferencePercent: sizeDifferencePercent.toFixed(2) + "%",
+        });
+
+        // If output is very similar in size (within 5%), the AI may not have processed it
+        // Retry once more with a stronger prompt
+        if (sizeDifferencePercent < 5) {
+          console.warn("[/api/main-image] Output too similar to input, retrying with reinforced prompt...");
+          
+          const reinforcedPrompt = `IMPORTANT: You MUST remove the background from this product photo.
+
+${prompt}
+
+This is a critical task - the background MUST be completely removed and replaced with the solid color. Do not return the original image.`;
+
+          const reinforcedResponse = await ai.models.generateContent({
+            model: "gemini-2.5-flash-image",
+            contents: [
+              {
+                role: "user",
+                parts: [
+                  {
+                    inlineData: {
+                      mimeType: mimeType,
+                      data: base64Image,
+                    },
+                  },
+                  { text: reinforcedPrompt },
+                ],
+              },
+            ],
+            config: {
+              responseModalities: [Modality.TEXT, Modality.IMAGE],
+            },
+          });
+
+          const reinforcedCandidate = reinforcedResponse.candidates?.[0];
+          const reinforcedImagePart = reinforcedCandidate?.content?.parts?.find(
+            (part: { inlineData?: { data?: string; mimeType?: string } }) =>
+              part.inlineData,
+          );
+
+          if (reinforcedImagePart?.inlineData?.data) {
+            const reinforcedBuffer = Buffer.from(reinforcedImagePart.inlineData.data, "base64");
+            const reinforcedSizeDiff = Math.abs(inputSize - reinforcedBuffer.length);
+            const reinforcedSizePercent = (reinforcedSizeDiff / inputSize) * 100;
+            
+            console.log("[/api/main-image] Reinforced attempt size:", {
+              reinforcedSize: reinforcedBuffer.length,
+              sizeDifferencePercent: reinforcedSizePercent.toFixed(2) + "%",
+            });
+
+            // Use reinforced result if it's more different from input
+            if (reinforcedSizePercent > sizeDifferencePercent) {
+              generatedImageBuffer = reinforcedBuffer;
+            }
+          }
+        }
 
         const imageMimeType =
           imagePart.inlineData.mimeType || "image/jpeg";

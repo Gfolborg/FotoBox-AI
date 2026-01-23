@@ -8,6 +8,7 @@ import {
   Dimensions,
   Alert,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -38,6 +39,7 @@ import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { saveToFotoBoxAlbum } from "@/lib/save-to-album";
 import { useBatchEdit } from "@/context/BatchEditContext";
 import { getApiUrl } from "@/lib/query-client";
+import { useNotification } from "@/context/NotificationContext";
 
 type NavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -53,6 +55,7 @@ export default function BatchResultScreen() {
   const route = useRoute<RouteProps>();
   const navigation = useNavigation<NavigationProp>();
   const { results, backgroundColor = "#FFFFFF" } = route.params;
+  const { showNotification } = useNotification();
 
   const [savedUris, setSavedUris] = React.useState<Set<string>>(new Set());
   const [savingUris, setSavingUris] = React.useState<Set<string>>(new Set());
@@ -60,6 +63,12 @@ export default function BatchResultScreen() {
   const [retryingUris, setRetryingUris] = React.useState<Set<string>>(
     new Set(),
   );
+  const [retryErrorUris, setRetryErrorUris] = React.useState<Set<string>>(
+    new Set(),
+  );
+  const retryErrorTimers = React.useRef<
+    Map<string, ReturnType<typeof setTimeout>>
+  >(new Map());
   const [showApplyAllModal, setShowApplyAllModal] = React.useState(false);
   const [editedImages, setEditedImages] = React.useState<Set<string>>(
     new Set(),
@@ -89,6 +98,13 @@ export default function BatchResultScreen() {
       headerShown: false,
     });
   }, [navigation]);
+
+  React.useEffect(() => {
+    return () => {
+      retryErrorTimers.current.forEach((timer) => clearTimeout(timer));
+      retryErrorTimers.current.clear();
+    };
+  }, []);
 
   // Process pending edit result when screen regains focus
   useFocusEffect(
@@ -182,6 +198,11 @@ export default function BatchResultScreen() {
     }
 
     setRetryingUris((prev) => new Set([...prev, originalUri]));
+    setRetryErrorUris((prev) => {
+      const newSet = new Set(prev);
+      newSet.delete(originalUri);
+      return newSet;
+    });
     setUpdatedResults((prev) =>
       prev.map((item) =>
         item.originalUri === originalUri
@@ -242,10 +263,30 @@ export default function BatchResultScreen() {
             : item,
         ),
       );
+      setRetryErrorUris((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(originalUri);
+        return newSet;
+      });
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error occurred";
 
+      showNotification("Retry failed. Please try again.", "error");
+      setRetryErrorUris((prev) => new Set([...prev, originalUri]));
+      const existingTimer = retryErrorTimers.current.get(originalUri);
+      if (existingTimer) {
+        clearTimeout(existingTimer);
+      }
+      const timer = setTimeout(() => {
+        setRetryErrorUris((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(originalUri);
+          return newSet;
+        });
+        retryErrorTimers.current.delete(originalUri);
+      }, 3500);
+      retryErrorTimers.current.set(originalUri, timer);
       setUpdatedResults((prev) =>
         prev.map((item) =>
           item.originalUri === originalUri
@@ -410,6 +451,14 @@ export default function BatchResultScreen() {
                         style={styles.image}
                       />
                     </Pressable>
+                    {isRetrying && (
+                      <View style={styles.retryOverlay}>
+                        <ActivityIndicator
+                          size="small"
+                          color={Colors.editing.text}
+                        />
+                      </View>
+                    )}
 
                     {/* Delete Button */}
                     <Pressable
@@ -420,13 +469,21 @@ export default function BatchResultScreen() {
                     </Pressable>
 
                     {/* Status Badge */}
-                    {savedUris.has(item.originalUri) && (
+                    {savedUris.has(item.originalUri) &&
+                      item.status !== "failed" && (
                       <View style={styles.savedBadge}>
                         <Feather
                           name="check"
                           size={12}
                           color={Colors.editing.buttonText}
                         />
+                      </View>
+                    )}
+                    {retryErrorUris.has(item.originalUri) && (
+                      <View style={styles.errorPill}>
+                        <ThemedText style={styles.errorPillText}>
+                          Retry failed
+                        </ThemedText>
                       </View>
                     )}
 
@@ -636,6 +693,13 @@ const styles = StyleSheet.create({
     height: "100%",
     resizeMode: "cover",
   },
+  retryOverlay: {
+    position: "absolute",
+    inset: 0,
+    backgroundColor: "rgba(255, 255, 255, 0.35)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   deleteButton: {
     position: "absolute",
     top: Spacing.xs,
@@ -657,6 +721,22 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.editing.success,
     justifyContent: "center",
     alignItems: "center",
+  },
+  errorPill: {
+    position: "absolute",
+    top: Spacing.xs,
+    right: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "rgba(239, 68, 68, 0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  errorPillText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "600",
   },
   actionButtons: {
     position: "absolute",

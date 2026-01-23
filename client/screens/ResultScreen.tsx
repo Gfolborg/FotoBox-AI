@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import {
   View,
   StyleSheet,
@@ -8,6 +8,7 @@ import {
   Alert,
   Platform,
   Pressable,
+  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from "@react-navigation/native";
@@ -34,6 +35,7 @@ import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getApiUrl } from "@/lib/query-client";
 import { useBatchEdit } from "@/context/BatchEditContext";
+import { useNotification } from "@/context/NotificationContext";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "Result">;
 type ResultRouteProp = RouteProp<RootStackParamList, "Result">;
@@ -54,6 +56,8 @@ export default function ResultScreen() {
 
   const [resultUri, setResultUri] = useState(initialResultUri);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [retryError, setRetryError] = useState<string | null>(null);
+  const retryErrorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showComparison, setShowComparison] = useState(false);
   const [imageDimensions, setImageDimensions] = useState<{
     width: number;
@@ -61,6 +65,7 @@ export default function ResultScreen() {
   } | null>(null);
   
   const { pendingEditResult, setPendingEditResult } = useBatchEdit();
+  const { showNotification } = useNotification();
 
   useEffect(() => {
     let isMounted = true;
@@ -79,6 +84,9 @@ export default function ResultScreen() {
     );
     return () => {
       isMounted = false;
+      if (retryErrorTimer.current) {
+        clearTimeout(retryErrorTimer.current);
+      }
     };
   }, [resultUri]);
 
@@ -158,15 +166,26 @@ export default function ResultScreen() {
 
   const handleRetry = async () => {
     setIsRetrying(true);
+    setRetryError(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     try {
       const formData = new FormData();
-      formData.append("file", {
-        uri: originalUri,
-        name: "product_photo.jpg",
-        type: "image/jpeg",
-      } as unknown as Blob);
+      
+      // Handle both file:// URIs and data URIs for the original image
+      if (originalUri.startsWith("data:")) {
+        // For data URIs, convert to blob
+        const response = await fetch(originalUri);
+        const blob = await response.blob();
+        formData.append("file", blob, "product_photo.jpg");
+      } else {
+        // For file:// URIs on native
+        formData.append("file", {
+          uri: originalUri,
+          name: "product_photo.jpg",
+          type: "image/jpeg",
+        } as unknown as Blob);
+      }
 
       const apiUrl = getApiUrl();
       const bgColorParam = encodeURIComponent(backgroundColor);
@@ -192,18 +211,22 @@ export default function ResultScreen() {
       }
 
       const blob = await response.blob();
-      const reader = new FileReader();
+      
+      // Use Promise wrapper to properly handle FileReader callbacks
+      const base64data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          resolve(reader.result as string);
+        };
+        reader.onerror = () => {
+          reject(new Error("Failed to read regenerated image"));
+        };
+        reader.readAsDataURL(blob);
+      });
 
-      reader.onload = () => {
-        const base64data = reader.result as string;
-        setResultUri(base64data);
-      };
-
-      reader.onerror = () => {
-        throw new Error("Failed to read regenerated image");
-      };
-
-      reader.readAsDataURL(blob);
+      setResultUri(base64data);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      showNotification("Image regenerated successfully!", "success");
     } catch (err) {
       let errorMessage = "An unexpected error occurred";
 
@@ -221,9 +244,14 @@ export default function ResultScreen() {
         }
       }
 
-      if (Platform.OS !== "web") {
-        Alert.alert("Retry Failed", errorMessage);
+      setRetryError(errorMessage);
+      if (retryErrorTimer.current) {
+        clearTimeout(retryErrorTimer.current);
       }
+      retryErrorTimer.current = setTimeout(() => {
+        setRetryError(null);
+      }, 3500);
+      showNotification("Retry failed. Please try again.", "error");
     } finally {
       setIsRetrying(false);
     }
@@ -343,6 +371,14 @@ export default function ResultScreen() {
                 />
               </View>
             )}
+            {isRetrying && (
+              <View style={styles.retryOverlay}>
+                <ActivityIndicator
+                  size="small"
+                  color={Colors.editing.text}
+                />
+              </View>
+            )}
 
             <Pressable
               style={styles.retryPill}
@@ -360,6 +396,13 @@ export default function ResultScreen() {
                 </ThemedText>
               </GlassPill>
             </Pressable>
+            {retryError && (
+              <View style={styles.retryErrorPill}>
+                <ThemedText style={styles.retryErrorText}>
+                  Retry failed
+                </ThemedText>
+              </View>
+            )}
           </Animated.View>
 
           {/* Image Specs Pill */}
@@ -597,6 +640,30 @@ const styles = StyleSheet.create({
   retryPillText: {
     color: Colors.editing.text,
     fontSize: 12,
+    fontWeight: "600",
+  },
+  retryOverlay: {
+    position: "absolute",
+    inset: 0,
+    backgroundColor: "rgba(255, 255, 255, 0.35)",
+    borderRadius: BorderRadius.xl,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  retryErrorPill: {
+    position: "absolute",
+    top: Spacing.sm + 30,
+    right: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "rgba(239, 68, 68, 0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  retryErrorText: {
+    color: "#FFFFFF",
+    fontSize: 11,
     fontWeight: "600",
   },
   specContainer: {
