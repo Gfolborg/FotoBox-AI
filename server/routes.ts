@@ -204,6 +204,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         console.log("[/api/main-image] Calling Gemini API...");
         console.log("[/api/main-image] Using base URL:", process.env.AI_INTEGRATIONS_GEMINI_BASE_URL);
+        console.log("[/api/main-image] Prompt:", prompt);
+        console.log("[/api/main-image] Image size:", imageBuffer.length, "bytes, mimeType:", mimeType);
         
         let response = await generateImage();
         let candidate = response.candidates?.[0];
