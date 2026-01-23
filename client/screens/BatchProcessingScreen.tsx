@@ -21,6 +21,7 @@ import Animated, {
 } from "react-native-reanimated";
 import pLimit from "p-limit";
 import { StyleSheet, View, ScrollView, Image } from "react-native";
+import * as ImageManipulator from "expo-image-manipulator";
 
 import { ThemedText } from "@/components/ThemedText";
 import { GlassPill } from "@/components/GlassPill";
@@ -103,9 +104,24 @@ export default function BatchProcessingScreen() {
     );
 
     try {
+      // Preprocess image: resize if too large and normalize orientation
+      // This fixes issues with camera photos that may be very large or have EXIF rotation
+      const MAX_DIMENSION = 2000;
+      
+      const manipulatedImage = await ImageManipulator.manipulateAsync(
+        imageUri,
+        [{ resize: { width: MAX_DIMENSION, height: MAX_DIMENSION } }],
+        { 
+          compress: 0.9, 
+          format: ImageManipulator.SaveFormat.JPEG,
+        }
+      );
+      
+      const processedUri = manipulatedImage.uri;
+
       const formData = new FormData();
       formData.append("file", {
-        uri: imageUri,
+        uri: processedUri,
         name: `product_photo_${index}.jpg`,
         type: "image/jpeg",
       } as unknown as Blob);
