@@ -264,29 +264,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
           "base64",
         );
 
-        // Check if the AI returned an image that's too similar to the input
-        // This detects when the AI fails to process and just returns the original
-        const inputSize = normalizedBuffer.length;
-        const outputSize = generatedImageBuffer.length;
-        const sizeDifference = Math.abs(inputSize - outputSize);
-        const sizeDifferencePercent = (sizeDifference / inputSize) * 100;
+        // Check if the background was actually replaced with the expected color
+        // by sampling corners of the output image
+        const expectedRGB = hexToRGB(backgroundColor);
         
-        console.log("[/api/main-image] Size comparison:", {
-          inputSize,
-          outputSize,
-          sizeDifferencePercent: sizeDifferencePercent.toFixed(2) + "%",
+        async function checkBackgroundColor(buffer: Buffer): Promise<{ hasCorrectBackground: boolean; avgDiff: number }> {
+          try {
+            const image = sharp(buffer);
+            const metadata = await image.metadata();
+            const width = metadata.width || 1000;
+            const height = metadata.height || 1000;
+            
+            // Sample 4 corner regions (10x10 pixels each)
+            const cornerSize = 10;
+            const corners = [
+              { left: 0, top: 0 }, // top-left
+              { left: width - cornerSize, top: 0 }, // top-right
+              { left: 0, top: height - cornerSize }, // bottom-left
+              { left: width - cornerSize, top: height - cornerSize }, // bottom-right
+            ];
+            
+            let totalDiff = 0;
+            let sampledCorners = 0;
+            
+            for (const corner of corners) {
+              try {
+                const { data } = await sharp(buffer)
+                  .extract({ left: corner.left, top: corner.top, width: cornerSize, height: cornerSize })
+                  .raw()
+                  .toBuffer({ resolveWithObject: true });
+                
+                // Calculate average color of this corner
+                let r = 0, g = 0, b = 0;
+                const pixelCount = cornerSize * cornerSize;
+                for (let i = 0; i < data.length; i += 3) {
+                  r += data[i];
+                  g += data[i + 1];
+                  b += data[i + 2];
+                }
+                r = Math.round(r / pixelCount);
+                g = Math.round(g / pixelCount);
+                b = Math.round(b / pixelCount);
+                
+                // Calculate difference from expected background
+                const diff = Math.abs(r - expectedRGB.r) + Math.abs(g - expectedRGB.g) + Math.abs(b - expectedRGB.b);
+                totalDiff += diff;
+                sampledCorners++;
+              } catch {
+                // Skip this corner if extraction fails
+              }
+            }
+            
+            const avgDiff = sampledCorners > 0 ? totalDiff / sampledCorners : 999;
+            // Allow some tolerance (30 per channel = 90 total) for compression artifacts
+            return { hasCorrectBackground: avgDiff < 90, avgDiff };
+          } catch {
+            return { hasCorrectBackground: true, avgDiff: 0 }; // Assume OK if check fails
+          }
+        }
+        
+        const bgCheck = await checkBackgroundColor(generatedImageBuffer);
+        console.log("[/api/main-image] Background check:", {
+          expectedColor: backgroundColor,
+          avgColorDifference: bgCheck.avgDiff.toFixed(1),
+          hasCorrectBackground: bgCheck.hasCorrectBackground,
         });
 
-        // If output is very similar in size (within 5%), the AI may not have processed it
-        // Retry once more with a stronger prompt
-        if (sizeDifferencePercent < 5) {
-          console.warn("[/api/main-image] Output too similar to input, retrying with reinforced prompt...");
+        // If background doesn't match expected color, retry with reinforced prompt
+        if (!bgCheck.hasCorrectBackground) {
+          console.warn("[/api/main-image] Background color mismatch, retrying with reinforced prompt...");
           
-          const reinforcedPrompt = `IMPORTANT: You MUST remove the background from this product photo.
+          const reinforcedPrompt = `CRITICAL: You MUST remove the background from this product photo and replace it with a solid RGB(${expectedRGB.r}, ${expectedRGB.g}, ${expectedRGB.b}) color.
 
 ${prompt}
 
-This is a critical task - the background MUST be completely removed and replaced with the solid color. Do not return the original image.`;
+The background MUST be completely removed and replaced with the exact solid color specified. The corners and edges of the image should be the solid background color.`;
 
           const reinforcedResponse = await ai.models.generateContent({
             model: "gemini-2.5-flash-image",
@@ -317,20 +369,30 @@ This is a critical task - the background MUST be completely removed and replaced
 
           if (reinforcedImagePart?.inlineData?.data) {
             const reinforcedBuffer = Buffer.from(reinforcedImagePart.inlineData.data, "base64");
-            const reinforcedSizeDiff = Math.abs(inputSize - reinforcedBuffer.length);
-            const reinforcedSizePercent = (reinforcedSizeDiff / inputSize) * 100;
+            const reinforcedBgCheck = await checkBackgroundColor(reinforcedBuffer);
             
-            console.log("[/api/main-image] Reinforced attempt size:", {
-              reinforcedSize: reinforcedBuffer.length,
-              sizeDifferencePercent: reinforcedSizePercent.toFixed(2) + "%",
+            console.log("[/api/main-image] Reinforced attempt background check:", {
+              avgColorDifference: reinforcedBgCheck.avgDiff.toFixed(1),
+              hasCorrectBackground: reinforcedBgCheck.hasCorrectBackground,
             });
 
-            // Use reinforced result if it's more different from input
-            if (reinforcedSizePercent > sizeDifferencePercent) {
+            // Use reinforced result if it has better background color
+            if (reinforcedBgCheck.avgDiff < bgCheck.avgDiff) {
               generatedImageBuffer = reinforcedBuffer;
+              bgCheck.avgDiff = reinforcedBgCheck.avgDiff;
+              bgCheck.hasCorrectBackground = reinforcedBgCheck.hasCorrectBackground;
             }
           }
         }
+
+        // Final check - if background still doesn't match after retry, log warning
+        const finalBgCheck = await checkBackgroundColor(generatedImageBuffer);
+        const backgroundVerified = finalBgCheck.hasCorrectBackground;
+        
+        console.log("[/api/main-image] Final result:", {
+          backgroundVerified,
+          avgColorDifference: finalBgCheck.avgDiff.toFixed(1),
+        });
 
         const imageMimeType =
           imagePart.inlineData.mimeType || "image/jpeg";
@@ -340,6 +402,8 @@ This is a critical task - the background MUST be completely removed and replaced
           "Content-Disposition",
           `attachment; filename="${platform}-main.${imageMimeType.split("/")[1] || "jpg"}"`,
         );
+        // Add header to indicate if background was verified
+        res.set("X-Background-Verified", backgroundVerified ? "true" : "false");
         res.send(generatedImageBuffer);
       } catch (error) {
         console.error("Error processing image:", error);

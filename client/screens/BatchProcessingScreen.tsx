@@ -43,6 +43,7 @@ interface ProcessingResult {
   resultUri: string | null;
   error?: string;
   status: "pending" | "processing" | "completed" | "failed";
+  backgroundVerified?: boolean;
 }
 
 export default function BatchProcessingScreen() {
@@ -146,6 +147,9 @@ export default function BatchProcessingScreen() {
         throw new Error(`Processing failed: ${response.status}`);
       }
 
+      // Check if background was verified
+      const backgroundVerified = response.headers.get("X-Background-Verified") === "true";
+      
       const blob = await response.blob();
       const reader = new FileReader();
 
@@ -157,7 +161,7 @@ export default function BatchProcessingScreen() {
 
       setResults((prev) =>
         prev.map((r, idx) =>
-          idx === index ? { ...r, resultUri, status: "completed" as const } : r,
+          idx === index ? { ...r, resultUri, status: "completed" as const, backgroundVerified } : r,
         ),
       );
     } catch (error) {

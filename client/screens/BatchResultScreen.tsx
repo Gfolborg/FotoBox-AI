@@ -479,6 +479,12 @@ export default function BatchResultScreen() {
                         />
                       </View>
                     )}
+                    {/* Warning badge when background wasn't verified */}
+                    {item.backgroundVerified === false && !savedUris.has(item.originalUri) && (
+                      <View style={styles.warningBadge}>
+                        <Feather name="alert-triangle" size={12} color="#FFFFFF" />
+                      </View>
+                    )}
                     {retryErrorUris.has(item.originalUri) && (
                       <View style={styles.errorPill}>
                         <ThemedText style={styles.errorPillText}>
@@ -719,6 +725,17 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     backgroundColor: Colors.editing.success,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  warningBadge: {
+    position: "absolute",
+    top: Spacing.xs,
+    left: Spacing.xs,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#F59E0B",
     justifyContent: "center",
     alignItems: "center",
   },

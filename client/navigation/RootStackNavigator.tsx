@@ -61,6 +61,7 @@ export type RootStackParamList = {
       resultUri: string | null;
       error?: string;
       status: "pending" | "processing" | "completed" | "failed";
+      backgroundVerified?: boolean;
     }[];
     backgroundColor?: string;
   };
