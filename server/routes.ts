@@ -120,9 +120,11 @@ RULES:
 3. ONLY remove the background - everything that is not the product
 4. Replace ALL background pixels with exactly RGB(${rgb.r}, ${rgb.g}, ${rgb.b})
 5. Keep clean edges around the product with no halos or artifacts
+6. DO NOT add any text, watermarks, labels, annotations, or any markings to the image
+7. The output image must be completely clean with only the product and solid background
 ${platformSpecificInstructions}
 
-The product must remain IDENTICAL to the original - same position, same angle, same size, same appearance. Only the background changes.`;
+The product must remain IDENTICAL to the original - same position, same angle, same size, same appearance. Only the background changes. Output a clean image with no text or annotations.`;
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
