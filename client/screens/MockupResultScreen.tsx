@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -51,8 +51,32 @@ export default function MockupResultScreen() {
 
   const { resultUri: initialResultUri, originalUri, mockupType } = route.params;
   const [resultUri, setResultUri] = useState(initialResultUri);
+  const [imageDimensions, setImageDimensions] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
   
   const { pendingEditResult, setPendingEditResult } = useBatchEdit();
+
+  useEffect(() => {
+    let isMounted = true;
+    Image.getSize(
+      resultUri,
+      (width, height) => {
+        if (isMounted) {
+          setImageDimensions({ width, height });
+        }
+      },
+      () => {
+        if (isMounted) {
+          setImageDimensions(null);
+        }
+      },
+    );
+    return () => {
+      isMounted = false;
+    };
+  }, [resultUri]);
 
   // Process pending edit result when screen regains focus
   useFocusEffect(
@@ -169,7 +193,18 @@ export default function MockupResultScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Animated.View entering={FadeIn.duration(500)}>
-          <GlassCard style={styles.imageCard}>
+          <GlassCard
+            style={[
+              styles.imageCard,
+              {
+                width: IMAGE_SIZE,
+                height: imageDimensions
+                  ? (IMAGE_SIZE * imageDimensions.height) /
+                    imageDimensions.width
+                  : IMAGE_SIZE,
+              },
+            ]}
+          >
             <Image
               source={{ uri: resultUri }}
               style={styles.resultImage}
@@ -237,10 +272,11 @@ const styles = StyleSheet.create({
   imageCard: {
     padding: Spacing.sm,
     marginBottom: Spacing.lg,
+    alignSelf: "center",
   },
   resultImage: {
     width: "100%",
-    aspectRatio: 1,
+    height: "100%",
     borderRadius: BorderRadius.lg,
     backgroundColor: Colors.light.backgroundSecondary,
   },

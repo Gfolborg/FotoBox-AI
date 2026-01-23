@@ -31,7 +31,7 @@ import { useQuickFix } from "@/hooks/useQuickFix";
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "QuickFix">;
 type RouteProps = RouteProp<RootStackParamList, "QuickFix">;
 
-type ToolKey = "rotate" | "flip" | "crop" | "brightness" | "contrast";
+type ToolKey = "rotate" | "flip" | "brightness" | "contrast";
 
 export default function QuickFixScreen() {
   const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -55,9 +55,6 @@ export default function QuickFixScreen() {
     rotateCCW,
     toggleFlipHorizontal,
     toggleFlipVertical,
-    setCrop,
-    setAspectRatio,
-    resetCrop,
     setBrightness,
     setContrast,
     resetAll,
@@ -216,8 +213,6 @@ export default function QuickFixScreen() {
     setSelectedTool(null);
   };
 
-  const showCropOverlay = selectedTool === "crop";
-
   return (
     <GradientBackground theme="home">
       <StatusBar style="dark" />
@@ -273,10 +268,10 @@ export default function QuickFixScreen() {
                 originalUri={preparedUri}
                 adjustments={getSkiaAdjustments()}
                 showOriginal={false}
-                showCropOverlay={showCropOverlay}
-                crop={state.crop}
-                aspectRatio={state.aspectRatio}
-                onCropChange={setCrop}
+                showCropOverlay={false}
+                crop={null}
+                aspectRatio={null}
+                onCropChange={() => {}}
                 maxWidth={imageMaxWidth}
                 maxHeight={imageMaxHeight}
               />
@@ -306,9 +301,7 @@ export default function QuickFixScreen() {
           style={styles.hintContainer}
         >
           <ThemedText style={styles.hintText}>
-            {selectedTool === "crop"
-              ? "Drag corners to crop"
-              : isAdjustmentTool
+            {isAdjustmentTool
               ? `Swipe up/down on image to adjust ${selectedTool}`
               : "Quick fixes before AI enhancement"}
           </ThemedText>
@@ -323,8 +316,6 @@ export default function QuickFixScreen() {
           onRotateCCW={rotateCCW}
           onToggleFlipHorizontal={toggleFlipHorizontal}
           onToggleFlipVertical={toggleFlipVertical}
-          onAspectRatioChange={setAspectRatio}
-          onResetCrop={resetCrop}
         />
 
         {/* Continue Button */}

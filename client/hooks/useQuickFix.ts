@@ -2,20 +2,13 @@ import { useState, useCallback } from "react";
 
 /**
  * Simplified editing state for QuickFix screen
- * Includes transform operations: rotate, flip, crop
+ * Includes transform operations: rotate, flip
  * And basic adjustments: brightness, contrast
  */
 export interface QuickFixState {
   rotation: number; // 0, 90, 180, 270
   flipHorizontal: boolean;
   flipVertical: boolean;
-  crop: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  } | null;
-  aspectRatio: "free" | "square" | "4:3" | "16:9" | "2:3" | null;
   brightness: number; // -100 to 100, default 0
   contrast: number; // -100 to 100, default 0
 }
@@ -24,8 +17,6 @@ const DEFAULT_STATE: QuickFixState = {
   rotation: 0,
   flipHorizontal: false,
   flipVertical: false,
-  crop: null,
-  aspectRatio: null,
   brightness: 0,
   contrast: 0,
 };
@@ -58,17 +49,6 @@ export function useQuickFix() {
     setState((prev) => ({ ...prev, flipVertical: !prev.flipVertical }));
   }, []);
 
-  const setCrop = useCallback((crop: QuickFixState["crop"]) => {
-    setState((prev) => ({ ...prev, crop }));
-  }, []);
-
-  const setAspectRatio = useCallback(
-    (aspectRatio: QuickFixState["aspectRatio"]) => {
-      setState((prev) => ({ ...prev, aspectRatio }));
-    },
-    [],
-  );
-
   const setBrightness = useCallback((brightness: number) => {
     setState((prev) => ({
       ...prev,
@@ -83,10 +63,6 @@ export function useQuickFix() {
     }));
   }, []);
 
-  const resetCrop = useCallback(() => {
-    setState((prev) => ({ ...prev, crop: null, aspectRatio: null }));
-  }, []);
-
   const resetAll = useCallback(() => {
     setState(DEFAULT_STATE);
   }, []);
@@ -96,7 +72,6 @@ export function useQuickFix() {
       state.rotation !== 0 ||
       state.flipHorizontal ||
       state.flipVertical ||
-      state.crop !== null ||
       state.brightness !== 0 ||
       state.contrast !== 0
     );
@@ -134,9 +109,6 @@ export function useQuickFix() {
     rotateCCW,
     toggleFlipHorizontal,
     toggleFlipVertical,
-    setCrop,
-    setAspectRatio,
-    resetCrop,
     setBrightness,
     setContrast,
     resetAll,

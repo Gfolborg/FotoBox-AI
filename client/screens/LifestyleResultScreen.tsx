@@ -1,5 +1,5 @@
 /* eslint-disable react/jsx-no-undef */
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -76,6 +76,10 @@ export default function LifestyleResultScreen() {
 
   const [resultUri, setResultUri] = useState(initialResultUri);
   const [showComparison, setShowComparison] = useState(false);
+  const [imageDimensions, setImageDimensions] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
   
   const { pendingEditResult, setPendingEditResult } = useBatchEdit();
 
@@ -157,6 +161,26 @@ export default function LifestyleResultScreen() {
 
   const environmentLabel = ENVIRONMENT_LABELS[environment] || "Lifestyle Scene";
 
+  useEffect(() => {
+    let isMounted = true;
+    Image.getSize(
+      resultUri,
+      (width, height) => {
+        if (isMounted) {
+          setImageDimensions({ width, height });
+        }
+      },
+      () => {
+        if (isMounted) {
+          setImageDimensions(null);
+        }
+      },
+    );
+    return () => {
+      isMounted = false;
+    };
+  }, [resultUri]);
+
   return (
     <GradientBackground theme="home">
       <StatusBar style="dark" />
@@ -188,7 +212,14 @@ export default function LifestyleResultScreen() {
             <Animated.View
               entering={FadeInDown.delay(100).duration(400)}
               exiting={FadeOut.duration(200)}
-              style={styles.imageContainer}
+              style={[
+                styles.imageContainer,
+                imageDimensions && {
+                  height:
+                    (IMAGE_SIZE * imageDimensions.height) /
+                    imageDimensions.width,
+                },
+              ]}
             >
               <Image source={{ uri: resultUri }} style={styles.resultImage} />
             </Animated.View>

@@ -11,7 +11,6 @@ import Animated, {
 import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "./ThemedText";
-import { BackgroundColorPicker } from "./BackgroundColorPicker";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import type { ImageEditingState } from "@/hooks/useImageEditing";
 
@@ -24,8 +23,7 @@ type ToolKey =
   | "shadows"
   | "warmth"
   | "rotate"
-  | "flip"
-  | "crop";
+  | "flip";
 
 export interface ToolConfig {
   key: ToolKey;
@@ -133,12 +131,6 @@ export const ADJUSTMENT_TOOLS: ToolConfig[] = [
     icon: "repeat",
     category: "transform",
   },
-  {
-    key: "crop",
-    label: "Crop",
-    icon: "crop",
-    category: "transform",
-  },
 ];
 
 interface CompactToolbarProps {
@@ -179,9 +171,6 @@ export function CompactToolbar({
     }
     if (tool.key === "flip") {
       return state.flipHorizontal || state.flipVertical;
-    }
-    if (tool.key === "crop") {
-      return false;
     }
     return false;
   };
@@ -282,38 +271,6 @@ export function CompactToolbar({
         </Animated.View>
       )}
 
-      {selectedTool === "crop" && (
-        <Animated.View
-          entering={FadeIn.duration(150)}
-          exiting={FadeOut.duration(100)}
-          style={styles.cropContentCompact}
-        >
-          <View style={styles.aspectRatioButtonsRow}>
-            <AspectRatioButton
-              label="Free"
-              active={
-                state.aspectRatio === "free" || state.aspectRatio === null
-              }
-              onPress={() => onUpdateAdjustment("aspectRatio", "free")}
-            />
-            <AspectRatioButton
-              label="1:1"
-              active={state.aspectRatio === "square"}
-              onPress={() => onUpdateAdjustment("aspectRatio", "square")}
-            />
-            <AspectRatioButton
-              label="4:3"
-              active={state.aspectRatio === "4:3"}
-              onPress={() => onUpdateAdjustment("aspectRatio", "4:3")}
-            />
-            <AspectRatioButton
-              label="16:9"
-              active={state.aspectRatio === "16:9"}
-              onPress={() => onUpdateAdjustment("aspectRatio", "16:9")}
-            />
-          </View>
-        </Animated.View>
-      )}
     </Animated.View>
   );
 }
@@ -379,32 +336,6 @@ function TransformButton({
           styles.transformBtnText,
           active && styles.transformBtnTextActive,
         ]}
-      >
-        {label}
-      </ThemedText>
-    </Pressable>
-  );
-}
-
-function AspectRatioButton({
-  label,
-  active,
-  onPress,
-}: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        onPress();
-      }}
-      style={[styles.aspectBtn, active && styles.aspectBtnActive]}
-    >
-      <ThemedText
-        style={[styles.aspectBtnText, active && styles.aspectBtnTextActive]}
       >
         {label}
       </ThemedText>
@@ -523,62 +454,5 @@ const styles = StyleSheet.create({
   backgroundContent: {
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
-  },
-  cropHint: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.xs,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    backgroundColor: Colors.editing.backgroundSecondary,
-    borderRadius: BorderRadius.md,
-  },
-  cropHintText: {
-    fontSize: 13,
-    color: Colors.editing.textSecondary,
-  },
-  cropControls: {
-    gap: Spacing.md,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-  },
-  cropLabel: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: Colors.editing.textSecondary,
-    marginBottom: Spacing.xs,
-  },
-  cropContentCompact: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 4,
-  },
-  aspectRatioButtonsRow: {
-    flexDirection: "row",
-    gap: 6,
-    justifyContent: "center",
-  },
-  aspectRatioButtons: {
-    flexDirection: "row",
-    gap: Spacing.xs,
-  },
-  aspectBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: Spacing.sm,
-    borderRadius: BorderRadius.full,
-    backgroundColor: "rgba(0, 0, 0, 0.05)",
-    borderWidth: 1,
-    borderColor: "rgba(0, 0, 0, 0.08)",
-  },
-  aspectBtnActive: {
-    backgroundColor: Colors.editing.primary,
-    borderColor: Colors.editing.primary,
-  },
-  aspectBtnText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: Colors.editing.textSecondary,
-  },
-  aspectBtnTextActive: {
-    color: Colors.editing.buttonText,
   },
 });

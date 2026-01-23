@@ -139,10 +139,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ error: "No image file provided" });
         }
 
-        if (
-          !process.env.AI_INTEGRATIONS_GEMINI_API_KEY ||
-          !process.env.AI_INTEGRATIONS_GEMINI_BASE_URL
-        ) {
+        const geminiApiKey = process.env.AI_INTEGRATIONS_GEMINI_API_KEY;
+        const geminiBaseUrl = process.env.AI_INTEGRATIONS_GEMINI_BASE_URL;
+        if (!geminiApiKey || !geminiBaseUrl) {
+          console.error(
+            "[/api/main-image] Missing Gemini config",
+            JSON.stringify({
+              hasApiKey: Boolean(geminiApiKey),
+              hasBaseUrl: Boolean(geminiBaseUrl),
+            }),
+          );
           return res.status(500).json({
             error:
               "Gemini AI integration is not configured. Please set up the AI integration.",
@@ -150,10 +156,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         const ai = new GoogleGenAI({
-          apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY,
+          apiKey: geminiApiKey,
           httpOptions: {
             apiVersion: "",
-            baseUrl: process.env.AI_INTEGRATIONS_GEMINI_BASE_URL,
+            baseUrl: geminiBaseUrl,
           },
         });
 
@@ -173,34 +179,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Generate prompt with the specified background color and platform
         const prompt = getGenericMainPrompt(backgroundColor, platform);
 
-        const response = await ai.models.generateContent({
-          model: "gemini-2.5-flash-image",
-          contents: [
-            {
-              role: "user",
-              parts: [
-                {
-                  inlineData: {
-                    mimeType: mimeType,
-                    data: base64Image,
+        const generateImage = async () => {
+          return ai.models.generateContent({
+            model: "gemini-2.5-flash-image",
+            contents: [
+              {
+                role: "user",
+                parts: [
+                  {
+                    inlineData: {
+                      mimeType: mimeType,
+                      data: base64Image,
+                    },
                   },
-                },
-                { text: prompt },
-              ],
+                  { text: prompt },
+                ],
+              },
+            ],
+            config: {
+              responseModalities: [Modality.TEXT, Modality.IMAGE],
             },
-          ],
-          config: {
-            responseModalities: [Modality.TEXT, Modality.IMAGE],
-          },
-        });
+          });
+        };
 
-        const candidate = response.candidates?.[0];
-        const imagePart = candidate?.content?.parts?.find(
+        console.log("[/api/main-image] Calling Gemini API...");
+        console.log("[/api/main-image] Using base URL:", process.env.AI_INTEGRATIONS_GEMINI_BASE_URL);
+        
+        let response = await generateImage();
+        let candidate = response.candidates?.[0];
+        let imagePart = candidate?.content?.parts?.find(
           (part: { inlineData?: { data?: string; mimeType?: string } }) =>
             part.inlineData,
         );
 
+        console.log("[/api/main-image] Response received:", {
+          hasCandidates: !!response.candidates,
+          candidateCount: response.candidates?.length || 0,
+          partsCount: candidate?.content?.parts?.length || 0,
+          hasImagePart: !!imagePart?.inlineData?.data,
+          imageDataLength: imagePart?.inlineData?.data?.length || 0,
+        });
+
         if (!imagePart?.inlineData?.data) {
+          console.warn(
+            "[/api/main-image] No image in response, retrying once",
+            JSON.stringify({
+              candidates: response.candidates?.length || 0,
+              hasParts: candidate?.content?.parts?.length || 0,
+            }),
+          );
+          response = await generateImage();
+          candidate = response.candidates?.[0];
+          imagePart = candidate?.content?.parts?.find(
+            (part: { inlineData?: { data?: string; mimeType?: string } }) =>
+              part.inlineData,
+          );
+        }
+
+        if (!imagePart?.inlineData?.data) {
+          console.error(
+            "[/api/main-image] AI did not return image data",
+            JSON.stringify({
+              candidates: response.candidates?.length || 0,
+              hasParts: candidate?.content?.parts?.length || 0,
+            }),
+          );
           return res.status(500).json({
             error: "AI did not return an image. Please try again.",
           });
@@ -211,131 +254,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           "base64",
         );
 
-        const bgRgb = hexToRGB(backgroundColor);
+        const imageMimeType =
+          imagePart.inlineData.mimeType || "image/jpeg";
 
-        // First, get the dimensions of the AI-generated image
-        const generatedMetadata = await sharp(generatedImageBuffer).metadata();
-        const genWidth = generatedMetadata.width || 1024;
-        const genHeight = generatedMetadata.height || 1024;
-
-        // Determine target dimensions based on platform
-        let targetWidth = 2000;
-        let targetHeight = 2000;
-
-        if (platform === "shopify") {
-          targetWidth = 2048;
-          targetHeight = 2048;
-        } else if (platform === "etsy") {
-          targetWidth = 3000;
-          targetHeight = 2250;
-        }
-
-        // Calculate the aspect ratios
-        const genAspect = genWidth / genHeight;
-        const targetAspect = targetWidth / targetHeight;
-
-        // Post-process to ensure uniform background color
-        // Extract raw pixel data and detect the actual background color from edges
-        const processedBuffer = await sharp(generatedImageBuffer)
-          .ensureAlpha()
-          .raw()
-          .toBuffer({ resolveWithObject: true });
-
-        const { data, info } = processedBuffer;
-        const width = info.width;
-        const height = info.height;
-
-        // Detect the most common color in the edge pixels (first/last 10 rows and columns)
-        const edgePixels: { r: number; g: number; b: number }[] = [];
-        const edgeThickness = Math.min(10, Math.floor(Math.min(width, height) * 0.05));
-
-        for (let y = 0; y < height; y++) {
-          for (let x = 0; x < width; x++) {
-            // Check if pixel is on the edge
-            const isEdge = x < edgeThickness || x >= width - edgeThickness || 
-                          y < edgeThickness || y >= height - edgeThickness;
-            if (isEdge) {
-              const idx = (y * width + x) * 4;
-              edgePixels.push({
-                r: data[idx],
-                g: data[idx + 1],
-                b: data[idx + 2],
-              });
-            }
-          }
-        }
-
-        // Find the most common edge color (likely the AI-generated background)
-        const colorCounts = new Map<string, { count: number; r: number; g: number; b: number }>();
-        for (const pixel of edgePixels) {
-          // Quantize colors to reduce noise (group similar colors)
-          const qr = Math.round(pixel.r / 10) * 10;
-          const qg = Math.round(pixel.g / 10) * 10;
-          const qb = Math.round(pixel.b / 10) * 10;
-          const key = `${qr},${qg},${qb}`;
-          
-          const existing = colorCounts.get(key);
-          if (existing) {
-            existing.count++;
-          } else {
-            colorCounts.set(key, { count: 1, r: qr, g: qg, b: qb });
-          }
-        }
-
-        // Get the most common edge color
-        let dominantEdgeColor = { r: 255, g: 255, b: 255 };
-        let maxCount = 0;
-        for (const [, value] of colorCounts) {
-          if (value.count > maxCount) {
-            maxCount = value.count;
-            dominantEdgeColor = { r: value.r, g: value.g, b: value.b };
-          }
-        }
-
-        console.log(`[Background Fix] Detected edge color: RGB(${dominantEdgeColor.r}, ${dominantEdgeColor.g}, ${dominantEdgeColor.b})`);
-        console.log(`[Background Fix] Target color: RGB(${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b})`);
-
-        const tolerance = 50; // Color tolerance for detecting background pixels
-
-        // Replace pixels close to the detected edge color with the requested background color
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i];
-          const g = data[i + 1];
-          const b = data[i + 2];
-          
-          // Check if this pixel is close to the detected edge (background) color
-          const diffR = Math.abs(r - dominantEdgeColor.r);
-          const diffG = Math.abs(g - dominantEdgeColor.g);
-          const diffB = Math.abs(b - dominantEdgeColor.b);
-          
-          if (diffR <= tolerance && diffG <= tolerance && diffB <= tolerance) {
-            // Replace with the requested background color
-            data[i] = bgRgb.r;
-            data[i + 1] = bgRgb.g;
-            data[i + 2] = bgRgb.b;
-            data[i + 3] = 255; // Full opacity
-          }
-        }
-
-        // Reconstruct the image with corrected background and resize in one step
-        const finalBuffer = await sharp(data, {
-          raw: { width: info.width, height: info.height, channels: 4 },
-        })
-          .removeAlpha()
-          .resize(targetWidth, targetHeight, {
-            fit: "cover",
-            position: "center",
-          })
-          .flatten({ background: { r: bgRgb.r, g: bgRgb.g, b: bgRgb.b } })
-          .jpeg({ quality: 95 })
-          .toBuffer();
-
-        res.set("Content-Type", "image/jpeg");
+        res.set("Content-Type", imageMimeType);
         res.set(
           "Content-Disposition",
-          `attachment; filename="${platform}-main.jpg"`,
+          `attachment; filename="${platform}-main.${imageMimeType.split("/")[1] || "jpg"}"`,
         );
-        res.send(finalBuffer);
+        res.send(generatedImageBuffer);
       } catch (error) {
         console.error("Error processing image:", error);
         const errorMessage =

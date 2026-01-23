@@ -13,7 +13,7 @@ import { ThemedText } from "./ThemedText";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import type { QuickFixState } from "@/hooks/useQuickFix";
 
-type ToolKey = "rotate" | "flip" | "crop" | "brightness" | "contrast";
+type ToolKey = "rotate" | "flip" | "brightness" | "contrast";
 
 interface QuickFixToolbarProps {
   state: QuickFixState;
@@ -23,15 +23,12 @@ interface QuickFixToolbarProps {
   onRotateCCW: () => void;
   onToggleFlipHorizontal: () => void;
   onToggleFlipVertical: () => void;
-  onAspectRatioChange: (ratio: QuickFixState["aspectRatio"]) => void;
-  onResetCrop: () => void;
   isHidden?: boolean;
 }
 
 const TOOLS = [
   { key: "rotate" as ToolKey, label: "Rotate", icon: "rotate-cw" as const },
   { key: "flip" as ToolKey, label: "Flip", icon: "repeat" as const },
-  { key: "crop" as ToolKey, label: "Crop", icon: "crop" as const },
   { key: "brightness" as ToolKey, label: "Brightness", icon: "sun" as const },
   { key: "contrast" as ToolKey, label: "Contrast", icon: "circle" as const },
 ];
@@ -44,8 +41,6 @@ export function QuickFixToolbar({
   onRotateCCW,
   onToggleFlipHorizontal,
   onToggleFlipVertical,
-  onAspectRatioChange,
-  onResetCrop,
   isHidden = false,
 }: QuickFixToolbarProps) {
   const getToolModified = (toolKey: ToolKey): boolean => {
@@ -54,9 +49,6 @@ export function QuickFixToolbar({
     }
     if (toolKey === "flip") {
       return state.flipHorizontal || state.flipVertical;
-    }
-    if (toolKey === "crop") {
-      return state.crop !== null;
     }
     if (toolKey === "brightness") {
       return state.brightness !== 0;
@@ -169,58 +161,6 @@ export function QuickFixToolbar({
         </Animated.View>
       )}
 
-      {/* Crop Controls */}
-      {selectedTool === "crop" && (
-        <Animated.View
-          entering={FadeIn.duration(150)}
-          exiting={FadeOut.duration(100)}
-          style={styles.cropContent}
-        >
-          <View style={styles.aspectRatioButtons}>
-            <AspectRatioButton
-              label="Free"
-              active={
-                state.aspectRatio === "free" || state.aspectRatio === null
-              }
-              onPress={() => onAspectRatioChange("free")}
-            />
-            <AspectRatioButton
-              label="1:1"
-              active={state.aspectRatio === "square"}
-              onPress={() => onAspectRatioChange("square")}
-            />
-            <AspectRatioButton
-              label="4:3"
-              active={state.aspectRatio === "4:3"}
-              onPress={() => onAspectRatioChange("4:3")}
-            />
-            <AspectRatioButton
-              label="16:9"
-              active={state.aspectRatio === "16:9"}
-              onPress={() => onAspectRatioChange("16:9")}
-            />
-            <AspectRatioButton
-              label="2:3"
-              active={state.aspectRatio === "2:3"}
-              onPress={() => onAspectRatioChange("2:3")}
-            />
-            <Pressable
-              style={styles.resetCropButton}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                onResetCrop();
-              }}
-            >
-              <Feather
-                name="refresh-ccw"
-                size={16}
-                color={Colors.editing.textSecondary}
-              />
-            </Pressable>
-          </View>
-        </Animated.View>
-      )}
-
       {/* Brightness/Contrast Gesture Hint */}
       {(selectedTool === "brightness" || selectedTool === "contrast") && (
         <Animated.View
@@ -327,32 +267,6 @@ function TransformButton({
   );
 }
 
-function AspectRatioButton({
-  label,
-  active,
-  onPress,
-}: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        onPress();
-      }}
-      style={[styles.aspectBtn, active && styles.aspectBtnActive]}
-    >
-      <ThemedText
-        style={[styles.aspectBtnText, active && styles.aspectBtnTextActive]}
-      >
-        {label}
-      </ThemedText>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   container: {
     backgroundColor: "rgba(255, 255, 255, 0.95)",
@@ -440,45 +354,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     color: Colors.editing.primary,
-  },
-  cropContent: {
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.sm,
-  },
-  aspectRatioButtons: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: Spacing.xs,
-  },
-  aspectBtn: {
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    borderRadius: BorderRadius.full,
-    backgroundColor: "rgba(0, 0, 0, 0.05)",
-    borderWidth: 1,
-    borderColor: "rgba(0, 0, 0, 0.08)",
-  },
-  aspectBtnActive: {
-    backgroundColor: Colors.editing.primary,
-    borderColor: Colors.editing.primary,
-  },
-  aspectBtnText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: Colors.editing.textSecondary,
-  },
-  aspectBtnTextActive: {
-    color: Colors.editing.buttonText,
-  },
-  resetCropButton: {
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.sm,
-    borderRadius: BorderRadius.full,
-    backgroundColor: "rgba(0, 0, 0, 0.05)",
-    borderWidth: 1,
-    borderColor: "rgba(0, 0, 0, 0.08)",
-    justifyContent: "center",
-    alignItems: "center",
   },
   gestureHintContainer: {
     flexDirection: "row",

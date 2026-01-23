@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -55,8 +55,32 @@ export default function ResultScreen() {
   const [resultUri, setResultUri] = useState(initialResultUri);
   const [isRetrying, setIsRetrying] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
+  const [imageDimensions, setImageDimensions] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
   
   const { pendingEditResult, setPendingEditResult } = useBatchEdit();
+
+  useEffect(() => {
+    let isMounted = true;
+    Image.getSize(
+      resultUri,
+      (width, height) => {
+        if (isMounted) {
+          setImageDimensions({ width, height });
+        }
+      },
+      () => {
+        if (isMounted) {
+          setImageDimensions(null);
+        }
+      },
+    );
+    return () => {
+      isMounted = false;
+    };
+  }, [resultUri]);
 
   // Process pending edit result when screen regains focus
   useFocusEffect(
@@ -302,7 +326,14 @@ export default function ResultScreen() {
             <Animated.View
               entering={FadeIn.duration(400)}
               exiting={FadeOut.duration(200)}
-              style={styles.imageContainer}
+              style={[
+                styles.imageContainer,
+                imageDimensions && {
+                  height:
+                    (IMAGE_SIZE * imageDimensions.height) /
+                    imageDimensions.width,
+                },
+              ]}
             >
               <Image
                 source={{ uri: resultUri }}
