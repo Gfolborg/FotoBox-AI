@@ -178,7 +178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // This ensures the image is displayed correctly regardless of camera orientation
         const normalizedBuffer = await sharp(req.file.buffer)
           .rotate() // Auto-rotate based on EXIF orientation
-          .jpeg({ quality: 95 })
+          .jpeg({ quality: 100 })
           .toBuffer();
         
         const base64Image = normalizedBuffer.toString("base64");
@@ -579,7 +579,7 @@ The background MUST be completely removed and replaced with the exact solid colo
         }
 
         // Convert to JPEG with high quality
-        const editedBuffer = await pipeline.jpeg({ quality: 95 }).toBuffer();
+        const editedBuffer = await pipeline.jpeg({ quality: 100 }).toBuffer();
 
         res.set("Content-Type", "image/jpeg");
         res.set(
@@ -688,7 +688,7 @@ The background MUST be completely removed and replaced with the exact solid colo
             fit: "contain",
             background: { r: 255, g: 255, b: 255 },
           })
-          .jpeg({ quality: 95 })
+          .jpeg({ quality: 100 })
           .toBuffer();
 
         res.set("Content-Type", "image/jpeg");
@@ -803,7 +803,7 @@ Additional requirements:
             fit: "contain",
             background: { r: 255, g: 255, b: 255 },
           })
-          .jpeg({ quality: 95 })
+          .jpeg({ quality: 100 })
           .toBuffer();
 
         // Return as base64 data URI for easy handling on client
