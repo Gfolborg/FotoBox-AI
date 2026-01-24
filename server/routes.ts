@@ -894,6 +894,7 @@ The background MUST be completely removed and replaced with the exact solid colo
           "base64",
         );
         const trimmedResult = await trimUniformBorders(generatedImageBuffer);
+        console.log("[/api/lifestyle-scene] Borders trimmed:", trimmedResult.trimmed);
 
         res.set("Content-Type", "image/png");
         res.set(
