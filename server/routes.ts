@@ -285,11 +285,12 @@ function getLifestyleScenePrompt(
 CRITICAL INSTRUCTIONS:
  - Keep the product EXACTLY the same (do not modify, repaint, or change any details of the product).
  - The product should be the clear focal point of the image.
- - Generate a photorealistic lifestyle scene.
+ - Generate a photorealistic lifestyle scene in HIGH RESOLUTION (at least 2048x2048 pixels).
+ - The image must be sharp, detailed, and suitable for professional e-commerce use.
  - Maintain ${shadowControl || "natural"} shadows and reflections consistent with the environment lighting.
  - The scene must fill the entire frame edge-to-edge. Do NOT add padding, borders, or solid-color bars.
  - The scene should look like a professional product photography shoot.
- - Output a photorealistic image with no text, no watermark, no borders.
+ - Output a high-quality, photorealistic image with no text, no watermark, no borders.
  - The composition should be balanced and aesthetically pleasing.`;
 }
 
@@ -896,13 +897,36 @@ The background MUST be completely removed and replaced with the exact solid colo
         const trimmedResult = await trimUniformBorders(generatedImageBuffer);
         console.log("[/api/lifestyle-scene] Borders trimmed:", trimmedResult.trimmed);
 
+        // Get current dimensions and upscale if needed for HD quality
+        const metadata = await sharp(trimmedResult.buffer).metadata();
+        const currentWidth = metadata.width || 0;
+        const currentHeight = metadata.height || 0;
+        const minDimension = 2000;
+
+        let finalBuffer = trimmedResult.buffer;
+        if (currentWidth < minDimension || currentHeight < minDimension) {
+          // Calculate scale factor to reach at least 2000px on the smaller side
+          const scale = Math.max(minDimension / currentWidth, minDimension / currentHeight);
+          const newWidth = Math.round(currentWidth * scale);
+          const newHeight = Math.round(currentHeight * scale);
+          
+          finalBuffer = await sharp(trimmedResult.buffer)
+            .resize(newWidth, newHeight, {
+              kernel: sharp.kernel.lanczos3, // High-quality upscaling
+            })
+            .png({ quality: 100 })
+            .toBuffer();
+          
+          console.log(`[/api/lifestyle-scene] Upscaled from ${currentWidth}x${currentHeight} to ${newWidth}x${newHeight}`);
+        }
+
         res.set("Content-Type", "image/png");
         res.set(
           "Content-Disposition",
           'attachment; filename="lifestyle-scene.png"',
         );
         res.set("X-Trimmed-Borders", trimmedResult.trimmed ? "true" : "false");
-        res.send(trimmedResult.buffer);
+        res.send(finalBuffer);
       } catch (error) {
         console.error("Error generating lifestyle scene:", error);
         const errorMessage =
