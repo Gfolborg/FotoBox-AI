@@ -105,6 +105,10 @@ export default function BatchActionSelectionScreen() {
     navigation.replace("EnvironmentSelection", { imageUris });
   };
 
+  const handleCreateMockup = () => {
+    navigation.replace("MockupSelection", { imageUris });
+  };
+
   return (
     <GradientBackground theme="home">
       <StatusBar style="dark" />
@@ -189,6 +193,15 @@ export default function BatchActionSelectionScreen() {
               color={Colors.editing.secondary}
               onPress={handleCreateLifestyle}
               delay={400}
+            />
+
+            <ActionCard
+              icon="box"
+              title="Create Mockups"
+              description="Generate realistic product mockups"
+              color="#A78BFA"
+              onPress={handleCreateMockup}
+              delay={500}
             />
           </View>
         </ScrollView>

@@ -57,6 +57,7 @@ function getLifestyleScenePrompt(
   isCustom: boolean,
   productDescription?: string,
   shadowControl?: string,
+  cameraAngle?: string,
 ): string {
   let basePrompt: string;
 
@@ -78,13 +79,40 @@ function getLifestyleScenePrompt(
     }
   }
 
+  const cameraAngleInstructions: Record<string, string> = {
+    "ultra close-up":
+      "Macro detail shot. Product fills 70–90% of the frame with shallow depth of field.",
+    "close-up":
+      "Tight framing. Product fills 50–70% of the frame with minimal background.",
+    medium:
+      "Balanced hero shot. Product fills 30–50% of the frame with some context visible.",
+    "wide / environmental":
+      "Wide environmental shot. Product fills 15–30% of the frame with the environment dominant.",
+    "eye-level":
+      "Camera at product mid-height, straight-on perspective with level horizon.",
+    "low angle":
+      "Camera below the product looking up, subtle converging lines.",
+    "high angle":
+      "Camera above the product looking down at ~45° angle.",
+    "three-quarter":
+      "Three-quarter view showing the front and side surfaces at about 45°.",
+  };
+  const cameraAngleInstruction = cameraAngle
+    ? cameraAngleInstructions[cameraAngle]
+    : "";
+  const cameraAngleLine = cameraAngle
+    ? `- Camera angle MUST match: ${cameraAngle}. ${cameraAngleInstruction}
+- Re-photograph the product from this angle; do NOT preserve the original camera viewpoint.
+- You may change perspective and framing to achieve the required angle, while keeping the product details identical.`
+    : "";
+
   return `${basePrompt}
 
 CRITICAL INSTRUCTIONS:
-- Keep the product EXACTLY the same (do not modify, repaint, or change any details of the product).
 - The product should be the clear focal point of the image.
 - Generate a photorealistic lifestyle scene.
 - Maintain ${shadowControl || "natural"} shadows and reflections consistent with the environment lighting.
+${cameraAngleLine}
 - The scene should look like a professional product photography shoot.
 - Output a square image, photorealistic, no text, no watermark, no borders.
 - The composition should be balanced and aesthetically pleasing.`;
@@ -630,7 +658,8 @@ The background MUST be completely removed and replaced with the exact solid colo
         const environment = (req.query.environment as string) || "minimal";
         const isCustom = (req.query.isCustom as string) === "true";
         const productDescription = req.query.productDescription as string;
-        const shadowControl = req.query.shadowControl as string; // Extract new parameter
+        const shadowControl = req.query.shadowControl as string;
+        const cameraAngle = req.query.cameraAngle as string;
 
         const imageBuffer = req.file.buffer;
         const base64Image = imageBuffer.toString("base64");
@@ -641,8 +670,12 @@ The background MUST be completely removed and replaced with the exact solid colo
           environment,
           isCustom,
           productDescription,
-          shadowControl, // Pass the new parameter
+          shadowControl,
+          cameraAngle,
         );
+
+        console.log("[/api/lifestyle-scene] Camera angle:", cameraAngle);
+        console.log("[/api/lifestyle-scene] Prompt:", prompt);
 
         const response = await ai.models.generateContent({
           model: "gemini-2.5-flash-image",

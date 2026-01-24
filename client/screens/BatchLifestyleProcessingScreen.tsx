@@ -32,8 +32,13 @@ export default function BatchLifestyleProcessingScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
-  const { imageUris, environment, productDescription, shadowControl } =
-    route.params;
+  const {
+    imageUris,
+    environment,
+    productDescription,
+    shadowControl,
+    cameraAngle,
+  } = route.params;
 
   const [results, setResults] = useState<ProcessingResult[]>(
     imageUris.map((uri) => ({
@@ -115,6 +120,9 @@ export default function BatchLifestyleProcessingScreen() {
     }
     if (shadowControl && shadowControl !== "natural") {
       params.append("shadowControl", shadowControl);
+    }
+    if (cameraAngle) {
+      params.append("cameraAngle", cameraAngle);
     }
 
     endpoint += `?${params.toString()}`;

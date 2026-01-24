@@ -137,6 +137,7 @@ export default function EnvironmentSelectionScreen() {
   const [selectedScene, setSelectedScene] = useState<string>("");
   const [selectedShadowControl, setSelectedShadowControl] =
     useState<string>("natural");
+  const [selectedCameraAngle, setSelectedCameraAngle] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSceneError, setShowSceneError] = useState(false);
   const { history: promptHistory, addToHistory } = usePromptHistory();
@@ -224,6 +225,7 @@ export default function EnvironmentSelectionScreen() {
           selectedShadowControl !== "natural"
             ? selectedShadowControl
             : undefined,
+        cameraAngle: selectedCameraAngle || undefined,
       });
       return;
     }
@@ -255,6 +257,9 @@ export default function EnvironmentSelectionScreen() {
 
       if (selectedShadowControl !== "natural") {
         params.append("shadowControl", selectedShadowControl);
+      }
+      if (selectedCameraAngle) {
+        params.append("cameraAngle", selectedCameraAngle);
       }
 
       endpoint += `?${params.toString()}`;
@@ -319,6 +324,16 @@ export default function EnvironmentSelectionScreen() {
     { id: "no shadows", label: "None" },
     { id: "subtle shadows", label: "Subtle" },
     { id: "prominent shadows", label: "Strong" },
+  ];
+  const cameraAngleOptions = [
+    { id: "ultra close-up", label: "Ultra close-up" },
+    { id: "close-up", label: "Close-up" },
+    { id: "medium", label: "Medium" },
+    { id: "wide / environmental", label: "Wide/Environmental" },
+    { id: "eye-level", label: "Eye-level" },
+    { id: "low angle", label: "Low angle" },
+    { id: "high angle", label: "High angle" },
+    { id: "three-quarter", label: "3/4" },
   ];
 
   return (
@@ -548,6 +563,46 @@ export default function EnvironmentSelectionScreen() {
             </View>
           </Animated.View>
 
+          {/* Camera Angle */}
+          <Animated.View
+            entering={FadeInDown.delay(375).duration(400)}
+            style={styles.section}
+          >
+            <View style={styles.sectionHeader}>
+              <Feather name="camera" size={18} color={Colors.editing.primary} />
+              <ThemedText style={styles.sectionTitle}>Camera Angle</ThemedText>
+              <ThemedText style={styles.optionalBadge}>Optional</ThemedText>
+            </View>
+            <View style={styles.shadowGrid}>
+              {cameraAngleOptions.map((option) => (
+                <Pressable
+                  key={option.id}
+                  style={[
+                    styles.shadowChip,
+                    selectedCameraAngle === option.id &&
+                      styles.shadowChipSelected,
+                  ]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setSelectedCameraAngle((prev) =>
+                      prev === option.id ? "" : option.id,
+                    );
+                  }}
+                >
+                  <ThemedText
+                    style={[
+                      styles.shadowChipText,
+                      selectedCameraAngle === option.id &&
+                        styles.shadowChipTextSelected,
+                    ]}
+                  >
+                    {option.label}
+                  </ThemedText>
+                </Pressable>
+              ))}
+            </View>
+          </Animated.View>
+
           {/* Scene Presets */}
           <Animated.View
             entering={FadeInDown.delay(400).duration(400)}
@@ -628,7 +683,13 @@ export default function EnvironmentSelectionScreen() {
             entering={FadeIn.duration(200)}
             style={styles.processingOverlay}
           >
-            <GlassCard theme="light" padding="xl" borderRadius="2xl">
+            <GlassCard
+              theme="dark"
+              variant="solid"
+              padding="xl"
+              borderRadius="2xl"
+              style={styles.processingCard}
+            >
               <View style={styles.processingContent}>
                 <ProgressRing
                   progress={0.7}
@@ -978,14 +1039,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: Spacing.lg,
   },
+  processingCard: {
+    width: "100%",
+    maxWidth: 340,
+  },
   processingTitle: {
-    color: Colors.editing.text,
+    color: Colors.dark.text,
     fontSize: 18,
     fontWeight: "600",
     textAlign: "center",
   },
   processingHint: {
-    color: Colors.editing.textSecondary,
+    color: Colors.dark.textSecondary,
     fontSize: 14,
     textAlign: "center",
   },

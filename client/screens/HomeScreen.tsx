@@ -29,13 +29,18 @@ export default function HomeScreen() {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsMultipleSelection: false,
+      allowsMultipleSelection: true,
+      selectionLimit: 10,
       quality: 1,
     });
 
     if (!result.canceled && result.assets.length > 0) {
-      const imageUri = result.assets[0].uri;
-      navigation.navigate("QuickFix", { imageUri });
+      const imageUris = result.assets.map((asset) => asset.uri).slice(0, 10);
+      if (imageUris.length === 1) {
+        navigation.navigate("QuickFix", { imageUri: imageUris[0] });
+        return;
+      }
+      navigation.navigate("BatchActionSelection", { imageUris });
     }
   };
 
