@@ -100,19 +100,23 @@ function getLifestyleScenePrompt(
   const cameraAngleInstruction = cameraAngle
     ? cameraAngleInstructions[cameraAngle]
     : "";
-  const cameraAngleLine = cameraAngle
-    ? `- Camera angle MUST match: ${cameraAngle}. ${cameraAngleInstruction}
-- Re-photograph the product from this angle; do NOT preserve the original camera viewpoint.
-- You may change perspective and framing to achieve the required angle, while keeping the product details identical.`
+  
+  // Build camera angle block - placed first for priority
+  const cameraAngleBlock = cameraAngle
+    ? `MANDATORY CAMERA ANGLE - THIS IS THE HIGHEST PRIORITY:
+Shot type: ${cameraAngle.toUpperCase()}
+${cameraAngleInstruction}
+You MUST compose the image from this exact camera angle. The angle defines how close or far the camera is and its vertical position relative to the product. Do not ignore this instruction.
+
+`
     : "";
 
-  return `${basePrompt}
+  return `${cameraAngleBlock}${basePrompt}
 
 CRITICAL INSTRUCTIONS:
 - The product should be the clear focal point of the image.
 - Generate a photorealistic lifestyle scene.
 - Maintain ${shadowControl || "natural"} shadows and reflections consistent with the environment lighting.
-${cameraAngleLine}
 - The scene should look like a professional product photography shoot.
 - Output a square image, photorealistic, no text, no watermark, no borders.
 - The composition should be balanced and aesthetically pleasing.`;
