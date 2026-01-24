@@ -83,6 +83,16 @@ export default function LifestyleResultScreen() {
   
   const { pendingEditResult, setPendingEditResult } = useBatchEdit();
 
+  const getExtensionFromDataUri = (dataUri: string): string => {
+    const match = dataUri.match(/^data:image\/([a-zA-Z0-9+]+);base64,/);
+    if (!match) return "jpg";
+    const raw = match[1].toLowerCase();
+    if (raw === "jpeg") return "jpg";
+    if (raw === "png") return "png";
+    if (raw === "webp") return "webp";
+    return "jpg";
+  };
+
   // Process pending edit result when screen regains focus
   useFocusEffect(
     useCallback(() => {
@@ -98,7 +108,8 @@ export default function LifestyleResultScreen() {
 
     try {
       // Save the result to a file for platform selection
-      const filename = `platform_temp_${Date.now()}.jpg`;
+      const extension = getExtensionFromDataUri(resultUri);
+      const filename = `platform_temp_${Date.now()}.${extension}`;
       const fileUri = FileSystem.documentDirectory + filename;
 
       const base64Data = resultUri.split(",")[1];
@@ -139,7 +150,8 @@ export default function LifestyleResultScreen() {
         return;
       }
       
-      const filename = `edit_temp_${Date.now()}.jpg`;
+      const extension = getExtensionFromDataUri(resultUri);
+      const filename = `edit_temp_${Date.now()}.${extension}`;
       const fileUri = FileSystem.documentDirectory + filename;
 
       const base64Data = resultUri.split(",")[1];

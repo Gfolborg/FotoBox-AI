@@ -35,11 +35,13 @@ import { GlassCard } from "@/components/GlassCard";
 import { GradientButton } from "@/components/GradientButton";
 import { ProgressRing } from "@/components/ProgressRing";
 import { ScrollIndicator } from "@/components/ScrollIndicator";
+import { PlatformChip } from "@/components/PlatformChip";
 import { GradientBackground } from "@/components/GradientBackground";
 import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getApiUrl } from "@/lib/query-client";
 import { SCENES, Scene } from "@/lib/lifestyle-scenes";
+import { getAllPlatforms } from "@/lib/platform-requirements";
 import { usePromptHistory } from "@/hooks/usePromptHistory";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -137,13 +139,14 @@ export default function EnvironmentSelectionScreen() {
   const [selectedScene, setSelectedScene] = useState<string>("");
   const [selectedShadowControl, setSelectedShadowControl] =
     useState<string>("natural");
-  const [selectedCameraAngle, setSelectedCameraAngle] = useState<string>("");
+  const [selectedPlatformId, setSelectedPlatformId] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSceneError, setShowSceneError] = useState(false);
   const { history: promptHistory, addToHistory } = usePromptHistory();
 
   const isBatchMode = selectedImages.length > 1;
   const imageUri = selectedImages[0] || null;
+  const allPlatforms = getAllPlatforms();
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
@@ -225,7 +228,7 @@ export default function EnvironmentSelectionScreen() {
           selectedShadowControl !== "natural"
             ? selectedShadowControl
             : undefined,
-        cameraAngle: selectedCameraAngle || undefined,
+        platform: selectedPlatformId || undefined,
       });
       return;
     }
@@ -258,8 +261,8 @@ export default function EnvironmentSelectionScreen() {
       if (selectedShadowControl !== "natural") {
         params.append("shadowControl", selectedShadowControl);
       }
-      if (selectedCameraAngle) {
-        params.append("cameraAngle", selectedCameraAngle);
+      if (selectedPlatformId) {
+        params.append("platform", selectedPlatformId);
       }
 
       endpoint += `?${params.toString()}`;
@@ -324,16 +327,6 @@ export default function EnvironmentSelectionScreen() {
     { id: "no shadows", label: "None" },
     { id: "subtle shadows", label: "Subtle" },
     { id: "prominent shadows", label: "Strong" },
-  ];
-  const cameraAngleOptions = [
-    { id: "ultra close-up", label: "Ultra close-up" },
-    { id: "close-up", label: "Close-up" },
-    { id: "medium", label: "Medium" },
-    { id: "wide / environmental", label: "Wide/Environmental" },
-    { id: "eye-level", label: "Eye-level" },
-    { id: "low angle", label: "Low angle" },
-    { id: "high angle", label: "High angle" },
-    { id: "three-quarter", label: "3/4" },
   ];
 
   return (
@@ -563,42 +556,33 @@ export default function EnvironmentSelectionScreen() {
             </View>
           </Animated.View>
 
-          {/* Camera Angle */}
+          {/* Platform Aspect Ratio */}
           <Animated.View
             entering={FadeInDown.delay(375).duration(400)}
             style={styles.section}
           >
             <View style={styles.sectionHeader}>
-              <Feather name="camera" size={18} color={Colors.editing.primary} />
-              <ThemedText style={styles.sectionTitle}>Camera Angle</ThemedText>
+              <Feather name="crop" size={18} color={Colors.editing.primary} />
+              <ThemedText style={styles.sectionTitle}>
+                Platform Aspect Ratio
+              </ThemedText>
               <ThemedText style={styles.optionalBadge}>Optional</ThemedText>
             </View>
-            <View style={styles.shadowGrid}>
-              {cameraAngleOptions.map((option) => (
-                <Pressable
-                  key={option.id}
-                  style={[
-                    styles.shadowChip,
-                    selectedCameraAngle === option.id &&
-                      styles.shadowChipSelected,
-                  ]}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setSelectedCameraAngle((prev) =>
-                      prev === option.id ? "" : option.id,
-                    );
-                  }}
-                >
-                  <ThemedText
-                    style={[
-                      styles.shadowChipText,
-                      selectedCameraAngle === option.id &&
-                        styles.shadowChipTextSelected,
-                    ]}
-                  >
-                    {option.label}
-                  </ThemedText>
-                </Pressable>
+            <ThemedText style={styles.sectionSubtitle}>
+              AI will generate an image matching the selected platform ratio
+            </ThemedText>
+            <View style={styles.platformGrid}>
+              {allPlatforms.map((platform) => (
+                <PlatformChip
+                  key={platform.id}
+                  platform={platform}
+                  selected={selectedPlatformId === platform.id}
+                  onPress={() =>
+                    setSelectedPlatformId((prev) =>
+                      prev === platform.id ? "" : platform.id,
+                    )
+                  }
+                />
               ))}
             </View>
           </Animated.View>
@@ -906,6 +890,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: Spacing.sm,
+  },
+  platformGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: Spacing.sm,
+    marginTop: Spacing.sm,
   },
   shadowChip: {
     paddingHorizontal: Spacing.lg,

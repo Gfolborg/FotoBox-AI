@@ -4,6 +4,16 @@ import { Platform } from "react-native";
 
 const ALBUM_NAME = "FotoBox";
 
+const getExtensionFromDataUri = (dataUri: string): string => {
+  const match = dataUri.match(/^data:image\/([a-zA-Z0-9+]+);base64,/);
+  if (!match) return "jpg";
+  const raw = match[1].toLowerCase();
+  if (raw === "jpeg") return "jpg";
+  if (raw === "png") return "png";
+  if (raw === "webp") return "webp";
+  return "jpg";
+};
+
 /**
  * Saves a base64 image to the FotoBox album in the user's gallery.
  * Creates the album if it doesn't exist.
@@ -23,7 +33,8 @@ export async function saveToFotoBoxAlbum(
     }
 
     // Write base64 to temporary file
-    const filename = `${filenamePrefix}_${Date.now()}.jpg`;
+    const extension = getExtensionFromDataUri(base64Uri);
+    const filename = `${filenamePrefix}_${Date.now()}.${extension}`;
     const fileUri = FileSystem.documentDirectory + filename;
     const base64Data = base64Uri.split(",")[1];
 

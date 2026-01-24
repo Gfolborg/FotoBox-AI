@@ -79,7 +79,7 @@ export type RootStackParamList = {
     environment: string;
     productDescription?: string;
     shadowControl?: string;
-    cameraAngle?: string;
+    platform?: string;
   };
   BatchLifestyleResult: {
     results: {

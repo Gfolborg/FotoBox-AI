@@ -37,7 +37,7 @@ export default function BatchLifestyleProcessingScreen() {
     environment,
     productDescription,
     shadowControl,
-    cameraAngle,
+    platform,
   } = route.params;
 
   const [results, setResults] = useState<ProcessingResult[]>(
@@ -121,8 +121,8 @@ export default function BatchLifestyleProcessingScreen() {
     if (shadowControl && shadowControl !== "natural") {
       params.append("shadowControl", shadowControl);
     }
-    if (cameraAngle) {
-      params.append("cameraAngle", cameraAngle);
+    if (platform) {
+      params.append("platform", platform);
     }
 
     endpoint += `?${params.toString()}`;

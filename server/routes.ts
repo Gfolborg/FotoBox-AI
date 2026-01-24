@@ -29,6 +29,175 @@ function hexToRGB(hex: string): { r: number; g: number; b: number } {
   };
 }
 
+type RGB = { r: number; g: number; b: number };
+
+async function trimUniformBorders(
+  buffer: Buffer,
+): Promise<{ buffer: Buffer; trimmed: boolean }> {
+  const image = sharp(buffer).ensureAlpha();
+  const { data, info } = await image
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  const width = info.width;
+  const height = info.height;
+  const channels = info.channels;
+
+  const sampleSize = 10;
+  const colorThreshold = 12;
+  const maxTrimRatio = 0.35;
+  const sampleStep = Math.max(4, Math.floor(Math.min(width, height) / 100));
+
+  const clamp = (value: number, min: number, max: number) =>
+    Math.max(min, Math.min(max, value));
+
+  const sampleBlock = (startX: number, startY: number): RGB => {
+    const safeStartX = clamp(startX, 0, width - 1);
+    const safeStartY = clamp(startY, 0, height - 1);
+    const endX = clamp(safeStartX + sampleSize, 0, width);
+    const endY = clamp(safeStartY + sampleSize, 0, height);
+    let r = 0;
+    let g = 0;
+    let b = 0;
+    let count = 0;
+    for (let y = safeStartY; y < endY; y += 1) {
+      for (let x = safeStartX; x < endX; x += 1) {
+        const idx = (y * width + x) * channels;
+        r += data[idx];
+        g += data[idx + 1];
+        b += data[idx + 2];
+        count += 1;
+      }
+    }
+    return {
+      r: Math.round(r / count),
+      g: Math.round(g / count),
+      b: Math.round(b / count),
+    };
+  };
+
+  const corners = [
+    sampleBlock(0, 0),
+    sampleBlock(width - sampleSize, 0),
+    sampleBlock(0, height - sampleSize),
+    sampleBlock(width - sampleSize, height - sampleSize),
+  ];
+
+  const avgCorner = corners.reduce(
+    (acc, c) => ({
+      r: acc.r + c.r,
+      g: acc.g + c.g,
+      b: acc.b + c.b,
+    }),
+    { r: 0, g: 0, b: 0 },
+  );
+
+  const background: RGB = {
+    r: Math.round(avgCorner.r / corners.length),
+    g: Math.round(avgCorner.g / corners.length),
+    b: Math.round(avgCorner.b / corners.length),
+  };
+
+  const cornerVariance = corners.some((c) => {
+    const diff =
+      Math.abs(c.r - background.r) +
+      Math.abs(c.g - background.g) +
+      Math.abs(c.b - background.b);
+    return diff > colorThreshold * 3;
+  });
+
+  if (cornerVariance) {
+    return { buffer, trimmed: false };
+  }
+
+  const alphaThreshold = 12;
+
+  const isBackgroundPixel = (idx: number) => {
+    if (channels >= 4) {
+      const alpha = data[idx + 3];
+      if (alpha <= alphaThreshold) {
+        return true;
+      }
+    }
+    const diff =
+      Math.abs(data[idx] - background.r) +
+      Math.abs(data[idx + 1] - background.g) +
+      Math.abs(data[idx + 2] - background.b);
+    return diff <= colorThreshold * 3;
+  };
+
+  const isBackgroundRow = (y: number) => {
+    let total = 0;
+    let matches = 0;
+    for (let x = 0; x < width; x += sampleStep) {
+      const idx = (y * width + x) * channels;
+      total += 1;
+      if (isBackgroundPixel(idx)) {
+        matches += 1;
+      }
+    }
+    return matches / total >= 0.98;
+  };
+
+  const isBackgroundColumn = (x: number) => {
+    let total = 0;
+    let matches = 0;
+    for (let y = 0; y < height; y += sampleStep) {
+      const idx = (y * width + x) * channels;
+      total += 1;
+      if (isBackgroundPixel(idx)) {
+        matches += 1;
+      }
+    }
+    return matches / total >= 0.98;
+  };
+
+  const maxTrimTop = Math.floor(height * maxTrimRatio);
+  const maxTrimBottom = Math.floor(height * maxTrimRatio);
+  const maxTrimLeft = Math.floor(width * maxTrimRatio);
+  const maxTrimRight = Math.floor(width * maxTrimRatio);
+
+  let top = 0;
+  while (top < maxTrimTop && isBackgroundRow(top)) top += 1;
+
+  let bottom = 0;
+  while (
+    bottom < maxTrimBottom &&
+    isBackgroundRow(height - 1 - bottom)
+  ) {
+    bottom += 1;
+  }
+
+  let left = 0;
+  while (left < maxTrimLeft && isBackgroundColumn(left)) left += 1;
+
+  let right = 0;
+  while (
+    right < maxTrimRight &&
+    isBackgroundColumn(width - 1 - right)
+  ) {
+    right += 1;
+  }
+
+  const trimmedWidth = width - left - right;
+  const trimmedHeight = height - top - bottom;
+
+  if (
+    trimmedWidth <= 0 ||
+    trimmedHeight <= 0 ||
+    (top === 0 && bottom === 0 && left === 0 && right === 0)
+  ) {
+    return { buffer, trimmed: false };
+  }
+
+  const trimmedBuffer = await sharp(buffer)
+    .extract({ left, top, width: trimmedWidth, height: trimmedHeight })
+    .png({ compressionLevel: 9 })
+    .toBuffer();
+
+  return { buffer: trimmedBuffer, trimmed: true };
+}
+
 // Lifestyle scene environment prompts
 const LIFESTYLE_ENVIRONMENTS: Record<string, string> = {
   kitchen:
@@ -52,12 +221,44 @@ const LIFESTYLE_ENVIRONMENTS: Record<string, string> = {
     "Place this product on a concrete surface in an industrial-chic loft, with exposed brick or metal accents in the background, and strong, directional lighting to create a modern, edgy look.",
 };
 
+const PLATFORM_ASPECT_RATIOS: Record<string, string> = {
+  amazon: "1:1",
+  shopify: "1:1",
+  etsy: "1:1",
+  ebay: "1:1",
+  walmart: "1:1",
+  facebook: "1:1",
+  google: "1:1",
+  pinterest: "2:3",
+};
+
+const SUPPORTED_ASPECT_RATIOS = new Set([
+  "1:1",
+  "2:3",
+  "3:2",
+  "3:4",
+  "4:3",
+  "4:5",
+  "5:4",
+  "9:16",
+  "16:9",
+  "21:9",
+]);
+
+function getAspectRatioForPlatform(
+  platform?: string,
+): string | undefined {
+  if (!platform) return undefined;
+  const ratio = PLATFORM_ASPECT_RATIOS[platform];
+  if (!ratio || !SUPPORTED_ASPECT_RATIOS.has(ratio)) return undefined;
+  return ratio;
+}
+
 function getLifestyleScenePrompt(
   environment: string,
   isCustom: boolean,
   productDescription?: string,
   shadowControl?: string,
-  cameraAngle?: string,
 ): string {
   let basePrompt: string;
 
@@ -79,43 +280,17 @@ function getLifestyleScenePrompt(
     }
   }
 
-  const cameraAngleInstructions: Record<string, string> = {
-    "ultra close-up":
-      "Macro detail shot. Product fills 70–90% of the frame with shallow depth of field.",
-    "close-up":
-      "Tight framing. Product fills 50–70% of the frame with minimal background.",
-    medium:
-      "Balanced hero shot. Product fills 30–50% of the frame with some context visible.",
-    "wide / environmental":
-      "Wide environmental shot. Product fills 15–30% of the frame with the environment dominant.",
-    "eye-level":
-      "Camera at product mid-height, straight-on perspective with level horizon.",
-    "low angle":
-      "Camera below the product looking up, subtle converging lines.",
-    "high angle":
-      "Camera above the product looking down at ~45° angle.",
-    "three-quarter":
-      "Three-quarter view showing the front and side surfaces at about 45°.",
-  };
-  const cameraAngleInstruction = cameraAngle
-    ? cameraAngleInstructions[cameraAngle]
-    : "";
-  const cameraAngleLine = cameraAngle
-    ? `- Camera angle MUST match: ${cameraAngle}. ${cameraAngleInstruction}
-- Re-photograph the product from this angle; do NOT preserve the original camera viewpoint.
-- You may change perspective and framing to achieve the required angle, while keeping the product details identical.`
-    : "";
-
-  return `${basePrompt}
+ return `${basePrompt}
 
 CRITICAL INSTRUCTIONS:
-- The product should be the clear focal point of the image.
-- Generate a photorealistic lifestyle scene.
-- Maintain ${shadowControl || "natural"} shadows and reflections consistent with the environment lighting.
-${cameraAngleLine}
-- The scene should look like a professional product photography shoot.
-- Output a square image, photorealistic, no text, no watermark, no borders.
-- The composition should be balanced and aesthetically pleasing.`;
+ - Keep the product EXACTLY the same (do not modify, repaint, or change any details of the product).
+ - The product should be the clear focal point of the image.
+ - Generate a photorealistic lifestyle scene.
+ - Maintain ${shadowControl || "natural"} shadows and reflections consistent with the environment lighting.
+ - The scene must fill the entire frame edge-to-edge. Do NOT add padding, borders, or solid-color bars.
+ - The scene should look like a professional product photography shoot.
+ - Output a photorealistic image with no text, no watermark, no borders.
+ - The composition should be balanced and aesthetically pleasing.`;
 }
 
 // Generate prompt with explicit background color specification
@@ -659,7 +834,8 @@ The background MUST be completely removed and replaced with the exact solid colo
         const isCustom = (req.query.isCustom as string) === "true";
         const productDescription = req.query.productDescription as string;
         const shadowControl = req.query.shadowControl as string;
-        const cameraAngle = req.query.cameraAngle as string;
+        const platform = (req.query.platform as string | undefined)?.toLowerCase();
+        const aspectRatio = getAspectRatioForPlatform(platform);
 
         const imageBuffer = req.file.buffer;
         const base64Image = imageBuffer.toString("base64");
@@ -671,10 +847,8 @@ The background MUST be completely removed and replaced with the exact solid colo
           isCustom,
           productDescription,
           shadowControl,
-          cameraAngle,
         );
 
-        console.log("[/api/lifestyle-scene] Camera angle:", cameraAngle);
         console.log("[/api/lifestyle-scene] Prompt:", prompt);
 
         const response = await ai.models.generateContent({
@@ -693,9 +867,14 @@ The background MUST be completely removed and replaced with the exact solid colo
               ],
             },
           ],
-          config: {
-            responseModalities: [Modality.TEXT, Modality.IMAGE],
-          },
+          config: aspectRatio
+            ? {
+                responseModalities: [Modality.TEXT, Modality.IMAGE],
+                imageConfig: { aspectRatio },
+              }
+            : {
+                responseModalities: [Modality.TEXT, Modality.IMAGE],
+              },
         });
 
         const candidate = response.candidates?.[0];
@@ -714,22 +893,15 @@ The background MUST be completely removed and replaced with the exact solid colo
           imagePart.inlineData.data,
           "base64",
         );
+        const trimmedResult = await trimUniformBorders(generatedImageBuffer);
 
-        // Resize and format to 2000x2000 JPEG
-        const finalBuffer = await sharp(generatedImageBuffer)
-          .resize(2000, 2000, {
-            fit: "contain",
-            background: { r: 255, g: 255, b: 255 },
-          })
-          .jpeg({ quality: 100 })
-          .toBuffer();
-
-        res.set("Content-Type", "image/jpeg");
+        res.set("Content-Type", "image/png");
         res.set(
           "Content-Disposition",
-          'attachment; filename="lifestyle-scene.jpg"',
+          'attachment; filename="lifestyle-scene.png"',
         );
-        res.send(finalBuffer);
+        res.set("X-Trimmed-Borders", trimmedResult.trimmed ? "true" : "false");
+        res.send(trimmedResult.buffer);
       } catch (error) {
         console.error("Error generating lifestyle scene:", error);
         const errorMessage =
