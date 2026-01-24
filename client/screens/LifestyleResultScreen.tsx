@@ -9,14 +9,17 @@ import {
   Platform,
   Dimensions,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system/legacy";
 import { Feather } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -32,12 +35,15 @@ import { GlassPill } from "@/components/GlassPill";
 import { IconButton } from "@/components/IconButton";
 import { BeforeAfterSlider } from "@/components/BeforeAfterSlider";
 import { GradientBackground } from "@/components/GradientBackground";
+import { ProgressRing } from "@/components/ProgressRing";
 import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { useBatchEdit } from "@/context/BatchEditContext";
+import { getApiUrl } from "@/lib/query-client";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const IMAGE_SIZE = SCREEN_WIDTH - Spacing.lg * 2;
+const MAX_IMAGE_HEIGHT = SCREEN_HEIGHT * 0.55;
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, "LifestyleResult">;
@@ -67,15 +73,23 @@ export default function LifestyleResultScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
+  const scrollViewRef = React.useRef<ScrollView>(null);
 
-  const { resultUri: initialResultUri, originalUri, environment } = route.params as {
-    resultUri: string;
-    originalUri: string;
-    environment: string;
-  };
+  const {
+    resultUri: initialResultUri,
+    originalUri,
+    environment,
+    isCustom,
+    productDescription,
+    shadowControl,
+    platform,
+  } = route.params;
 
   const [resultUri, setResultUri] = useState(initialResultUri);
   const [showComparison, setShowComparison] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const [scrollEnabled, setScrollEnabled] = useState(false);
+  const [containerHeight, setContainerHeight] = useState(0);
   const [imageDimensions, setImageDimensions] = useState<{
     width: number;
     height: number;
@@ -129,14 +143,122 @@ export default function LifestyleResultScreen() {
     }
   };
 
-  const handleTryDifferentEnvironment = () => {
-    navigation.replace("EnvironmentSelection", {
-      imageUri: originalUri,
-    });
+  const handleRetryGeneration = async () => {
+    if (isRetrying) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setIsRetrying(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", {
+        uri: originalUri,
+        name: "product_photo.jpg",
+        type: "image/jpeg",
+      } as unknown as Blob);
+
+      const apiUrl = getApiUrl();
+      let endpoint = `${apiUrl}api/lifestyle-scene`;
+      const params = new URLSearchParams();
+
+      params.append("environment", environment);
+      if (isCustom) {
+        params.append("isCustom", "true");
+      }
+      if (productDescription) {
+        params.append("productDescription", productDescription);
+      }
+      if (shadowControl) {
+        params.append("shadowControl", shadowControl);
+      }
+      if (platform) {
+        params.append("platform", platform);
+      }
+
+      endpoint += `?${params.toString()}`;
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 300000);
+
+      let response: Response;
+      try {
+        response = await fetch(endpoint, {
+          method: "POST",
+          body: formData,
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to generate lifestyle scene");
+      }
+
+      const blob = await response.blob();
+      const reader = new FileReader();
+
+      const base64data = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error("Failed to read generated image"));
+        reader.readAsDataURL(blob);
+      });
+
+      setResultUri(base64data);
+      setShowComparison(false);
+      requestAnimationFrame(() => {
+        scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+      });
+    } catch (error) {
+      console.error("Retry generation failed:", error);
+      const message =
+        error instanceof Error ? error.message : "Failed to generate image";
+      if (Platform.OS !== "web") {
+        Alert.alert("Generation Failed", message);
+      }
+    } finally {
+      setIsRetrying(false);
+    }
   };
 
   const handleGenerateAnother = () => {
-    navigation.navigate("Home");
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Alert.alert(
+      "Start a new lifestyle scene",
+      "Use the same product image or choose a new one.",
+      [
+        {
+          text: "Use same image",
+          onPress: () =>
+            navigation.replace("EnvironmentSelection", {
+              imageUri: originalUri,
+            }),
+        },
+        {
+          text: "Choose new image",
+          onPress: async () => {
+            try {
+              const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsMultipleSelection: false,
+                quality: 1,
+              });
+              if (!result.canceled && result.assets[0]) {
+                navigation.replace("EnvironmentSelection", {
+                  imageUri: result.assets[0].uri,
+                });
+              }
+            } catch (error) {
+              console.error("Failed to pick image:", error);
+              if (Platform.OS !== "web") {
+                Alert.alert("Error", "Could not access your photos.");
+              }
+            }
+          },
+        },
+        { text: "Cancel", style: "cancel" },
+      ],
+    );
   };
 
   const handleEditImage = async () => {
@@ -172,6 +294,18 @@ export default function LifestyleResultScreen() {
   };
 
   const environmentLabel = ENVIRONMENT_LABELS[environment] || "Lifestyle Scene";
+  const displayHeight = imageDimensions
+    ? Math.min(
+        (IMAGE_SIZE * imageDimensions.height) / imageDimensions.width,
+        MAX_IMAGE_HEIGHT,
+      )
+    : IMAGE_SIZE;
+
+  const actionCardGradients = {
+    edit: ["rgba(14, 165, 233, 0.28)", "rgba(59, 130, 246, 0.45)"],
+    retry: ["rgba(249, 115, 22, 0.28)", "rgba(234, 88, 12, 0.45)"],
+    new: ["rgba(16, 185, 129, 0.28)", "rgba(34, 197, 94, 0.45)"],
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -201,12 +335,24 @@ export default function LifestyleResultScreen() {
 
       <View style={[styles.container, { paddingTop: insets.top + 54 }]}>
         <ScrollView
+          ref={scrollViewRef}
           style={styles.scrollView}
           contentContainerStyle={[
             styles.content,
             { paddingBottom: insets.bottom + 240 },
           ]}
+          scrollEnabled={scrollEnabled}
           showsVerticalScrollIndicator={false}
+          bounces={scrollEnabled}
+          onContentSizeChange={(_, height) => {
+            if (containerHeight) {
+              setScrollEnabled(height > containerHeight + 16);
+            }
+          }}
+          onLayout={(event) => {
+            const height = event.nativeEvent.layout.height;
+            setContainerHeight(height);
+          }}
         >
           {/* Image Display */}
           {showComparison ? (
@@ -226,32 +372,78 @@ export default function LifestyleResultScreen() {
               exiting={FadeOut.duration(200)}
               style={[
                 styles.imageContainer,
-                imageDimensions && {
-                  height:
-                    (IMAGE_SIZE * imageDimensions.height) /
-                    imageDimensions.width,
-                },
+                { height: displayHeight },
               ]}
             >
               <Image source={{ uri: resultUri }} style={styles.resultImage} />
             </Animated.View>
           )}
 
-          {/* Environment Badge */}
+          {/* Action Carousel */}
           <Animated.View
             entering={FadeInUp.delay(200).duration(400)}
-            style={styles.badgeContainer}
+            style={styles.carouselContainer}
           >
-            <GlassPill>
-              <Feather
-                name="check-circle"
-                size={14}
-                color={Colors.editing.success}
-              />
-              <ThemedText style={styles.environmentText}>
-                {environmentLabel}
-              </ThemedText>
-            </GlassPill>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.actionCarousel}
+              >
+                <Pressable style={styles.actionCard} onPress={handleEditImage}>
+                  <LinearGradient
+                    colors={actionCardGradients.edit}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.actionCardGradient}
+                  />
+                  <View style={styles.actionIconContainer}>
+                    <Feather name="edit-2" size={18} color={Colors.editing.text} />
+                  </View>
+                  <ThemedText style={styles.actionCardLabel}>Edit</ThemedText>
+                </Pressable>
+
+                <Pressable
+                  style={[
+                    styles.actionCard,
+                    isRetrying && styles.actionCardDisabled,
+                  ]}
+                  onPress={handleRetryGeneration}
+                  disabled={isRetrying}
+                >
+                  <LinearGradient
+                    colors={actionCardGradients.retry}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.actionCardGradient}
+                  />
+                  <View style={styles.actionIconContainer}>
+                    <Feather
+                      name="refresh-cw"
+                      size={18}
+                      color={Colors.editing.text}
+                  />
+                </View>
+                <ThemedText style={styles.actionCardLabel}>
+                  {isRetrying ? "Retrying..." : "Retry"}
+                </ThemedText>
+              </Pressable>
+
+                <Pressable
+                  style={styles.actionCard}
+                  onPress={handleGenerateAnother}
+                >
+                  <LinearGradient
+                    colors={actionCardGradients.new}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.actionCardGradient}
+                  />
+                  <View style={styles.actionIconContainer}>
+                    <Feather name="plus" size={18} color={Colors.editing.text} />
+                  </View>
+                  <ThemedText style={styles.actionCardLabel}>New</ThemedText>
+                </Pressable>
+            </ScrollView>
           </Animated.View>
 
           {/* Comparison Toggle */}
@@ -308,53 +500,43 @@ export default function LifestyleResultScreen() {
                 fullWidth
               />
 
-              {/* Secondary Actions */}
-              <View style={styles.secondaryActions}>
-                <Pressable
-                  style={styles.actionButton}
-                  onPress={handleEditImage}
-                >
-                  <IconButton
-                    icon="edit-2"
-                    onPress={handleEditImage}
-                    size={48}
-                    iconSize={22}
-                    variant="glass"
-                  />
-                  <ThemedText style={styles.actionLabel}>Edit</ThemedText>
-                </Pressable>
-
-                <Pressable
-                  style={styles.actionButton}
-                  onPress={handleTryDifferentEnvironment}
-                >
-                  <IconButton
-                    icon="refresh-cw"
-                    onPress={handleTryDifferentEnvironment}
-                    size={48}
-                    iconSize={22}
-                    variant="glass"
-                  />
-                  <ThemedText style={styles.actionLabel}>Retry</ThemedText>
-                </Pressable>
-
-                <Pressable
-                  style={styles.actionButton}
-                  onPress={handleGenerateAnother}
-                >
-                  <IconButton
-                    icon="plus"
-                    onPress={handleGenerateAnother}
-                    size={48}
-                    iconSize={22}
-                    variant="glass"
-                  />
-                  <ThemedText style={styles.actionLabel}>New</ThemedText>
-                </Pressable>
-              </View>
             </View>
           </GlassCard>
         </Animated.View>
+
+        {/* Retry Overlay */}
+        {isRetrying && (
+          <Animated.View
+            entering={FadeIn.duration(200)}
+            style={styles.retryOverlay}
+          >
+            <GlassCard
+              theme="dark"
+              variant="solid"
+              padding="xl"
+              borderRadius="2xl"
+              style={styles.retryCard}
+            >
+              <View style={styles.retryContent}>
+                <ProgressRing
+                  progress={0.7}
+                  size={90}
+                  strokeWidth={7}
+                  color={Colors.editing.primary}
+                  backgroundColor="rgba(255, 255, 255, 0.1)"
+                >
+                  <ActivityIndicator size="small" color={Colors.editing.primary} />
+                </ProgressRing>
+                <ThemedText style={styles.retryTitle}>
+                  Regenerating Scene
+                </ThemedText>
+                <ThemedText style={styles.retryHint}>
+                  This may take up to 30 seconds
+                </ThemedText>
+              </View>
+            </GlassCard>
+          </Animated.View>
+        )}
       </View>
     </GradientBackground>
   );
@@ -375,6 +557,7 @@ const styles = StyleSheet.create({
   imageContainer: {
     width: IMAGE_SIZE,
     height: IMAGE_SIZE,
+    maxHeight: MAX_IMAGE_HEIGHT,
     borderRadius: BorderRadius.xl,
     overflow: "hidden",
     backgroundColor: Colors.editing.backgroundSecondary,
@@ -385,13 +568,8 @@ const styles = StyleSheet.create({
     height: "100%",
     resizeMode: "cover",
   },
-  badgeContainer: {
+  carouselContainer: {
     marginTop: Spacing.lg,
-  },
-  environmentText: {
-    color: Colors.editing.success,
-    fontWeight: "600",
-    fontSize: 13,
   },
   toggleContainer: {
     marginTop: Spacing.md,
@@ -428,17 +606,66 @@ const styles = StyleSheet.create({
   actionButtons: {
     gap: Spacing.md,
   },
-  secondaryActions: {
-    flexDirection: "row",
-    justifyContent: "space-around",
+  actionCarousel: {
+    gap: Spacing.md,
+    paddingHorizontal: Spacing.xs,
   },
-  actionButton: {
+  actionCard: {
+    width: 96,
+    height: 96,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1.5,
+    borderColor: "rgba(0, 0, 0, 0.08)",
     alignItems: "center",
     gap: Spacing.xs,
+    overflow: "hidden",
   },
-  actionLabel: {
-    color: Colors.editing.textSecondary,
+  actionCardGradient: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  actionCardDisabled: {
+    opacity: 0.6,
+  },
+  actionIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+  },
+  actionCardLabel: {
+    color: Colors.editing.text,
     fontSize: 12,
-    fontWeight: "500",
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  retryOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: Spacing.xl,
+  },
+  retryCard: {
+    width: "100%",
+    maxWidth: 340,
+  },
+  retryContent: {
+    alignItems: "center",
+    gap: Spacing.lg,
+  },
+  retryTitle: {
+    color: Colors.dark.text,
+    fontSize: 18,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  retryHint: {
+    color: Colors.dark.textSecondary,
+    fontSize: 14,
+    textAlign: "center",
   },
 });

@@ -68,15 +68,24 @@ export type RootStackParamList = {
 
   // Preset and Lifestyle flows
   PresetSelection: undefined;
-  EnvironmentSelection: { imageUri?: string; imageUris?: string[] };
+  EnvironmentSelection: {
+    imageUri?: string;
+    imageUris?: string[];
+    returnToBatch?: boolean;
+  };
   LifestyleResult: {
     resultUri: string;
     originalUri: string;
     environment: string;
+    isCustom?: boolean;
+    productDescription?: string;
+    shadowControl?: string;
+    platform?: string;
   };
   BatchLifestyleProcessing: {
     imageUris: string[];
     environment: string;
+    isCustom?: boolean;
     productDescription?: string;
     shadowControl?: string;
     platform?: string;
@@ -89,6 +98,10 @@ export type RootStackParamList = {
       status: "pending" | "processing" | "completed" | "failed";
     }[];
     environment: string;
+    isCustom?: boolean;
+    productDescription?: string;
+    shadowControl?: string;
+    platform?: string;
   };
 
   // Mockup flows
@@ -251,7 +264,7 @@ export default function RootStackNavigator() {
       <Stack.Screen
         name="LifestyleResult"
         component={LifestyleResultScreen}
-        options={{ headerTitle: "Lifestyle Scene", headerBackVisible: false }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="BatchLifestyleProcessing"

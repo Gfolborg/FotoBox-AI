@@ -6,7 +6,7 @@ import { Skia, ImageFormat, rect } from "@shopify/react-native-skia";
 import * as FileSystem from "expo-file-system/legacy";
 import { Platform } from "react-native";
 import { PlatformRequirement } from "./platform-requirements";
-import { saveToFotoBoxAlbum } from "./save-to-album";
+import { saveToFotoBoxAlbum, ensureMediaLibraryPermission } from "./save-to-album";
 
 export interface ComplianceResult {
   compliant: boolean;
@@ -294,11 +294,17 @@ export async function saveOptimizedImages(
   let successful = 0;
   let failed = 0;
 
+  const hasPermission = await ensureMediaLibraryPermission();
+  if (!hasPermission) {
+    throw new Error("Permission to access gallery was denied");
+  }
+
   for (const [platformId, result] of optimizedImages) {
     try {
       const saveResult = await saveToFotoBoxAlbum(
         result.uri,
         `${platformId}_product`,
+        { skipPermissionCheck: true },
       );
 
       if (saveResult.success) {
@@ -336,6 +342,11 @@ export async function batchOptimizeAndSave(
   let totalSaved = 0;
   let totalFailed = 0;
 
+  const hasPermission = await ensureMediaLibraryPermission();
+  if (!hasPermission) {
+    throw new Error("Permission to access gallery was denied");
+  }
+
   for (let i = 0; i < imageUris.length; i++) {
     const imageUri = imageUris[i];
 
@@ -350,6 +361,7 @@ export async function batchOptimizeAndSave(
         const saveResult = await saveToFotoBoxAlbum(
           optimized.uri,
           `${platform.id}_product_${i + 1}`,
+          { skipPermissionCheck: true },
         );
 
         if (saveResult.success) {

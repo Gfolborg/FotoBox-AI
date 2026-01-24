@@ -14,6 +14,11 @@ const getExtensionFromDataUri = (dataUri: string): string => {
   return "jpg";
 };
 
+export async function ensureMediaLibraryPermission(): Promise<boolean> {
+  const { status } = await MediaLibrary.requestPermissionsAsync(true);
+  return status === "granted";
+}
+
 /**
  * Saves a base64 image to the FotoBox album in the user's gallery.
  * Creates the album if it doesn't exist.
@@ -21,15 +26,18 @@ const getExtensionFromDataUri = (dataUri: string): string => {
 export async function saveToFotoBoxAlbum(
   base64Uri: string,
   filenamePrefix: string = "product_image",
+  options?: { skipPermissionCheck?: boolean },
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // Request permissions
-    const { status } = await MediaLibrary.requestPermissionsAsync();
-    if (status !== "granted") {
-      return {
-        success: false,
-        error: "Permission to access gallery was denied",
-      };
+    if (!options?.skipPermissionCheck) {
+      const hasPermission = await ensureMediaLibraryPermission();
+      if (!hasPermission) {
+        return {
+          success: false,
+          error: "Permission to access gallery was denied",
+        };
+      }
     }
 
     // Write base64 to temporary file
@@ -42,25 +50,22 @@ export async function saveToFotoBoxAlbum(
       encoding: FileSystem.EncodingType.Base64,
     });
 
-    // Create asset from file
-    const asset = await MediaLibrary.createAssetAsync(fileUri);
-
-    // Clean up temporary file
-    await FileSystem.deleteAsync(fileUri, { idempotent: true });
-
     // On iOS and Android, add to album
     if (Platform.OS !== "web") {
       // Check if album exists
       let album = await MediaLibrary.getAlbumAsync(ALBUM_NAME);
 
       if (album === null) {
+        const asset = await MediaLibrary.createAssetAsync(fileUri);
         // Create album with this asset
         album = await MediaLibrary.createAlbumAsync(ALBUM_NAME, asset, false);
       } else {
-        // Add asset to existing album
-        await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
+        await MediaLibrary.createAssetAsync(fileUri, album);
       }
     }
+
+    // Clean up temporary file
+    await FileSystem.deleteAsync(fileUri, { idempotent: true });
 
     return { success: true };
   } catch (error) {

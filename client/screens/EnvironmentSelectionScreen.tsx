@@ -13,7 +13,7 @@ import {
   Dimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { useNavigation, useRoute, RouteProp, StackActions } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import * as ImagePicker from "expo-image-picker";
 import { Feather } from "@expo/vector-icons";
@@ -223,6 +223,7 @@ export default function EnvironmentSelectionScreen() {
       navigation.replace("BatchLifestyleProcessing", {
         imageUris: selectedImages,
         environment: environmentText,
+        isCustom: Boolean(customScene.trim()),
         productDescription: productKeywords.trim() || undefined,
         shadowControl:
           selectedShadowControl !== "natural"
@@ -295,6 +296,13 @@ export default function EnvironmentSelectionScreen() {
           resultUri: base64data,
           originalUri: imageUri!,
           environment: customScene.trim() || selectedScene,
+          isCustom: Boolean(customScene.trim()),
+          productDescription: productKeywords.trim() || undefined,
+          shadowControl:
+            selectedShadowControl !== "natural"
+              ? selectedShadowControl
+              : undefined,
+          platform: selectedPlatformId || undefined,
         });
       };
 
@@ -329,10 +337,32 @@ export default function EnvironmentSelectionScreen() {
     { id: "prominent shadows", label: "Strong" },
   ];
 
+  const handleBack = () => {
+    if (route.params?.returnToBatch) {
+      const state = navigation.getState();
+      const routes = state.routes;
+      const batchIndex = [...routes]
+        .map((r) => r.name)
+        .lastIndexOf("BatchLifestyleResult");
+      if (batchIndex >= 0) {
+        const popCount = routes.length - 1 - batchIndex;
+        if (popCount > 0) {
+          navigation.dispatch(StackActions.pop(popCount));
+          return;
+        }
+      }
+    }
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+      return;
+    }
+    navigation.navigate("Home");
+  };
+
   return (
     <GradientBackground theme="home">
       <StatusBar style="dark" />
-      <ThemedHeader title="Lifestyle Scene" />
+      <ThemedHeader title="Lifestyle Scene" onBack={handleBack} />
       <View style={[styles.container, { paddingTop: insets.top + 54 }]}>
         <ScrollView
           style={styles.scrollView}

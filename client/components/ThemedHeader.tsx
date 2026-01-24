@@ -13,11 +13,17 @@ import { Colors, Spacing } from "@/constants/theme";
 interface ThemedHeaderProps {
   title: string;
   transparent?: boolean;
+  onBack?: () => void;
 }
 
-export function ThemedHeader({ title, transparent = false }: ThemedHeaderProps) {
+export function ThemedHeader({
+  title,
+  transparent = false,
+  onBack,
+}: ThemedHeaderProps) {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
+  const showBack = Boolean(onBack) || navigation.canGoBack();
 
   return (
     <Animated.View
@@ -30,12 +36,16 @@ export function ThemedHeader({ title, transparent = false }: ThemedHeaderProps) 
     >
       <View style={styles.headerContent}>
         <View style={styles.leftHeaderItem}>
-          {navigation.canGoBack() && (
+          {showBack && (
             <Pressable
               style={styles.headerButton}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                navigation.goBack();
+                if (onBack) {
+                  onBack();
+                } else {
+                  navigation.goBack();
+                }
               }}
             >
               <Feather

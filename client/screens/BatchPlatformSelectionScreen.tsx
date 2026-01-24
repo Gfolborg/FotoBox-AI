@@ -34,7 +34,7 @@ import {
   PlatformRequirement,
 } from "@/lib/platform-requirements";
 import { batchOptimizeAndSave } from "@/lib/platform-optimizer";
-import { saveToFotoBoxAlbum } from "@/lib/save-to-album";
+import { saveToFotoBoxAlbum, ensureMediaLibraryPermission } from "@/lib/save-to-album";
 
 type NavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -90,11 +90,17 @@ export default function BatchPlatformSelectionScreen() {
     let savedCount = 0;
 
     try {
+      const hasPermission = await ensureMediaLibraryPermission();
+      if (!hasPermission) {
+        throw new Error("Permission to access gallery was denied");
+      }
+
       for (const result of results) {
         if (result.resultUri) {
           const saveResult = await saveToFotoBoxAlbum(
             result.resultUri,
             "product_image",
+            { skipPermissionCheck: true },
           );
           if (saveResult.success) {
             savedCount++;

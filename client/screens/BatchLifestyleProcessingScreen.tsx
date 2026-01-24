@@ -35,6 +35,7 @@ export default function BatchLifestyleProcessingScreen() {
   const {
     imageUris,
     environment,
+    isCustom,
     productDescription,
     shadowControl,
     platform,
@@ -98,6 +99,10 @@ export default function BatchLifestyleProcessingScreen() {
           resultUri: r.status === "completed" ? r.resultUri : null,
         })),
         environment,
+        isCustom,
+        productDescription,
+        shadowControl,
+        platform,
       });
     }, 500);
   };
@@ -114,6 +119,9 @@ export default function BatchLifestyleProcessingScreen() {
     let endpoint = `${apiUrl}api/lifestyle-scene`;
     const params = new URLSearchParams();
     params.append("environment", environment);
+    if (isCustom) {
+      params.append("isCustom", "true");
+    }
 
     if (productDescription) {
       params.append("productDescription", productDescription);
