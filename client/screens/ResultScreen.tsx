@@ -22,6 +22,7 @@ import Animated, {
 } from "react-native-reanimated";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Haptics from "expo-haptics";
+import * as ImageManipulator from "expo-image-manipulator";
 import { Feather } from "@expo/vector-icons";
 
 import { ThemedText } from "@/components/ThemedText";
@@ -179,9 +180,14 @@ export default function ResultScreen() {
         const blob = await response.blob();
         formData.append("file", blob, "product_photo.jpg");
       } else {
-        // For file:// URIs on native
+        // For file:// URIs on native, convert to JPEG to avoid HEIF format issues
+        const manipResult = await ImageManipulator.manipulateAsync(
+          originalUri,
+          [],
+          { compress: 0.95, format: ImageManipulator.SaveFormat.JPEG }
+        );
         formData.append("file", {
-          uri: originalUri,
+          uri: manipResult.uri,
           name: "product_photo.jpg",
           type: "image/jpeg",
         } as unknown as Blob);

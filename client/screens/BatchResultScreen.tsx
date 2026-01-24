@@ -22,6 +22,7 @@ import { Feather } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Haptics from "expo-haptics";
+import * as ImageManipulator from "expo-image-manipulator";
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -212,9 +213,16 @@ export default function BatchResultScreen() {
     );
 
     try {
+      const manipResult = await ImageManipulator.manipulateAsync(
+        originalUri,
+        [],
+        { compress: 0.95, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      const jpegUri = manipResult.uri;
+
       const formData = new FormData();
       formData.append("file", {
-        uri: originalUri,
+        uri: jpegUri,
         name: "product_photo.jpg",
         type: "image/jpeg",
       } as unknown as Blob);
