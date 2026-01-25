@@ -500,8 +500,8 @@ export function getMockupPrompt(
   };
 
   const productInstruction = isCustomProduct
-    ? `IMPORTANT: The user specifically wants their design/logo placed on a "${productName}". Create a realistic ${productName} with their design.`
-    : `Create a realistic product mockup of the provided design/logo placed on a ${productName}.`;
+    ? `IMPORTANT: The user specifically wants their design/logo placed on a "${productName}". Create a realistic ${productName} with their design for use in advertising and marketing materials.`
+    : `Create a professional product mockup of the provided design/logo placed on a ${productName}. This is for advertising, marketing, and e-commerce use.`;
 
   const modelInstruction =
     modelOption && modelOption.id !== "none"
