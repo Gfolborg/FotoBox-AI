@@ -995,13 +995,16 @@ The background MUST be completely removed and replaced with the exact solid colo
         // Build enhanced prompt for mockup generation
         const enhancedPrompt = `${prompt}
 
-Additional requirements:
+CRITICAL REQUIREMENTS:
+- Generate a HIGH RESOLUTION square image (at least 2048x2048 pixels)
+- The scene must fill the entire frame edge-to-edge. Do NOT add padding, borders, or solid-color bars on any side
 - The design/logo from the input image should be clearly visible and properly placed on the product
 - Maintain realistic proportions and perspective
 - Use professional lighting that matches the scene vibe
 - The mockup should look like a real photograph, not a digital render
-- High quality, photorealistic result
-- No text watermarks or borders`;
+- High quality, photorealistic result suitable for professional e-commerce use
+- No text watermarks or borders
+- The composition should be balanced with the scene filling the entire square frame`;
 
         const response = await ai.models.generateContent({
           model: "gemini-2.5-flash-image",
