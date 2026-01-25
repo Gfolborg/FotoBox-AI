@@ -98,7 +98,7 @@ export default function PhotoActionScreen() {
   };
 
   const handleCreateMockup = () => {
-    navigation.navigate("MockupSelection", { imageUri });
+    navigation.navigate("MockupWizardImages", { imageUri });
   };
 
   return (

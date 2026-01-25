@@ -18,11 +18,14 @@ import BatchLifestyleResultScreen from "@/screens/BatchLifestyleResultScreen";
 import OnboardingScreen from "@/screens/OnboardingScreen";
 import BackgroundColorSelectionScreen from "@/screens/BackgroundColorSelectionScreen";
 import BatchActionSelectionScreen from "@/screens/BatchActionSelectionScreen";
-import MockupSelectionScreen from "@/screens/MockupSelectionScreen";
 import MockupProcessingScreen from "@/screens/MockupProcessingScreen";
 import MockupResultScreen from "@/screens/MockupResultScreen";
 import BatchMockupProcessingScreen from "@/screens/BatchMockupProcessingScreen";
 import BatchMockupResultScreen from "@/screens/BatchMockupResultScreen";
+import MockupWizardImagesScreen from "@/screens/MockupWizardImagesScreen";
+import MockupWizardTemplatesScreen from "@/screens/MockupWizardTemplatesScreen";
+import MockupWizardCustomizeScreen from "@/screens/MockupWizardCustomizeScreen";
+import MockupWizardReviewScreen from "@/screens/MockupWizardReviewScreen";
 import QuickFixScreen from "@/screens/QuickFixScreen";
 import PlatformSelectionScreen from "@/screens/PlatformSelectionScreen";
 import BatchPlatformSelectionScreen from "@/screens/BatchPlatformSelectionScreen";
@@ -32,6 +35,7 @@ import {
   CameraOption,
   ModelOption,
 } from "@/lib/mockup-presets";
+import { MockupWizardState } from "@/lib/mockup-templates";
 
 export type RootStackParamList = {
   Home: undefined;
@@ -46,9 +50,14 @@ export type RootStackParamList = {
     backgroundColor?: string;
     isEdited?: boolean;
   };
-  PlatformSelection: { imageUri: string; originalUri?: string };
+  PlatformSelection: {
+    imageUri: string;
+    originalUri?: string;
+    sourceService?: "background" | "lifestyle" | "mockup" | "edit";
+  };
   BatchPlatformSelection: {
     results: { originalUri: string; resultUri: string }[];
+    sourceService?: "background" | "lifestyle" | "mockup" | "edit";
   };
 
   // Batch flow
@@ -105,7 +114,14 @@ export type RootStackParamList = {
   };
 
   // Mockup flows
-  MockupSelection: { imageUri?: string; imageUris?: string[] };
+  MockupWizardImages: {
+    imageUri?: string;
+    imageUris?: string[];
+    wizardState?: MockupWizardState;
+  };
+  MockupWizardTemplates: { wizardState: MockupWizardState };
+  MockupWizardCustomize: { wizardState: MockupWizardState };
+  MockupWizardReview: { wizardState: MockupWizardState };
   MockupProcessing: {
     imageUri: string;
     mockupItem: MockupItem;
@@ -113,12 +129,22 @@ export type RootStackParamList = {
     cameraOption: CameraOption;
     mockupColor?: string;
     customDescription?: string;
+    customScenePrompt?: string;
+    negativePrompt?: string;
     modelOption?: ModelOption;
   };
   MockupResult: {
     resultUri: string;
     originalUri: string;
     mockupType: string;
+    mockupItem: MockupItem;
+    sceneVibe: SceneVibe;
+    cameraOption: CameraOption;
+    mockupColor?: string;
+    customDescription?: string;
+    customScenePrompt?: string;
+    negativePrompt?: string;
+    modelOption?: ModelOption;
   };
   BatchMockupProcessing: {
     imageUris: string[];
@@ -127,6 +153,8 @@ export type RootStackParamList = {
     cameraOption: CameraOption;
     mockupColor?: string;
     customDescription?: string;
+    customScenePrompt?: string;
+    negativePrompt?: string;
     modelOption?: ModelOption;
   };
   BatchMockupResult: {
@@ -137,6 +165,14 @@ export type RootStackParamList = {
       status: "pending" | "processing" | "completed" | "failed";
     }[];
     mockupType: string;
+    sceneVibe?: SceneVibe;
+    cameraOption?: CameraOption;
+    modelOption?: ModelOption;
+    customScenePrompt?: string;
+    negativePrompt?: string;
+    customDescription?: string;
+    mockupItem: MockupItem;
+    mockupColor?: string;
   };
 };
 
@@ -277,9 +313,24 @@ export default function RootStackNavigator() {
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="MockupSelection"
-        component={MockupSelectionScreen}
-        options={{ headerTitle: "Create Mockup" }}
+        name="MockupWizardImages"
+        component={MockupWizardImagesScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="MockupWizardTemplates"
+        component={MockupWizardTemplatesScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="MockupWizardCustomize"
+        component={MockupWizardCustomizeScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="MockupWizardReview"
+        component={MockupWizardReviewScreen}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="MockupProcessing"

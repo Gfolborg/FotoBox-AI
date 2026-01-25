@@ -165,6 +165,7 @@ export default function BatchLifestyleResultScreen() {
 
     navigation.navigate("BatchPlatformSelection", {
       results: exportableResults,
+      sourceService: "lifestyle",
     });
   };
 

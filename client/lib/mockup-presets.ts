@@ -455,6 +455,8 @@ export function getMockupPrompt(
   mockupColor?: string,
   customDescription?: string,
   modelOption?: ModelOption,
+  customScenePrompt?: string,
+  negativePrompt?: string,
 ): string {
   const isCustomProduct = mockupItem.id === "custom";
   const productName = mockupItem.label.toLowerCase();
@@ -511,5 +513,10 @@ export function getMockupPrompt(
     ? ` Additional context: ${customDescription}`
     : "";
 
-  return `${basePrompt}${customAddition} The product placement should look natural and realistic with proper perspective, lighting, and shadows. High quality, photorealistic result.`;
+  const customSceneAddition = customScenePrompt
+    ? ` Custom scene request: ${customScenePrompt}`
+    : "";
+  const negativeAddition = negativePrompt ? ` Avoid: ${negativePrompt}` : "";
+
+  return `${basePrompt}${customAddition}${customSceneAddition}${negativeAddition} The product placement should look natural and realistic with proper perspective, lighting, and shadows. High quality, photorealistic result.`;
 }

@@ -46,13 +46,14 @@ export default function BatchPlatformSelectionScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
-  const { results } = route.params;
+  const { results, sourceService } = route.params;
 
   const [selectedPlatforms, setSelectedPlatforms] = useState<Set<string>>(
     new Set(),
   );
   const [isExporting, setIsExporting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showPostSaveActions, setShowPostSaveActions] = useState(false);
   const [exportCount, setExportCount] = useState(0);
   const [currentProgress, setCurrentProgress] = useState<{
     image: number;
@@ -111,6 +112,7 @@ export default function BatchPlatformSelectionScreen() {
       if (savedCount > 0) {
         setExportCount(savedCount);
         setShowSuccess(true);
+        setShowPostSaveActions(false);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
     } catch (error) {
@@ -158,6 +160,7 @@ export default function BatchPlatformSelectionScreen() {
       if (saveResult.totalSaved > 0) {
         setExportCount(saveResult.totalSaved);
         setShowSuccess(true);
+        setShowPostSaveActions(false);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
 
@@ -185,8 +188,70 @@ export default function BatchPlatformSelectionScreen() {
 
   const handleSuccessComplete = () => {
     setShowSuccess(false);
+    setShowPostSaveActions(false);
     navigation.popToTop();
   };
+
+  const getSourceUris = (): string[] =>
+    results
+      .map((result) => result.originalUri || result.resultUri)
+      .filter((uri): uri is string => Boolean(uri));
+
+  const handlePostSaveAction = (
+    action: "background" | "mockup" | "lifestyle",
+  ) => {
+    const imageUris = getSourceUris();
+    if (imageUris.length === 0) {
+      handleSuccessComplete();
+      return;
+    }
+
+    setShowSuccess(false);
+    setShowPostSaveActions(false);
+
+    if (action === "background") {
+      navigation.replace("BatchPreview", { imageUris });
+      return;
+    }
+
+    if (action === "mockup") {
+      navigation.replace("MockupWizardImages", { imageUris });
+      return;
+    }
+
+    navigation.replace("EnvironmentSelection", { imageUris });
+  };
+
+  const postSaveActions = [
+    {
+      key: "background",
+      title: "Remove Backgrounds",
+      subtitle: "Clean cutouts with solid colors",
+      icon: "scissors" as const,
+      color: "#0EA5E9",
+      tint: "rgba(14, 165, 233, 0.28)",
+    },
+    {
+      key: "mockup",
+      title: "Create Mockups",
+      subtitle: "Generate realistic product scenes",
+      icon: "box" as const,
+      color: "#A78BFA",
+      tint: "rgba(167, 139, 250, 0.28)",
+    },
+    {
+      key: "lifestyle",
+      title: "Lifestyle Scenes",
+      subtitle: "Place products in new environments",
+      icon: "image" as const,
+      color: "#10B981",
+      tint: "rgba(16, 185, 129, 0.28)",
+    },
+  ];
+
+  const availablePostSaveActions = postSaveActions.filter(
+    (action) => action.key !== sourceService,
+  );
 
   return (
     <GradientBackground theme="home">
@@ -382,13 +447,81 @@ export default function BatchPlatformSelectionScreen() {
         {showSuccess && (
           <View style={styles.successOverlay}>
             <SuccessAnimation
-              onComplete={handleSuccessComplete}
+              onComplete={() => {
+                if (availablePostSaveActions.length > 0) {
+                  setShowPostSaveActions(true);
+                } else {
+                  handleSuccessComplete();
+                }
+              }}
               size={140}
               delay={0}
             />
             <ThemedText style={styles.successText}>
               {exportCount} image{exportCount !== 1 ? "s" : ""} saved to FotoBox
             </ThemedText>
+            {showPostSaveActions && availablePostSaveActions.length > 0 && (
+              <GlassCard
+                theme="dark"
+                variant="solid"
+                padding="lg"
+                borderRadius="xl"
+                style={styles.postSaveCard}
+              >
+                <View style={styles.postSaveActions}>
+                  <ThemedText style={styles.postSaveTitle}>
+                    Keep going with the same photos
+                  </ThemedText>
+                  <View style={styles.actionList}>
+                    {availablePostSaveActions.map((action) => (
+                      <Pressable
+                        key={action.key}
+                        style={styles.actionRow}
+                        onPress={() =>
+                          handlePostSaveAction(
+                            action.key as "background" | "mockup" | "lifestyle",
+                          )
+                        }
+                      >
+                        <View
+                          style={[
+                            styles.actionIcon,
+                            { backgroundColor: action.tint },
+                          ]}
+                        >
+                          <Feather
+                            name={action.icon}
+                            size={18}
+                            color={action.color}
+                          />
+                        </View>
+                        <View style={styles.actionCopy}>
+                          <ThemedText style={styles.actionTitle}>
+                            {action.title}
+                          </ThemedText>
+                          <ThemedText style={styles.actionSubtitle}>
+                            {action.subtitle}
+                          </ThemedText>
+                        </View>
+                        <Feather
+                          name="chevron-right"
+                          size={18}
+                          color="#FFFFFF"
+                        />
+                      </Pressable>
+                    ))}
+                  </View>
+                  <GradientButton
+                    title="Done"
+                    onPress={handleSuccessComplete}
+                    variant="glass"
+                    size="sm"
+                    fullWidth
+                    style={styles.doneButton}
+                  />
+                </View>
+              </GlassCard>
+            )}
           </View>
         )}
       </View>
@@ -554,6 +687,8 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.7)",
     justifyContent: "center",
     alignItems: "center",
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg,
     zIndex: 1000,
   },
   successText: {
@@ -561,5 +696,57 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     marginTop: Spacing.lg,
+  },
+  postSaveActions: {
+    width: "100%",
+    gap: Spacing.md,
+  },
+  postSaveCard: {
+    marginTop: Spacing.lg,
+    width: "100%",
+    maxWidth: 420,
+  },
+  postSaveTitle: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  actionList: {
+    gap: Spacing.sm,
+  },
+  actionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    backgroundColor: "rgba(255, 255, 255, 0.18)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.28)",
+  },
+  actionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  actionCopy: {
+    flex: 1,
+  },
+  actionTitle: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  actionSubtitle: {
+    color: "rgba(255, 255, 255, 0.82)",
+    fontSize: 13,
+    marginTop: 2,
+  },
+  doneButton: {
+    marginTop: Spacing.sm,
   },
 });

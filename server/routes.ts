@@ -31,8 +31,16 @@ function hexToRGB(hex: string): { r: number; g: number; b: number } {
 
 type RGB = { r: number; g: number; b: number };
 
+type TrimOptions = {
+  maxTrimRatio?: number;
+  colorThreshold?: number;
+  matchThreshold?: number;
+  alphaThreshold?: number;
+};
+
 async function trimUniformBorders(
   buffer: Buffer,
+  options: TrimOptions = {},
 ): Promise<{ buffer: Buffer; trimmed: boolean }> {
   const image = sharp(buffer).ensureAlpha();
   const { data, info } = await image
@@ -44,8 +52,8 @@ async function trimUniformBorders(
   const channels = info.channels;
 
   const sampleSize = 10;
-  const colorThreshold = 12;
-  const maxTrimRatio = 0.35;
+  const colorThreshold = options.colorThreshold ?? 12;
+  const maxTrimRatio = options.maxTrimRatio ?? 0.35;
   const sampleStep = Math.max(4, Math.floor(Math.min(width, height) / 100));
 
   const clamp = (value: number, min: number, max: number) =>
@@ -110,7 +118,7 @@ async function trimUniformBorders(
     return { buffer, trimmed: false };
   }
 
-  const alphaThreshold = 12;
+  const alphaThreshold = options.alphaThreshold ?? 12;
 
   const isBackgroundPixel = (idx: number) => {
     if (channels >= 4) {
@@ -136,7 +144,8 @@ async function trimUniformBorders(
         matches += 1;
       }
     }
-    return matches / total >= 0.98;
+    const matchThreshold = options.matchThreshold ?? 0.98;
+    return matches / total >= matchThreshold;
   };
 
   const isBackgroundColumn = (x: number) => {
@@ -149,7 +158,8 @@ async function trimUniformBorders(
         matches += 1;
       }
     }
-    return matches / total >= 0.98;
+    const matchThreshold = options.matchThreshold ?? 0.98;
+    return matches / total >= matchThreshold;
   };
 
   const maxTrimTop = Math.floor(height * maxTrimRatio);
@@ -894,7 +904,11 @@ The background MUST be completely removed and replaced with the exact solid colo
           imagePart.inlineData.data,
           "base64",
         );
-        const trimmedResult = await trimUniformBorders(generatedImageBuffer);
+        const trimmedResult = await trimUniformBorders(generatedImageBuffer, {
+          maxTrimRatio: 0.6,
+          colorThreshold: 18,
+          matchThreshold: 0.96,
+        });
         console.log("[/api/lifestyle-scene] Borders trimmed:", trimmedResult.trimmed);
 
         // Get current dimensions and upscale if needed for HD quality
@@ -1027,18 +1041,44 @@ Additional requirements:
           "base64",
         );
 
-        // Resize and format to 2000x2000 JPEG
-        const finalBuffer = await sharp(generatedImageBuffer)
-          .resize(2000, 2000, {
-            fit: "contain",
-            background: { r: 255, g: 255, b: 255 },
-          })
-          .jpeg({ quality: 100 })
-          .toBuffer();
+        // Trim uniform borders and upscale like lifestyle scene results
+        // Use same aggressive trimming options as lifestyle-scene endpoint
+        const trimmedResult = await trimUniformBorders(generatedImageBuffer, {
+          maxTrimRatio: 0.6,
+          colorThreshold: 18,
+          matchThreshold: 0.96,
+        });
+        console.log("[/api/mockup] Borders trimmed:", trimmedResult.trimmed);
+
+        const metadata = await sharp(trimmedResult.buffer).metadata();
+        const currentWidth = metadata.width || 0;
+        const currentHeight = metadata.height || 0;
+        const minDimension = 2000;
+
+        let finalBuffer = trimmedResult.buffer;
+        if (currentWidth < minDimension || currentHeight < minDimension) {
+          const scale = Math.max(
+            minDimension / currentWidth,
+            minDimension / currentHeight,
+          );
+          const newWidth = Math.round(currentWidth * scale);
+          const newHeight = Math.round(currentHeight * scale);
+
+          finalBuffer = await sharp(trimmedResult.buffer)
+            .resize(newWidth, newHeight, {
+              kernel: sharp.kernel.lanczos3,
+            })
+            .png({ quality: 100 })
+            .toBuffer();
+
+          console.log(
+            `[/api/mockup] Upscaled from ${currentWidth}x${currentHeight} to ${newWidth}x${newHeight}`,
+          );
+        }
 
         // Return as base64 data URI for easy handling on client
         const base64Result = finalBuffer.toString("base64");
-        const resultUri = `data:image/jpeg;base64,${base64Result}`;
+        const resultUri = `data:image/png;base64,${base64Result}`;
 
         res.json({
           resultUri,

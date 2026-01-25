@@ -106,7 +106,7 @@ export default function BatchActionSelectionScreen() {
   };
 
   const handleCreateMockup = () => {
-    navigation.replace("MockupSelection", { imageUris });
+    navigation.replace("MockupWizardImages", { imageUris });
   };
 
   return (

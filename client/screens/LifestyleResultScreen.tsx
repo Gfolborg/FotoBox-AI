@@ -134,6 +134,7 @@ export default function LifestyleResultScreen() {
       navigation.navigate("PlatformSelection", {
         imageUri: fileUri,
         originalUri: originalUri,
+        sourceService: "lifestyle",
       });
     } catch (error) {
       console.error("Failed to prepare image for platform selection:", error);

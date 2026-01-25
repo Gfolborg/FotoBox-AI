@@ -117,6 +117,7 @@ export default function ResultScreen() {
       navigation.navigate("PlatformSelection", {
         imageUri: fileUri,
         originalUri: originalUri,
+        sourceService: "background",
       });
     } catch (error) {
       console.error("Failed to prepare image for platform selection:", error);
@@ -294,7 +295,7 @@ export default function ResultScreen() {
         encoding: FileSystem.EncodingType.Base64,
       });
 
-      navigation.navigate("MockupSelection", {
+      navigation.navigate("MockupWizardImages", {
         imageUri: fileUri,
       });
     } catch (error) {

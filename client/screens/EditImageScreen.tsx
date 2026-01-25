@@ -250,6 +250,7 @@ export default function EditImageScreen() {
       navigation.navigate("PlatformSelection", {
         imageUri: fileUri,
         originalUri: originalUri || imageUri,
+        sourceService: "edit",
       });
     } catch (error) {
       console.error("Failed to prepare image for platform selection:", error);
@@ -313,7 +314,7 @@ export default function EditImageScreen() {
         encoding: FileSystem.EncodingType.Base64,
       });
 
-      navigation.navigate("MockupSelection", { imageUri: fileUri });
+      navigation.navigate("MockupWizardImages", { imageUri: fileUri });
     } catch (error) {
       console.error("Failed to prepare image:", error);
       showNotification("Failed to prepare image. Please try again.", "error");

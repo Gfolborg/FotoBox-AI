@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { Feather } from "@expo/vector-icons";
+import * as ImageManipulator from "expo-image-manipulator";
 
 import { ThemedText } from "@/components/ThemedText";
 import { GlassCard } from "@/components/GlassCard";
@@ -46,6 +47,8 @@ export default function BatchMockupProcessingScreen() {
     mockupColor,
     customDescription,
     modelOption,
+    customScenePrompt,
+    negativePrompt,
   } = route.params;
 
   const [results, setResults] = useState<ProcessingResult[]>(
@@ -78,22 +81,43 @@ export default function BatchMockupProcessingScreen() {
       mockupColor,
       customDescription,
       modelOption,
+      customScenePrompt,
+      negativePrompt,
     );
+
+    let workingResults: ProcessingResult[] = imageUris.map((uri) => ({
+      originalUri: uri,
+      resultUri: null,
+      status: "pending",
+    }));
+    setResults(workingResults);
 
     for (let i = 0; i < imageUris.length; i++) {
       setCurrentIndex(i);
-      setResults((prev) =>
-        prev.map((r, idx) => (idx === i ? { ...r, status: "processing" } : r)),
+      workingResults = workingResults.map((r, idx) =>
+        idx === i ? { ...r, status: "processing" } : r,
       );
+      setResults(workingResults);
 
       try {
+        const manipulated = await ImageManipulator.manipulateAsync(
+          imageUris[i],
+          [],
+          { compress: 0.95, format: ImageManipulator.SaveFormat.JPEG },
+        );
         const formData = new FormData();
         formData.append("file", {
-          uri: imageUris[i],
+          uri: manipulated.uri,
           name: `product_${i}.jpg`,
           type: "image/jpeg",
         } as unknown as Blob);
         formData.append("prompt", prompt);
+        if (customScenePrompt) {
+          formData.append("customPrompt", customScenePrompt);
+        }
+        if (negativePrompt) {
+          formData.append("negativePrompt", negativePrompt);
+        }
         formData.append("mockupType", mockupItem.id);
         formData.append("sceneVibe", sceneVibe.id);
         formData.append("cameraOption", cameraOption.id);
@@ -116,35 +140,33 @@ export default function BatchMockupProcessingScreen() {
 
         const data = await response.json();
 
-        setResults((prev) =>
-          prev.map((r, idx) =>
-            idx === i
-              ? { ...r, resultUri: data.resultUri, status: "completed" }
-              : r,
-          ),
+        workingResults = workingResults.map((r, idx) =>
+          idx === i
+            ? { ...r, resultUri: data.resultUri, status: "completed" }
+            : r,
         );
+        setResults(workingResults);
 
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       } catch (error) {
         console.error(`Mockup processing error for image ${i}:`, error);
-        setResults((prev) =>
-          prev.map((r, idx) =>
-            idx === i
-              ? {
-                  ...r,
-                  error: error instanceof Error ? error.message : "Failed",
-                  status: "failed",
-                }
-              : r,
-          ),
+        workingResults = workingResults.map((r, idx) =>
+          idx === i
+            ? {
+                ...r,
+                error: error instanceof Error ? error.message : "Failed",
+                status: "failed",
+              }
+            : r,
         );
+        setResults(workingResults);
       }
     }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
     setTimeout(() => {
-      const finalResults = results.map((r, idx) => {
+      const finalResults = workingResults.map((r) => {
         if (r.status === "pending" || r.status === "processing") {
           return { ...r, status: "failed" as const, error: "Not processed" };
         }
@@ -154,6 +176,14 @@ export default function BatchMockupProcessingScreen() {
       navigation.replace("BatchMockupResult", {
         results: finalResults,
         mockupType: mockupItem.label,
+        sceneVibe,
+        cameraOption,
+        modelOption,
+        customScenePrompt,
+        negativePrompt,
+        customDescription,
+        mockupItem,
+        mockupColor,
       });
     }, 1000);
   };
@@ -237,8 +267,9 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: "center",
+    justifyContent: "flex-start",
     alignItems: "center",
+    paddingTop: Spacing["2xl"],
   },
   statusCard: {
     padding: Spacing.lg,

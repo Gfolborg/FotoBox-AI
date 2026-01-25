@@ -5,6 +5,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
+import * as ImageManipulator from "expo-image-manipulator";
 
 import { ThemedText } from "@/components/ThemedText";
 import { GlassCard } from "@/components/GlassCard";
@@ -38,6 +39,8 @@ export default function MockupProcessingScreen() {
     mockupColor,
     customDescription,
     modelOption,
+    customScenePrompt,
+    negativePrompt,
   } = route.params;
 
   const [progress, setProgress] = useState(0);
@@ -56,9 +59,15 @@ export default function MockupProcessingScreen() {
       setProgress(10);
       setStatus("Uploading image...");
 
+      const manipulated = await ImageManipulator.manipulateAsync(
+        imageUri,
+        [],
+        { compress: 0.95, format: ImageManipulator.SaveFormat.JPEG },
+      );
+
       const formData = new FormData();
       formData.append("file", {
-        uri: imageUri,
+        uri: manipulated.uri,
         name: "product.jpg",
         type: "image/jpeg",
       } as unknown as Blob);
@@ -70,8 +79,16 @@ export default function MockupProcessingScreen() {
         mockupColor,
         customDescription,
         modelOption,
+        customScenePrompt,
+        negativePrompt,
       );
       formData.append("prompt", prompt);
+      if (customScenePrompt) {
+        formData.append("customPrompt", customScenePrompt);
+      }
+      if (negativePrompt) {
+        formData.append("negativePrompt", negativePrompt);
+      }
       formData.append("mockupType", mockupItem.id);
       formData.append("sceneVibe", sceneVibe.id);
       formData.append("cameraOption", cameraOption.id);
@@ -110,6 +127,14 @@ export default function MockupProcessingScreen() {
           resultUri: data.resultUri,
           originalUri: imageUri,
           mockupType: mockupItem.label,
+          mockupItem,
+          sceneVibe,
+          cameraOption,
+          mockupColor,
+          customDescription,
+          modelOption,
+          customScenePrompt,
+          negativePrompt,
         });
       }, 500);
     } catch (error) {
@@ -182,8 +207,9 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: "center",
+    justifyContent: "flex-start",
     alignItems: "center",
+    paddingTop: Spacing["2xl"],
   },
   imageContainer: {
     position: "relative",

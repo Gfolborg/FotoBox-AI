@@ -374,6 +374,7 @@ export default function BatchResultScreen() {
 
     navigation.navigate("BatchPlatformSelection", {
       results: exportableResults,
+      sourceService: "background",
     });
   };
 

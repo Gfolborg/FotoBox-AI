@@ -13,6 +13,7 @@ import RootStackNavigator from "@/navigation/RootStackNavigator";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { NotificationProvider } from "@/context/NotificationProvider";
 import { BatchEditProvider } from "@/context/BatchEditContext";
+import { MockupVariantsProvider } from "@/context/MockupVariantsContext";
 
 export default function App() {
   return (
@@ -23,10 +24,12 @@ export default function App() {
             <KeyboardProvider>
               <NotificationProvider>
                 <BatchEditProvider>
-                  <NavigationContainer>
-                    <RootStackNavigator />
-                  </NavigationContainer>
-                  <StatusBar style="auto" />
+                  <MockupVariantsProvider>
+                    <NavigationContainer>
+                      <RootStackNavigator />
+                    </NavigationContainer>
+                    <StatusBar style="auto" />
+                  </MockupVariantsProvider>
                 </BatchEditProvider>
               </NotificationProvider>
             </KeyboardProvider>
