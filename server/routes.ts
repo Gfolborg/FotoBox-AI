@@ -1026,6 +1026,7 @@ CRITICAL INSTRUCTIONS:
           ],
           config: {
             responseModalities: [Modality.TEXT, Modality.IMAGE],
+            imageConfig: { aspectRatio: "16:9" },
           },
         });
 
