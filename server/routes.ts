@@ -993,20 +993,19 @@ The background MUST be completely removed and replaced with the exact solid colo
         const base64Image = imageBuffer.toString("base64");
         const mimeType = req.file.mimetype || "image/jpeg";
 
-        // Build enhanced prompt for mockup generation - match lifestyle format
+        // Build enhanced prompt for mockup generation - identical to lifestyle format
         const enhancedPrompt = `${prompt}
 
 CRITICAL INSTRUCTIONS:
-- Generate a WIDE LANDSCAPE image (horizontal orientation, wider than tall, approximately 16:9 or 4:3 aspect ratio).
-- Keep the design/logo from the input image EXACTLY the same and clearly visible on the product.
-- The product should be the clear focal point of the image.
-- Generate a photorealistic mockup scene in HIGH RESOLUTION (at least 2048x1536 pixels).
-- The image must be sharp, detailed, and suitable for professional e-commerce use.
-- Maintain realistic proportions, perspective, and natural shadows consistent with the lighting.
-- The scene must fill the entire frame edge-to-edge. Do NOT add padding, borders, or solid-color bars.
-- The mockup should look like a real photograph, not a digital render.
-- Output a high-quality, photorealistic image with no text, no watermark, no borders.
-- The composition should be balanced and aesthetically pleasing.`;
+ - Keep the product EXACTLY the same (do not modify, repaint, or change any details of the product).
+ - The product should be the clear focal point of the image.
+ - Generate a photorealistic lifestyle scene in HIGH RESOLUTION (at least 2048x2048 pixels).
+ - The image must be sharp, detailed, and suitable for professional e-commerce use.
+ - Maintain natural shadows and reflections consistent with the environment lighting.
+ - The scene must fill the entire frame edge-to-edge. Do NOT add padding, borders, or solid-color bars.
+ - The scene should look like a professional product photography shoot.
+ - Output a high-quality, photorealistic image with no text, no watermark, no borders.
+ - The composition should be balanced and aesthetically pleasing.`;
 
         const response = await ai.models.generateContent({
           model: "gemini-2.5-flash-image",
