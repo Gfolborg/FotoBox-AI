@@ -14,6 +14,11 @@ The app also supports batch processing, advanced editing tools, saved presets, a
 - **Confident exports**: platform-aware optimization and save-to-gallery success feedback.
 - **Premium feel**: gradients, glassmorphism, motion, and haptics.
 
+## AI Prompt Requirements
+To avoid regressions (e.g., unintended borders/padding), prompt constraints are documented in:
+- `docs/ai-prompt-requirements.md`
+- `docs/ai-prompt-checklist.md`
+
 ## Navigation & Flow
 **Stack navigation only** with onboarding gate on first launch.
 

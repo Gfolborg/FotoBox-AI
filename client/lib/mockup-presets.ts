@@ -458,6 +458,7 @@ export function getMockupPrompt(
   customScenePrompt?: string,
   negativePrompt?: string,
 ): string {
+  // Prompt requirements: docs/ai-prompt-requirements.md
   const isCustomProduct = mockupItem.id === "custom";
   const productName = mockupItem.label.toLowerCase();
   const colorDesc = mockupColor

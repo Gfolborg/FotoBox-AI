@@ -957,6 +957,7 @@ The background MUST be completely removed and replaced with the exact solid colo
     "/api/mockup",
     upload.single("file"),
     async (req: Request, res: Response) => {
+      // Prompt requirements: docs/ai-prompt-requirements.md
       try {
         if (!req.file) {
           return res.status(400).json({ error: "No image file provided" });
