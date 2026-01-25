@@ -997,9 +997,10 @@ The background MUST be completely removed and replaced with the exact solid colo
         const enhancedPrompt = `${prompt}
 
 CRITICAL INSTRUCTIONS:
+- Generate a WIDE LANDSCAPE image (horizontal orientation, wider than tall, approximately 16:9 or 4:3 aspect ratio).
 - Keep the design/logo from the input image EXACTLY the same and clearly visible on the product.
 - The product should be the clear focal point of the image.
-- Generate a photorealistic mockup scene in HIGH RESOLUTION (at least 2048x2048 pixels).
+- Generate a photorealistic mockup scene in HIGH RESOLUTION (at least 2048x1536 pixels).
 - The image must be sharp, detailed, and suitable for professional e-commerce use.
 - Maintain realistic proportions, perspective, and natural shadows consistent with the lighting.
 - The scene must fill the entire frame edge-to-edge. Do NOT add padding, borders, or solid-color bars.
