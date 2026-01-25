@@ -5,7 +5,11 @@ import { Feather } from "@expo/vector-icons";
 import { ThemedText } from "./ThemedText";
 import { GlassCard } from "./GlassCard";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
-import { PlatformRequirement } from "@/lib/platform-requirements";
+import {
+  PlatformRequirement,
+  getExportDimensions,
+  DEFAULT_EXPORT_LONG_EDGE,
+} from "@/lib/platform-requirements";
 
 interface OptimizationPreviewProps {
   selectedPlatforms: PlatformRequirement[];
@@ -35,7 +39,12 @@ export function OptimizationPreview({
     <GlassCard theme="light" padding="md" borderRadius="lg">
       {/* Header */}
       <View style={styles.header}>
-        <ThemedText style={styles.headerTitle}>Optimization Preview</ThemedText>
+        <View>
+          <ThemedText style={styles.headerTitle}>Optimization Preview</ThemedText>
+          <ThemedText style={styles.subheaderText}>
+            High-res export up to {DEFAULT_EXPORT_LONG_EDGE}px on the long edge
+          </ThemedText>
+        </View>
         <View style={styles.countBadge}>
           <ThemedText style={styles.countText}>
             {selectedPlatforms.length} platform
@@ -60,8 +69,10 @@ export function OptimizationPreview({
 
       {/* Platform List */}
       <View style={styles.platformList}>
-        {selectedPlatforms.map((platform) => (
-          <View key={platform.id} style={styles.platformItem}>
+        {selectedPlatforms.map((platform) => {
+          const exportDims = getExportDimensions(platform);
+          return (
+            <View key={platform.id} style={styles.platformItem}>
             <View style={styles.platformInfo}>
               <View
                 style={[
@@ -80,7 +91,7 @@ export function OptimizationPreview({
                 color={Colors.editing.textTertiary}
               />
               <ThemedText style={styles.dimensionsText}>
-                {platform.optimalWidth} x {platform.optimalHeight}
+                {exportDims.width} x {exportDims.height}
               </ThemedText>
               <View style={styles.ratioBadge}>
                 <ThemedText style={styles.ratioText}>
@@ -89,7 +100,8 @@ export function OptimizationPreview({
               </View>
             </View>
           </View>
-        ))}
+          );
+        })}
       </View>
 
       {/* Note about cropping */}
@@ -128,6 +140,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: Colors.editing.text,
+  },
+  subheaderText: {
+    fontSize: 11,
+    color: Colors.editing.textSecondary,
+    marginTop: 2,
   },
   countBadge: {
     paddingHorizontal: Spacing.sm,

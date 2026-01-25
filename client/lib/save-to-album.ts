@@ -15,8 +15,16 @@ const getExtensionFromDataUri = (dataUri: string): string => {
 };
 
 export async function ensureMediaLibraryPermission(): Promise<boolean> {
-  const { status } = await MediaLibrary.requestPermissionsAsync(true);
-  return status === "granted";
+  const permissions = await MediaLibrary.requestPermissionsAsync();
+  if (permissions.status === "granted") return true;
+  if (
+    "accessPrivileges" in permissions &&
+    permissions.accessPrivileges &&
+    permissions.accessPrivileges !== "none"
+  ) {
+    return true;
+  }
+  return false;
 }
 
 /**
@@ -50,17 +58,23 @@ export async function saveToFotoBoxAlbum(
       encoding: FileSystem.EncodingType.Base64,
     });
 
-    // On iOS and Android, add to album
+    // On iOS and Android, add to album (fallback to camera roll if limited)
     if (Platform.OS !== "web") {
-      // Check if album exists
-      let album = await MediaLibrary.getAlbumAsync(ALBUM_NAME);
+      try {
+        let album = await MediaLibrary.getAlbumAsync(ALBUM_NAME);
 
-      if (album === null) {
-        const asset = await MediaLibrary.createAssetAsync(fileUri);
-        // Create album with this asset
-        album = await MediaLibrary.createAlbumAsync(ALBUM_NAME, asset, false);
-      } else {
-        await MediaLibrary.createAssetAsync(fileUri, album);
+        if (album === null) {
+          const asset = await MediaLibrary.createAssetAsync(fileUri);
+          await MediaLibrary.createAlbumAsync(ALBUM_NAME, asset, false);
+        } else {
+          await MediaLibrary.createAssetAsync(fileUri, album);
+        }
+      } catch (albumError) {
+        console.warn(
+          "[saveToFotoBoxAlbum] Album access unavailable, saving to camera roll instead:",
+          albumError,
+        );
+        await MediaLibrary.createAssetAsync(fileUri);
       }
     }
 

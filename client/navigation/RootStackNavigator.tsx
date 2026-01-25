@@ -340,7 +340,7 @@ export default function RootStackNavigator() {
       <Stack.Screen
         name="MockupResult"
         component={MockupResultScreen}
-        options={{ headerTitle: "Mockup Ready", headerBackVisible: false }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="BatchMockupProcessing"

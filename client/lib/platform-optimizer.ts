@@ -5,7 +5,10 @@
 import { Skia, ImageFormat, rect } from "@shopify/react-native-skia";
 import * as FileSystem from "expo-file-system/legacy";
 import { Platform } from "react-native";
-import { PlatformRequirement } from "./platform-requirements";
+import {
+  PlatformRequirement,
+  getExportDimensions,
+} from "./platform-requirements";
 import { saveToFotoBoxAlbum, ensureMediaLibraryPermission } from "./save-to-album";
 
 export interface ComplianceResult {
@@ -42,6 +45,7 @@ export function checkCompliance(
 ): ComplianceResult {
   const issues: string[] = [];
   const suggestions: string[] = [];
+  const exportDims = getExportDimensions(platform);
 
   // Check minimum dimensions
   if (imageWidth < platform.minWidth) {
@@ -49,7 +53,7 @@ export function checkCompliance(
       `Width ${imageWidth}px is below minimum ${platform.minWidth}px`,
     );
     suggestions.push(
-      `Image will be upscaled to ${platform.optimalWidth}px width`,
+      `Image will be upscaled to ${exportDims.width}px width`,
     );
   }
   if (imageHeight < platform.minHeight) {
@@ -57,7 +61,7 @@ export function checkCompliance(
       `Height ${imageHeight}px is below minimum ${platform.minHeight}px`,
     );
     suggestions.push(
-      `Image will be upscaled to ${platform.optimalHeight}px height`,
+      `Image will be upscaled to ${exportDims.height}px height`,
     );
   }
 
@@ -190,8 +194,8 @@ export async function optimizeForPlatform(
   );
 
   // 3. Create output surface at optimal dimensions
-  const outputWidth = platform.optimalWidth;
-  const outputHeight = platform.optimalHeight;
+  const { width: outputWidth, height: outputHeight } =
+    getExportDimensions(platform);
 
   const surface = Skia.Surface.Make(outputWidth, outputHeight);
   if (!surface) {

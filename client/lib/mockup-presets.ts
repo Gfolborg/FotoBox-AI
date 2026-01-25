@@ -508,7 +508,7 @@ export function getMockupPrompt(
       ? ` ${modelDescriptions[modelOption.id]}`
       : "";
 
-  const basePrompt = `${productInstruction} ${colorDesc}${modelInstruction} The scene should be ${vibeDescriptions[sceneVibe.id] || vibeDescriptions.casual} ${cameraDescriptions[cameraOption.id] || cameraDescriptions.medium}`;
+  const basePrompt = `${productInstruction} ${colorDesc}${modelInstruction} The scene should be ${vibeDescriptions[sceneVibe.id] || vibeDescriptions.casual} ${cameraDescriptions[cameraOption.id] || cameraDescriptions.medium} CRITICAL: The camera angle must be followed precisely and must apply to the product framing and how the product is photographed (not just the background scene).`;
 
   const customAddition = customDescription
     ? ` Additional context: ${customDescription}`
@@ -519,5 +519,5 @@ export function getMockupPrompt(
     : "";
   const negativeAddition = negativePrompt ? ` Avoid: ${negativePrompt}` : "";
 
-  return `Generate a WIDE LANDSCAPE image (horizontal orientation, wider than tall). ${basePrompt}${customAddition}${customSceneAddition}${negativeAddition} The product placement should look natural and realistic with proper perspective, lighting, and shadows. The scene must fill the entire frame edge-to-edge with no padding or borders. High quality, photorealistic result.`;
+  return `Generate a 16:9 aspect ratio image (horizontal, widescreen). ${basePrompt} CRITICAL: Camera angle applies to the product framing, not just the scene. ${customAddition}${customSceneAddition}${negativeAddition} The product placement should look natural and realistic with proper perspective, lighting, and shadows. The scene must fill the entire frame edge-to-edge with no padding or borders. High quality, photorealistic result.`;
 }

@@ -47,6 +47,7 @@ import { useBatchEdit } from "@/context/BatchEditContext";
 import { getApiUrl } from "@/lib/query-client";
 import { getMockupPrompt } from "@/lib/mockup-presets";
 import { ProgressRing } from "@/components/ProgressRing";
+import { IterateSheet } from "@/components/IterateSheet";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const GRID_PADDING = Spacing.lg;
@@ -96,6 +97,9 @@ export default function BatchMockupResultScreen() {
     height: number;
   } | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [isIterateOpen, setIsIterateOpen] = useState(false);
+  const [iterateNotes, setIterateNotes] = useState("");
+  const [isIterating, setIsIterating] = useState(false);
   const { pendingEditResult, setPendingEditResult } = useBatchEdit();
 
   useFocusEffect(
@@ -123,6 +127,7 @@ export default function BatchMockupResultScreen() {
     edit: ["rgba(14, 165, 233, 0.28)", "rgba(59, 130, 246, 0.45)"],
     retry: ["rgba(249, 115, 22, 0.28)", "rgba(234, 88, 12, 0.45)"],
     new: ["rgba(16, 185, 129, 0.28)", "rgba(34, 197, 94, 0.45)"],
+    iterate: ["rgba(20, 184, 166, 0.25)", "rgba(13, 148, 136, 0.45)"],
   };
 
   const viewerHeight = viewerDimensions
@@ -195,6 +200,7 @@ export default function BatchMockupResultScreen() {
   const handleCloseViewer = () => {
     setViewerIndex(null);
     setIsRetrying(false);
+    setIsIterateOpen(false);
   };
 
   const handleViewerScrollEnd = (
@@ -209,7 +215,9 @@ export default function BatchMockupResultScreen() {
   };
 
   const handleRetrySelected = async () => {
-    if (!selectedItem || isRetrying) return;
+    if (!selectedItem || isRetrying || isIterating) return;
+    const targetIndex = viewerIndex;
+    if (targetIndex === null) return;
     setIsRetrying(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
@@ -268,7 +276,7 @@ export default function BatchMockupResultScreen() {
 
       setResults((prev) =>
         prev.map((item, idx) =>
-          idx === viewerIndex
+          idx === targetIndex
             ? { ...item, resultUri: data.resultUri, status: "completed" }
             : item,
         ),
@@ -282,6 +290,116 @@ export default function BatchMockupResultScreen() {
       }
     } finally {
       setIsRetrying(false);
+    }
+  };
+
+  const buildIterationPrompt = (notes: string) =>
+    `\n\nITERATION REQUEST:\n- Refine the provided mockup image. Keep the product identical and preserve the overall scene.\n- Apply ONLY these changes: ${notes}\n- Do not add text, borders, or padding.`;
+
+  const handleOpenIterate = () => {
+    if (!selectedItem?.resultUri || isRetrying || isIterating) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setIsIterateOpen(true);
+  };
+
+  const handleIterateSelected = async () => {
+    if (!selectedItem?.resultUri || isIterating || isRetrying) return;
+    const targetIndex = viewerIndex;
+    if (targetIndex === null) return;
+    const notes = iterateNotes.trim();
+    if (!notes) return;
+    setIsIterating(true);
+    setIsIterateOpen(false);
+
+    try {
+      const prompt = `${getMockupPrompt(
+        mockupItem,
+        sceneVibe,
+        cameraOption,
+        mockupColor,
+        customDescription,
+        modelOption,
+        customScenePrompt,
+        negativePrompt,
+      )}${buildIterationPrompt(notes)}`;
+
+      const formData = new FormData();
+
+      if (Platform.OS === "web") {
+        const blob = await fetch(selectedItem.resultUri).then((res) => res.blob());
+        formData.append("file", blob, "mockup-iterate.png");
+      } else {
+        let sourceUri = selectedItem.resultUri;
+        if (sourceUri.startsWith("data:")) {
+          const extension = getExtensionFromDataUri(sourceUri);
+          const filename = `iterate_source_${Date.now()}.${extension}`;
+          const fileUri = FileSystem.documentDirectory + filename;
+          const base64Data = sourceUri.split(",")[1];
+          await FileSystem.writeAsStringAsync(fileUri, base64Data, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          sourceUri = fileUri;
+        }
+
+        const manipulated = await ImageManipulator.manipulateAsync(
+          sourceUri,
+          [],
+          { compress: 0.95, format: ImageManipulator.SaveFormat.JPEG },
+        );
+
+        formData.append("file", {
+          uri: manipulated.uri,
+          name: "product_photo.jpg",
+          type: "image/jpeg",
+        } as unknown as Blob);
+      }
+
+      formData.append("prompt", prompt);
+      if (customScenePrompt) {
+        formData.append("customPrompt", customScenePrompt);
+      }
+      if (negativePrompt) {
+        formData.append("negativePrompt", negativePrompt);
+      }
+      formData.append("mockupType", mockupItem.id);
+      formData.append("sceneVibe", sceneVibe.id);
+      formData.append("cameraOption", cameraOption.id);
+      if (mockupColor) {
+        formData.append("mockupColor", mockupColor);
+      }
+
+      const response = await fetch(
+        new URL("/api/mockup", getApiUrl()).toString(),
+        {
+          method: "POST",
+          body: formData,
+        },
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to create mockup");
+      }
+
+      const data = await response.json();
+
+      setResults((prev) =>
+        prev.map((item, idx) =>
+          idx === targetIndex
+            ? { ...item, resultUri: data.resultUri, status: "completed" }
+            : item,
+        ),
+      );
+      setIterateNotes("");
+    } catch (error) {
+      console.error("Iteration failed:", error);
+      const message =
+        error instanceof Error ? error.message : "Failed to generate image";
+      if (Platform.OS !== "web") {
+        Alert.alert("Iteration Failed", message);
+      }
+    } finally {
+      setIsIterating(false);
     }
   };
 
@@ -355,6 +473,9 @@ export default function BatchMockupResultScreen() {
       ],
     );
   };
+
+  const isWorking = isRetrying || isIterating;
+  const workingTitle = isIterating ? "Iterating" : "Regenerating";
 
   const renderResultItem = ({
     item,
@@ -544,7 +665,11 @@ export default function BatchMockupResultScreen() {
                 ))}
               </ScrollView>
 
-              <View style={styles.viewerActionsRow}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.viewerActionsRow}
+              >
                 <Pressable
                   style={[
                     styles.actionCard,
@@ -568,10 +693,10 @@ export default function BatchMockupResultScreen() {
                 <Pressable
                   style={[
                     styles.actionCard,
-                    isRetrying && styles.actionCardDisabled,
+                    isWorking && styles.actionCardDisabled,
                   ]}
                   onPress={handleRetrySelected}
-                  disabled={isRetrying}
+                  disabled={isWorking}
                 >
                   <LinearGradient
                     colors={actionCardGradients.retry}
@@ -587,6 +712,27 @@ export default function BatchMockupResultScreen() {
                   </ThemedText>
                 </Pressable>
 
+                <Pressable
+                  style={[
+                    styles.actionCard,
+                    (!selectedItem?.resultUri || isWorking) &&
+                      styles.actionCardDisabled,
+                  ]}
+                  onPress={handleOpenIterate}
+                  disabled={!selectedItem?.resultUri || isWorking}
+                >
+                  <LinearGradient
+                    colors={actionCardGradients.iterate}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.actionCardGradient}
+                  />
+                  <View style={styles.actionIconContainer}>
+                    <Feather name="repeat" size={18} color={Colors.editing.text} />
+                  </View>
+                  <ThemedText style={styles.actionCardLabel}>Iterate</ThemedText>
+                </Pressable>
+
                 <Pressable style={styles.actionCard} onPress={handleNewSelected}>
                   <LinearGradient
                     colors={actionCardGradients.new}
@@ -599,9 +745,9 @@ export default function BatchMockupResultScreen() {
                   </View>
                   <ThemedText style={styles.actionCardLabel}>New</ThemedText>
                 </Pressable>
-              </View>
+              </ScrollView>
 
-              {isRetrying && (
+              {isWorking && (
                 <View style={styles.retryOverlay}>
                   <GlassCard theme="dark" variant="solid" padding="lg" borderRadius="xl">
                     <View style={styles.retryContent}>
@@ -615,7 +761,7 @@ export default function BatchMockupResultScreen() {
                         <ActivityIndicator size="small" color={Colors.editing.primary} />
                       </ProgressRing>
                       <ThemedText style={styles.retryTitle}>
-                        Regenerating
+                        {workingTitle}
                       </ThemedText>
                     </View>
                   </GlassCard>
@@ -625,6 +771,15 @@ export default function BatchMockupResultScreen() {
           </Animated.View>
         )}
       </View>
+
+      <IterateSheet
+        isOpen={isIterateOpen}
+        value={iterateNotes}
+        onChange={setIterateNotes}
+        onClose={() => setIsIterateOpen(false)}
+        onSubmit={handleIterateSelected}
+        isSubmitting={isIterating}
+      />
     </GradientBackground>
   );
 }
@@ -867,8 +1022,8 @@ const styles = StyleSheet.create({
   },
   viewerActionsRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     gap: Spacing.md,
+    paddingHorizontal: Spacing.xs,
   },
   retryOverlay: {
     ...StyleSheet.absoluteFillObject,

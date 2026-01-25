@@ -39,6 +39,7 @@ import { GlassCard } from "@/components/GlassCard";
 import { BeforeAfterSlider } from "@/components/BeforeAfterSlider";
 import { GradientBackground } from "@/components/GradientBackground";
 import { ProgressRing } from "@/components/ProgressRing";
+import { IterateSheet } from "@/components/IterateSheet";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { useBatchEdit } from "@/context/BatchEditContext";
@@ -75,6 +76,9 @@ export default function MockupResultScreen() {
   const [resultUri, setResultUri] = useState(initialResultUri);
   const [showComparison, setShowComparison] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [isIterateOpen, setIsIterateOpen] = useState(false);
+  const [iterateNotes, setIterateNotes] = useState("");
+  const [isIterating, setIsIterating] = useState(false);
   const [scrollEnabled, setScrollEnabled] = useState(false);
   const [containerHeight, setContainerHeight] = useState(0);
   const [imageDimensions, setImageDimensions] = useState<{
@@ -130,7 +134,7 @@ export default function MockupResultScreen() {
   };
 
   const handleRetryGeneration = async () => {
-    if (isRetrying) return;
+    if (isRetrying || isIterating) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsRetrying(true);
 
@@ -201,6 +205,111 @@ export default function MockupResultScreen() {
       }
     } finally {
       setIsRetrying(false);
+    }
+  };
+
+  const buildIterationPrompt = (notes: string) =>
+    `\n\nITERATION REQUEST:\n- Refine the provided mockup image. Keep the product identical and preserve the overall scene.\n- Apply ONLY these changes: ${notes}\n- Do not add text, borders, or padding.`;
+
+  const handleOpenIterate = () => {
+    if (isRetrying || isIterating) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setIsIterateOpen(true);
+  };
+
+  const handleIterateSubmit = async () => {
+    const notes = iterateNotes.trim();
+    if (!notes || isIterating || isRetrying) return;
+    setIsIterating(true);
+    setIsIterateOpen(false);
+
+    try {
+      const prompt = `${getMockupPrompt(
+        mockupItem,
+        sceneVibe,
+        cameraOption,
+        mockupColor,
+        customDescription,
+        modelOption,
+        customScenePrompt,
+        negativePrompt,
+      )}${buildIterationPrompt(notes)}`;
+
+      const formData = new FormData();
+
+      if (Platform.OS === "web") {
+        const blob = await fetch(resultUri).then((res) => res.blob());
+        formData.append("file", blob, "mockup-iterate.png");
+      } else {
+        let sourceUri = resultUri;
+        if (sourceUri.startsWith("data:")) {
+          const extension = getExtensionFromDataUri(sourceUri);
+          const filename = `iterate_source_${Date.now()}.${extension}`;
+          const fileUri = FileSystem.documentDirectory + filename;
+          const base64Data = sourceUri.split(",")[1];
+          await FileSystem.writeAsStringAsync(fileUri, base64Data, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          sourceUri = fileUri;
+        }
+
+        const manipulated = await ImageManipulator.manipulateAsync(
+          sourceUri,
+          [],
+          { compress: 0.95, format: ImageManipulator.SaveFormat.JPEG },
+        );
+
+        formData.append("file", {
+          uri: manipulated.uri,
+          name: "product.jpg",
+          type: "image/jpeg",
+        } as unknown as Blob);
+      }
+
+      formData.append("prompt", prompt);
+      if (customScenePrompt) {
+        formData.append("customPrompt", customScenePrompt);
+      }
+      if (negativePrompt) {
+        formData.append("negativePrompt", negativePrompt);
+      }
+      formData.append("mockupType", mockupItem.id);
+      formData.append("sceneVibe", sceneVibe.id);
+      formData.append("cameraOption", cameraOption.id);
+      if (mockupColor) {
+        formData.append("mockupColor", mockupColor);
+      }
+
+      const response = await fetch(
+        new URL("/api/mockup", getApiUrl()).toString(),
+        {
+          method: "POST",
+          body: formData,
+        },
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to create mockup");
+      }
+
+      const data = await response.json();
+
+      setResultUri(data.resultUri);
+      setShowComparison(false);
+      setIterateNotes("");
+      requestAnimationFrame(() => {
+        scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+      });
+    } catch (error) {
+      console.error("Iteration failed:", error);
+      const message =
+        error instanceof Error ? error.message : "Failed to generate image";
+      if (Platform.OS !== "web") {
+        Alert.alert("Iteration Failed", message);
+      }
+    } finally {
+      setIsIterating(false);
     }
   };
 
@@ -286,7 +395,14 @@ export default function MockupResultScreen() {
     edit: ["rgba(14, 165, 233, 0.28)", "rgba(59, 130, 246, 0.45)"],
     retry: ["rgba(249, 115, 22, 0.28)", "rgba(234, 88, 12, 0.45)"],
     new: ["rgba(16, 185, 129, 0.28)", "rgba(34, 197, 94, 0.45)"],
+    iterate: ["rgba(20, 184, 166, 0.25)", "rgba(13, 148, 136, 0.45)"],
   };
+
+  const isWorking = isRetrying || isIterating;
+  const workingTitle = isIterating ? "Refining Mockup" : "Regenerating Mockup";
+  const workingHint = isIterating
+    ? "Applying your changes"
+    : "This may take up to 30 seconds";
 
   useEffect(() => {
     let isMounted = true;
@@ -378,9 +494,9 @@ export default function MockupResultScreen() {
               </Pressable>
 
               <Pressable
-                style={[styles.actionCard, isRetrying && styles.actionCardDisabled]}
+                style={[styles.actionCard, isWorking && styles.actionCardDisabled]}
                 onPress={handleRetryGeneration}
-                disabled={isRetrying}
+                disabled={isWorking}
               >
                 <LinearGradient
                   colors={actionCardGradients.retry}
@@ -394,6 +510,23 @@ export default function MockupResultScreen() {
                 <ThemedText style={styles.actionCardLabel}>
                   {isRetrying ? "Retrying..." : "Retry"}
                 </ThemedText>
+              </Pressable>
+
+              <Pressable
+                style={[styles.actionCard, isWorking && styles.actionCardDisabled]}
+                onPress={handleOpenIterate}
+                disabled={isWorking}
+              >
+                <LinearGradient
+                  colors={actionCardGradients.iterate}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.actionCardGradient}
+                />
+                <View style={styles.actionIconContainer}>
+                  <Feather name="repeat" size={18} color={Colors.editing.text} />
+                </View>
+                <ThemedText style={styles.actionCardLabel}>Iterate</ThemedText>
               </Pressable>
 
               <Pressable style={styles.actionCard} onPress={handleGenerateAnother}>
@@ -460,7 +593,7 @@ export default function MockupResultScreen() {
           </GlassCard>
         </Animated.View>
 
-        {isRetrying && (
+        {isWorking && (
           <Animated.View
             entering={FadeIn.duration(200)}
             style={styles.retryOverlay}
@@ -482,15 +615,22 @@ export default function MockupResultScreen() {
                 >
                   <ActivityIndicator size="small" color={Colors.editing.primary} />
                 </ProgressRing>
-                <ThemedText style={styles.retryTitle}>Regenerating Mockup</ThemedText>
-                <ThemedText style={styles.retryHint}>
-                  This may take up to 30 seconds
-                </ThemedText>
+                <ThemedText style={styles.retryTitle}>{workingTitle}</ThemedText>
+                <ThemedText style={styles.retryHint}>{workingHint}</ThemedText>
               </View>
             </GlassCard>
           </Animated.View>
         )}
       </View>
+
+      <IterateSheet
+        isOpen={isIterateOpen}
+        value={iterateNotes}
+        onChange={setIterateNotes}
+        onClose={() => setIsIterateOpen(false)}
+        onSubmit={handleIterateSubmit}
+        isSubmitting={isIterating}
+      />
     </GradientBackground>
   );
 }

@@ -269,6 +269,7 @@ function getLifestyleScenePrompt(
   isCustom: boolean,
   productDescription?: string,
   shadowControl?: string,
+  iterationNotes?: string,
 ): string {
   let basePrompt: string;
 
@@ -290,18 +291,22 @@ function getLifestyleScenePrompt(
     }
   }
 
- return `${basePrompt}
+  const iterationBlock = iterationNotes?.trim()
+    ? `\n\nITERATION REQUEST:\n - Refine the provided image while keeping the product and overall scene consistent.\n - Apply ONLY these changes: ${iterationNotes.trim()}\n - Do not add text, borders, or padding.`
+    : "";
+
+  return `${basePrompt}
 
 CRITICAL INSTRUCTIONS:
  - Keep the product EXACTLY the same (do not modify, repaint, or change any details of the product).
  - The product should be the clear focal point of the image.
- - Generate a photorealistic lifestyle scene in HIGH RESOLUTION (at least 2048x2048 pixels).
+ - Generate a 16:9 aspect ratio image (horizontal, widescreen), in HIGH RESOLUTION (at least 2048x2048 pixels).
  - The image must be sharp, detailed, and suitable for professional e-commerce use.
  - Maintain ${shadowControl || "natural"} shadows and reflections consistent with the environment lighting.
  - The scene must fill the entire frame edge-to-edge. Do NOT add padding, borders, or solid-color bars.
  - The scene should look like a professional product photography shoot.
  - Output a high-quality, photorealistic image with no text, no watermark, no borders.
- - The composition should be balanced and aesthetically pleasing.`;
+ - The composition should be balanced and aesthetically pleasing.${iterationBlock}`;
 }
 
 // Generate prompt with explicit background color specification
@@ -847,6 +852,7 @@ The background MUST be completely removed and replaced with the exact solid colo
         const shadowControl = req.query.shadowControl as string;
         const platform = (req.query.platform as string | undefined)?.toLowerCase();
         const aspectRatio = getAspectRatioForPlatform(platform);
+        const iterationNotes = req.query.iterationNotes as string | undefined;
 
         const imageBuffer = req.file.buffer;
         const base64Image = imageBuffer.toString("base64");
@@ -858,6 +864,7 @@ The background MUST be completely removed and replaced with the exact solid colo
           isCustom,
           productDescription,
           shadowControl,
+          iterationNotes,
         );
 
         console.log("[/api/lifestyle-scene] Prompt:", prompt);
@@ -999,9 +1006,11 @@ The background MUST be completely removed and replaced with the exact solid colo
 CRITICAL INSTRUCTIONS:
  - Keep the product EXACTLY the same (do not modify, repaint, or change any details of the product).
  - The product should be the clear focal point of the image.
- - Generate a photorealistic lifestyle scene in HIGH RESOLUTION (at least 2048x2048 pixels).
- - The image must be sharp, detailed, and suitable for professional e-commerce use.
- - Maintain natural shadows and reflections consistent with the environment lighting.
+- Generate a photorealistic lifestyle scene in HIGH RESOLUTION (at least 2048x2048 pixels).
+- The image must be sharp, detailed, and suitable for professional e-commerce use.
+- Maintain natural shadows and reflections consistent with the environment lighting.
+ - CRITICAL: The specified camera angle must be followed precisely for the product framing (not just the overall scene).
+ - CRITICAL: Camera angle applies to the product framing, not just the scene.
  - The scene must fill the entire frame edge-to-edge. Do NOT add padding, borders, or solid-color bars.
  - The scene should look like a professional product photography shoot.
  - Output a high-quality, photorealistic image with no text, no watermark, no borders.

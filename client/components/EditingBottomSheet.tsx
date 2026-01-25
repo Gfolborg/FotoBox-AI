@@ -13,7 +13,7 @@ import { ThemedText } from "./ThemedText";
 import { Colors, Spacing } from "@/constants/theme";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
-const SHEET_MAX_HEIGHT = SCREEN_HEIGHT * 0.45;
+const DEFAULT_SHEET_MAX_HEIGHT = SCREEN_HEIGHT * 0.45;
 
 const SPRING_CONFIG = {
   damping: 20,
@@ -26,6 +26,7 @@ interface EditingBottomSheetProps {
   title: string;
   onClose: () => void;
   children: React.ReactNode;
+  maxHeight?: number;
 }
 
 export function EditingBottomSheet({
@@ -33,9 +34,11 @@ export function EditingBottomSheet({
   title,
   onClose,
   children,
+  maxHeight,
 }: EditingBottomSheetProps) {
   const insets = useSafeAreaInsets();
-  const translateY = useSharedValue(SHEET_MAX_HEIGHT);
+  const maxHeightValue = maxHeight ?? DEFAULT_SHEET_MAX_HEIGHT;
+  const translateY = useSharedValue(maxHeightValue);
   const opacity = useSharedValue(0);
 
   useEffect(() => {
@@ -43,12 +46,12 @@ export function EditingBottomSheet({
       translateY.value = withSpring(0, SPRING_CONFIG);
       opacity.value = withTiming(1, { duration: 200 });
     } else {
-      translateY.value = withSpring(SHEET_MAX_HEIGHT, SPRING_CONFIG);
+      translateY.value = withSpring(maxHeightValue, SPRING_CONFIG);
       opacity.value = withTiming(0, { duration: 150 });
     }
     // Shared values are stable refs and shouldn't trigger re-runs
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]);
+  }, [isOpen, maxHeightValue]);
 
   const sheetStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
@@ -72,6 +75,8 @@ export function EditingBottomSheet({
           styles.sheet,
           sheetStyle,
           { paddingBottom: insets.bottom + Spacing.md },
+          { maxHeight: maxHeightValue },
+          maxHeight ? { height: maxHeightValue } : null,
         ]}
       >
         {/* Handle bar */}
@@ -108,7 +113,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.backgroundRoot,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: SHEET_MAX_HEIGHT,
+    overflow: "hidden",
     zIndex: 101,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -4 },

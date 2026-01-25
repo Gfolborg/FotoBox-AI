@@ -51,6 +51,12 @@ const getInitialItem = (
   return category.items.find((item) => item.id === productId) || null;
 };
 
+const getFirstItemForCategory = (categoryId?: string) => {
+  if (!categoryId) return null;
+  const category = MOCKUP_CATEGORIES.find((c) => c.id === categoryId);
+  return category?.items?.[0] || null;
+};
+
 const getDefaultVibe = (vibeId?: string): SceneVibe =>
   SCENE_VIBES.find((item) => item.id === vibeId) || SCENE_VIBES[0];
 
@@ -66,10 +72,9 @@ export default function MockupWizardCustomizeScreen() {
   const insets = useSafeAreaInsets();
 
   const { wizardState } = route.params;
-  const initialItem = getInitialItem(
-    wizardState.productCategoryId,
-    wizardState.productId,
-  );
+  const initialItem =
+    getInitialItem(wizardState.productCategoryId, wizardState.productId) ??
+    getFirstItemForCategory(wizardState.productCategoryId);
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(
     wizardState.productCategoryId || null,
@@ -78,7 +83,9 @@ export default function MockupWizardCustomizeScreen() {
     initialItem,
   );
   const [selectedColor, setSelectedColor] = useState<string>(
-    wizardState.productColor || "#FFFFFF",
+    wizardState.productColor ||
+      initialItem?.defaultColors?.[0] ||
+      "#FFFFFF",
   );
   const [customProductName, setCustomProductName] = useState(
     wizardState.customProductName || "",
@@ -102,6 +109,18 @@ export default function MockupWizardCustomizeScreen() {
     wizardState.additionalNotes || "",
   );
 
+  React.useEffect(() => {
+    if (!selectedCategory || selectedCategory === CUSTOM_CATEGORY_ID) return;
+    if (selectedItem) return;
+    const firstItem = getFirstItemForCategory(selectedCategory);
+    if (firstItem) {
+      setSelectedItem(firstItem);
+      if (firstItem.defaultColors && firstItem.defaultColors.length > 0) {
+        setSelectedColor(firstItem.defaultColors[0]);
+      }
+    }
+  }, [selectedCategory, selectedItem]);
+
   const selectedCategoryData = useMemo(
     () => MOCKUP_CATEGORIES.find((c) => c.id === selectedCategory),
     [selectedCategory],
@@ -124,7 +143,15 @@ export default function MockupWizardCustomizeScreen() {
   const handleCategorySelect = (categoryId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedCategory(categoryId);
-    setSelectedItem(null);
+    if (categoryId === CUSTOM_CATEGORY_ID) {
+      setSelectedItem(null);
+    } else {
+      const firstItem = getFirstItemForCategory(categoryId);
+      setSelectedItem(firstItem);
+      if (firstItem?.defaultColors && firstItem.defaultColors.length > 0) {
+        setSelectedColor(firstItem.defaultColors[0]);
+      }
+    }
     if (categoryId !== CUSTOM_CATEGORY_ID) {
       setCustomProductName("");
     }
@@ -143,7 +170,13 @@ export default function MockupWizardCustomizeScreen() {
     setSelectedColor(color);
   };
 
+  const resolveSelectedItem = () => {
+    if (selectedCategory === CUSTOM_CATEGORY_ID) return null;
+    return selectedItem || getFirstItemForCategory(selectedCategory || undefined);
+  };
+
   const handleBack = () => {
+    const resolvedItem = resolveSelectedItem();
     navigation.navigate("MockupWizardTemplates", {
       wizardState: {
         ...wizardState,
@@ -152,7 +185,9 @@ export default function MockupWizardCustomizeScreen() {
             ? CUSTOM_CATEGORY_ID
             : selectedCategory || undefined,
         productId:
-          selectedCategory === CUSTOM_CATEGORY_ID ? undefined : selectedItem?.id,
+          selectedCategory === CUSTOM_CATEGORY_ID
+            ? undefined
+            : resolvedItem?.id,
         customProductName:
           selectedCategory === CUSTOM_CATEGORY_ID
             ? customProductName.trim()
@@ -169,6 +204,7 @@ export default function MockupWizardCustomizeScreen() {
   };
 
   const handleNext = () => {
+    const resolvedItem = resolveSelectedItem();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     navigation.navigate("MockupWizardReview", {
       wizardState: {
@@ -178,7 +214,9 @@ export default function MockupWizardCustomizeScreen() {
             ? CUSTOM_CATEGORY_ID
             : selectedCategory || undefined,
         productId:
-          selectedCategory === CUSTOM_CATEGORY_ID ? undefined : selectedItem?.id,
+          selectedCategory === CUSTOM_CATEGORY_ID
+            ? undefined
+            : resolvedItem?.id,
         customProductName:
           selectedCategory === CUSTOM_CATEGORY_ID
             ? customProductName.trim()

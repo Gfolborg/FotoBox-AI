@@ -20,6 +20,29 @@ export interface PlatformRequirement {
   notes: string;
 }
 
+export const DEFAULT_EXPORT_LONG_EDGE = 3500;
+
+export function getExportDimensions(
+  platform: PlatformRequirement,
+  maxLongEdge: number = DEFAULT_EXPORT_LONG_EDGE,
+): { width: number; height: number; scale: number } {
+  const longEdge = Math.max(platform.optimalWidth, platform.optimalHeight);
+  if (!maxLongEdge || maxLongEdge <= longEdge) {
+    return {
+      width: platform.optimalWidth,
+      height: platform.optimalHeight,
+      scale: 1,
+    };
+  }
+
+  const scale = maxLongEdge / longEdge;
+  return {
+    width: Math.round(platform.optimalWidth * scale),
+    height: Math.round(platform.optimalHeight * scale),
+    scale,
+  };
+}
+
 export const PLATFORM_REQUIREMENTS: Record<string, PlatformRequirement> = {
   amazon: {
     id: "amazon",

@@ -30,6 +30,8 @@ type NavigationProp = NativeStackNavigationProp<
 
 type RouteProps = RouteProp<RootStackParamList, "MockupWizardReview">;
 
+const CUSTOM_CATEGORY_ID = "custom";
+
 const buildCustomItem = (name: string): MockupItem => ({
   id: "custom",
   label: name,
@@ -53,7 +55,9 @@ export default function MockupWizardReviewScreen() {
     );
     const productItem =
       category?.items.find((item) => item.id === wizardState.productId) ||
-      (wizardState.customProductName
+      category?.items[0] ||
+      (wizardState.productCategoryId === CUSTOM_CATEGORY_ID &&
+      wizardState.customProductName
         ? buildCustomItem(wizardState.customProductName)
         : null);
 
