@@ -519,5 +519,5 @@ export function getMockupPrompt(
     : "";
   const negativeAddition = negativePrompt ? ` Avoid: ${negativePrompt}` : "";
 
-  return `${basePrompt}${customAddition}${customSceneAddition}${negativeAddition} The product placement should look natural and realistic with proper perspective, lighting, and shadows. High quality, photorealistic result.`;
+  return `Generate a WIDE LANDSCAPE image (horizontal orientation, wider than tall). ${basePrompt}${customAddition}${customSceneAddition}${negativeAddition} The product placement should look natural and realistic with proper perspective, lighting, and shadows. The scene must fill the entire frame edge-to-edge with no padding or borders. High quality, photorealistic result.`;
 }
