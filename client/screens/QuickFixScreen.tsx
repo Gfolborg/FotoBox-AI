@@ -38,7 +38,7 @@ export default function QuickFixScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
-  const { imageUri } = route.params;
+  const { imageUri, existingResults, skipEnhancement } = route.params;
 
   const imageRef = useRef<SkiaEditableImageRef>(null);
   const [selectedTool, setSelectedTool] = useState<ToolKey | null>(null);
@@ -166,7 +166,14 @@ export default function QuickFixScreen() {
   const handleSkip = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     // Navigate directly to PhotoAction with original image
-    navigation.navigate("PhotoAction", { imageUri });
+    if (skipEnhancement) {
+      navigation.navigate("BackgroundColorSelection", {
+        imageUri,
+        existingResults,
+      });
+    } else {
+      navigation.navigate("PhotoAction", { imageUri, existingResults });
+    }
   };
 
   const handleContinue = async () => {
@@ -196,7 +203,17 @@ export default function QuickFixScreen() {
       }
 
       // Navigate to PhotoAction with the (potentially modified) image
-      navigation.navigate("PhotoAction", { imageUri: finalUri });
+      if (skipEnhancement) {
+        navigation.navigate("BackgroundColorSelection", {
+          imageUri: finalUri,
+          existingResults,
+        });
+      } else {
+        navigation.navigate("PhotoAction", {
+          imageUri: finalUri,
+          existingResults,
+        });
+      }
     } catch (error) {
       console.error("[QuickFix] Failed to process image:", error);
       if (Platform.OS !== "web") {

@@ -128,7 +128,7 @@ export default function ResultScreen() {
   };
 
   const handleGenerateAnother = () => {
-    navigation.popToTop();
+    navigation.navigate("Camera");
   };
 
   const handleEdit = async () => {

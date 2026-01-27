@@ -81,7 +81,7 @@ export default function PhotoActionScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
-  const { imageUri } = route.params;
+  const { imageUri, existingResults } = route.params;
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
@@ -90,7 +90,10 @@ export default function PhotoActionScreen() {
   }, [navigation]);
 
   const handleRemoveBackground = () => {
-    navigation.navigate("BackgroundColorSelection", { imageUri });
+    navigation.navigate("BackgroundColorSelection", {
+      imageUri,
+      existingResults,
+    });
   };
 
   const handleCreateLifestyle = () => {

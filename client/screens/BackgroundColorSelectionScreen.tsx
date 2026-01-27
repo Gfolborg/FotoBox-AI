@@ -52,7 +52,7 @@ export default function BackgroundColorSelectionScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
-  const { imageUri } = route.params;
+  const { imageUri, existingResults } = route.params;
   const [selectedColor, setSelectedColor] = useState("white");
   const [imageSize, setImageSize] = useState({
     width: IMAGE_MAX_WIDTH,
@@ -98,6 +98,7 @@ export default function BackgroundColorSelectionScreen() {
     navigation.replace("BatchProcessing", {
       imageUris: [imageUri],
       backgroundColor: selected?.color || "#FFFFFF",
+      existingResults,
     });
   };
 

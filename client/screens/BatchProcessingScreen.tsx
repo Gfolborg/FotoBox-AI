@@ -44,19 +44,25 @@ interface ProcessingResult {
   error?: string;
   status: "pending" | "processing" | "completed" | "failed";
   backgroundVerified?: boolean;
+  backgroundColor?: string;
 }
 
 export default function BatchProcessingScreen() {
   const insets = useSafeAreaInsets();
   const route = useRoute<RouteProps>();
   const navigation = useNavigation<NavigationProp>();
-  const { imageUris, backgroundColor = "#FFFFFF" } = route.params;
+  const {
+    imageUris,
+    backgroundColor = "#FFFFFF",
+    existingResults = [],
+  } = route.params;
 
   const [results, setResults] = React.useState<ProcessingResult[]>(
     imageUris.map((uri) => ({
       originalUri: uri,
       resultUri: null,
       status: "pending" as const,
+      backgroundColor,
     })),
   );
   const [isComplete, setIsComplete] = React.useState(false);
@@ -77,11 +83,11 @@ export default function BatchProcessingScreen() {
   React.useEffect(() => {
     if (isComplete) {
       navigation.replace("BatchResult", {
-        results: resultsRef.current,
+        results: [...existingResults, ...resultsRef.current],
         backgroundColor,
       });
     }
-  }, [isComplete, navigation, backgroundColor]);
+  }, [isComplete, navigation, backgroundColor, existingResults]);
 
   React.useEffect(() => {
     processImages();
@@ -161,7 +167,15 @@ export default function BatchProcessingScreen() {
 
       setResults((prev) =>
         prev.map((r, idx) =>
-          idx === index ? { ...r, resultUri, status: "completed" as const, backgroundVerified } : r,
+          idx === index
+            ? {
+                ...r,
+                resultUri,
+                status: "completed" as const,
+                backgroundVerified,
+                backgroundColor,
+              }
+            : r,
         ),
       );
     } catch (error) {

@@ -37,7 +37,6 @@ import { ApplyToAllModal } from "@/components/ApplyToAllModal";
 import { GradientBackground } from "@/components/GradientBackground";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
-import { saveToFotoBoxAlbum } from "@/lib/save-to-album";
 import { useBatchEdit } from "@/context/BatchEditContext";
 import { getApiUrl } from "@/lib/query-client";
 import { useNotification } from "@/context/NotificationContext";
@@ -58,8 +57,6 @@ export default function BatchResultScreen() {
   const { results, backgroundColor = "#FFFFFF" } = route.params;
   const { showNotification } = useNotification();
 
-  const [savedUris, setSavedUris] = React.useState<Set<string>>(new Set());
-  const [savingUris, setSavingUris] = React.useState<Set<string>>(new Set());
   const [deletedUris, setDeletedUris] = React.useState<Set<string>>(new Set());
   const [retryingUris, setRetryingUris] = React.useState<Set<string>>(
     new Set(),
@@ -75,6 +72,7 @@ export default function BatchResultScreen() {
     new Set(),
   );
   const [lastEditedUri, setLastEditedUri] = React.useState<string | null>(null);
+  const maxProducts = 10;
 
   const {
     hasShownApplyAllPopup,
@@ -134,30 +132,22 @@ export default function BatchResultScreen() {
     }, [pendingEditResult, hasShownApplyAllPopup, uneditedCount, successfulResults.length]),
   );
 
-  const handleSaveImage = async (resultUri: string, originalUri: string) => {
-    setSavingUris((prev) => new Set([...prev, originalUri]));
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
-    const result = await saveToFotoBoxAlbum(resultUri, "product_image");
-
-    if (result.success) {
-      setSavedUris((prev) => new Set([...prev, originalUri]));
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } else {
+  const handleGenerateMore = () => {
+    if (visibleResults.length >= maxProducts) {
+      showNotification(`Max ${maxProducts} products per batch.`, "error");
       if (Platform.OS !== "web") {
-        Alert.alert("Error", result.error || "Failed to save image");
+        Alert.alert(
+          "Batch Limit Reached",
+          `You can process up to ${maxProducts} product images at a time.`,
+        );
       }
+      return;
     }
 
-    setSavingUris((prev) => {
-      const newSet = new Set(prev);
-      newSet.delete(originalUri);
-      return newSet;
+    navigation.navigate("Camera", {
+      existingResults: visibleResults,
+      skipEnhancement: true,
     });
-  };
-
-  const handleGenerateMore = () => {
-    navigation.popToTop();
   };
 
   const handleEditImage = async (resultUri: string, originalUri: string) => {
@@ -198,6 +188,12 @@ export default function BatchResultScreen() {
       return;
     }
 
+    const targetResult = updatedResults.find(
+      (item) => item.originalUri === originalUri,
+    );
+    const targetBackgroundColor =
+      targetResult?.backgroundColor || backgroundColor || "#FFFFFF";
+
     setRetryingUris((prev) => new Set([...prev, originalUri]));
     setRetryErrorUris((prev) => {
       const newSet = new Set(prev);
@@ -228,7 +224,7 @@ export default function BatchResultScreen() {
       } as unknown as Blob);
 
       const apiUrl = getApiUrl();
-      const bgColorParam = encodeURIComponent(backgroundColor);
+      const bgColorParam = encodeURIComponent(targetBackgroundColor);
       const endpoint = `${apiUrl}api/main-image?backgroundColor=${bgColorParam}`;
 
       const controller = new AbortController();
@@ -267,6 +263,7 @@ export default function BatchResultScreen() {
                 resultUri,
                 status: "completed",
                 error: undefined,
+                backgroundColor: targetBackgroundColor,
               }
             : item,
         ),
@@ -340,12 +337,7 @@ export default function BatchResultScreen() {
             style: "destructive",
             onPress: () => {
               setDeletedUris((prev) => new Set([...prev, originalUri]));
-              // Also remove from saved/edited states
-              setSavedUris((prev) => {
-                const newSet = new Set(prev);
-                newSet.delete(originalUri);
-                return newSet;
-              });
+              // Also remove from edited states
               setEditedImages((prev) => {
                 const newSet = new Set(prev);
                 newSet.delete(originalUri);
@@ -410,7 +402,7 @@ export default function BatchResultScreen() {
 
         {/* Stats */}
         <Animated.View
-          entering={FadeInDown.delay(100).duration(400)}
+          entering={FadeInDown.delay(140).duration(400)}
           style={styles.statsRow}
         >
           <View style={styles.statItem}>
@@ -431,6 +423,22 @@ export default function BatchResultScreen() {
             </>
           )}
         </Animated.View>
+
+        {visibleResults.length > 0 && (
+          <Animated.View
+            entering={FadeInDown.delay(180).duration(400)}
+            style={styles.retryHintRow}
+          >
+            <Feather
+              name="refresh-cw"
+              size={14}
+              color={Colors.editing.secondary}
+            />
+            <ThemedText style={styles.retryHintText}>
+              Not happy with a result? Tap Retry to regenerate.
+            </ThemedText>
+          </Animated.View>
+        )}
 
         {/* Image Grid */}
         <FlatList
@@ -477,23 +485,6 @@ export default function BatchResultScreen() {
                       <Feather name="trash-2" size={14} color="#FFFFFF" />
                     </Pressable>
 
-                    {/* Status Badge */}
-                    {savedUris.has(item.originalUri) &&
-                      item.status !== "failed" && (
-                      <View style={styles.savedBadge}>
-                        <Feather
-                          name="check"
-                          size={12}
-                          color={Colors.editing.buttonText}
-                        />
-                      </View>
-                    )}
-                    {/* Warning badge when background wasn't verified */}
-                    {item.backgroundVerified === false && !savedUris.has(item.originalUri) && (
-                      <View style={styles.warningBadge}>
-                        <Feather name="alert-triangle" size={12} color="#FFFFFF" />
-                      </View>
-                    )}
                     {retryErrorUris.has(item.originalUri) && (
                       <View style={styles.errorPill}>
                         <ThemedText style={styles.errorPillText}>
@@ -524,34 +515,6 @@ export default function BatchResultScreen() {
                         />
                         <ThemedText style={styles.buttonText}>
                           {isRetrying ? "Retrying" : "Retry"}
-                        </ThemedText>
-                      </Pressable>
-                      <Pressable
-                        style={[
-                          styles.saveButton,
-                          savedUris.has(item.originalUri) &&
-                            styles.saveButtonSaved,
-                        ]}
-                        onPress={() =>
-                          handleSaveImage(item.resultUri!, item.originalUri)
-                        }
-                        disabled={
-                          savingUris.has(item.originalUri) ||
-                          savedUris.has(item.originalUri)
-                        }
-                      >
-                        <ThemedText
-                          style={[
-                            styles.buttonText,
-                            savedUris.has(item.originalUri) &&
-                              styles.buttonTextSaved,
-                          ]}
-                        >
-                          {savingUris.has(item.originalUri)
-                            ? "Saving..."
-                            : savedUris.has(item.originalUri)
-                              ? "Saved"
-                              : "Save"}
                         </ThemedText>
                       </Pressable>
                     </View>
@@ -610,6 +573,7 @@ export default function BatchResultScreen() {
                   variant="secondary"
                   icon="plus"
                   style={styles.actionButton}
+                  disabled={visibleResults.length >= maxProducts}
                 />
               </>
             ) : (
@@ -662,6 +626,19 @@ const styles = StyleSheet.create({
     gap: Spacing.xl,
     marginTop: Spacing.md,
     marginBottom: Spacing.lg,
+  },
+  retryHintRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.xs,
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.lg,
+  },
+  retryHintText: {
+    color: Colors.editing.textSecondary,
+    fontSize: 12,
+    fontWeight: "600",
   },
   statItem: {
     alignItems: "center",
@@ -726,28 +703,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  savedBadge: {
-    position: "absolute",
-    top: Spacing.xs,
-    right: Spacing.xs,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: Colors.editing.success,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  warningBadge: {
-    position: "absolute",
-    top: Spacing.xs,
-    left: Spacing.xs,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: "#F59E0B",
-    justifyContent: "center",
-    alignItems: "center",
-  },
   errorPill: {
     position: "absolute",
     top: Spacing.xs,
@@ -793,24 +748,10 @@ const styles = StyleSheet.create({
   retryButtonFailed: {
     marginTop: Spacing.sm,
   },
-  saveButton: {
-    flex: 1,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  saveButtonSaved: {
-    backgroundColor: Colors.editing.success,
-  },
   buttonText: {
     color: "#FFFFFF",
     fontSize: 13,
     fontWeight: "600",
-  },
-  buttonTextSaved: {
-    color: "#FFFFFF",
   },
   failedCard: {
     width: "100%",

@@ -37,12 +37,33 @@ import {
 } from "@/lib/mockup-presets";
 import { MockupWizardState } from "@/lib/mockup-templates";
 
+export type BackgroundBatchResult = {
+  originalUri: string;
+  resultUri: string | null;
+  error?: string;
+  status: "pending" | "processing" | "completed" | "failed";
+  backgroundVerified?: boolean;
+  backgroundColor?: string;
+};
+
 export type RootStackParamList = {
   Home: undefined;
-  Camera: undefined;
-  QuickFix: { imageUri: string };
-  PhotoAction: { imageUri: string };
-  BackgroundColorSelection: { imageUri: string };
+  Camera:
+    | {
+        existingResults?: BackgroundBatchResult[];
+        skipEnhancement?: boolean;
+      }
+    | undefined;
+  QuickFix: {
+    imageUri: string;
+    existingResults?: BackgroundBatchResult[];
+    skipEnhancement?: boolean;
+  };
+  PhotoAction: { imageUri: string; existingResults?: BackgroundBatchResult[] };
+  BackgroundColorSelection: {
+    imageUri: string;
+    existingResults?: BackgroundBatchResult[];
+  };
   EditImage: { imageUri: string; originalUri?: string; presetId?: string };
   Result: {
     resultUri: string;
@@ -63,15 +84,13 @@ export type RootStackParamList = {
   // Batch flow
   BatchActionSelection: { imageUris: string[] };
   BatchPreview: { imageUris: string[] };
-  BatchProcessing: { imageUris: string[]; backgroundColor?: string };
+  BatchProcessing: {
+    imageUris: string[];
+    backgroundColor?: string;
+    existingResults?: BackgroundBatchResult[];
+  };
   BatchResult: {
-    results: {
-      originalUri: string;
-      resultUri: string | null;
-      error?: string;
-      status: "pending" | "processing" | "completed" | "failed";
-      backgroundVerified?: boolean;
-    }[];
+    results: BackgroundBatchResult[];
     backgroundColor?: string;
   };
 

@@ -13,7 +13,7 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import * as ImagePicker from "expo-image-picker";
 import { Feather } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { BlurView } from "expo-blur";
 import Animated, {
@@ -37,6 +37,7 @@ import { Colors, Spacing, BorderRadius, Animations } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "Camera">;
+type RouteProps = RouteProp<RootStackParamList, "Camera">;
 
 const RETAKE_TIPS = [
   {
@@ -69,11 +70,14 @@ const RETAKE_TIPS = [
 export default function CameraScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
+  const route = useRoute<RouteProps>();
   const cameraRef = useRef<CameraView>(null);
   const [permission, requestPermission] = useCameraPermissions();
   const [isCapturing, setIsCapturing] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
   const [showTips, setShowTips] = useState(false);
+  const existingResults = route.params?.existingResults;
+  const skipEnhancement = route.params?.skipEnhancement;
 
   const captureScale = useSharedValue(1);
 
@@ -97,7 +101,11 @@ export default function CameraScreen() {
       });
 
       if (photo?.uri) {
-        navigation.navigate("QuickFix", { imageUri: photo.uri });
+        navigation.navigate("QuickFix", {
+          imageUri: photo.uri,
+          existingResults,
+          skipEnhancement,
+        });
       }
     } catch (error) {
       console.error("Failed to capture photo:", error);
@@ -115,7 +123,11 @@ export default function CameraScreen() {
     });
 
     if (!result.canceled && result.assets[0]) {
-      navigation.navigate("QuickFix", { imageUri: result.assets[0].uri });
+      navigation.navigate("QuickFix", {
+        imageUri: result.assets[0].uri,
+        existingResults,
+        skipEnhancement,
+      });
     }
   };
 
