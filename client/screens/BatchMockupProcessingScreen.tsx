@@ -11,6 +11,7 @@ import * as ImageManipulator from "expo-image-manipulator";
 import { ThemedText } from "@/components/ThemedText";
 import { GlassCard } from "@/components/GlassCard";
 import { ProgressRing } from "@/components/ProgressRing";
+import { ProcessingTips, DEFAULT_PROCESSING_TIPS } from "@/components/ProcessingTips";
 import { GradientBackground } from "@/components/GradientBackground";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
@@ -60,6 +61,8 @@ export default function BatchMockupProcessingScreen() {
   );
   const [currentIndex, setCurrentIndex] = useState(0);
   const hasStartedRef = useRef(false);
+  const abortControllersRef = useRef<AbortController[]>([]);
+  const isCancelledRef = useRef(false);
 
   const completedCount = results.filter((r) => r.status === "completed").length;
   const failedCount = results.filter((r) => r.status === "failed").length;
@@ -71,6 +74,14 @@ export default function BatchMockupProcessingScreen() {
     hasStartedRef.current = true;
 
     processAllImages();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      isCancelledRef.current = true;
+      abortControllersRef.current.forEach((controller) => controller.abort());
+      abortControllersRef.current = [];
+    };
   }, []);
 
   const processAllImages = async () => {
@@ -93,6 +104,7 @@ export default function BatchMockupProcessingScreen() {
     setResults(workingResults);
 
     for (let i = 0; i < imageUris.length; i++) {
+      if (isCancelledRef.current) return;
       setCurrentIndex(i);
       workingResults = workingResults.map((r, idx) =>
         idx === i ? { ...r, status: "processing" } : r,
@@ -125,11 +137,14 @@ export default function BatchMockupProcessingScreen() {
           formData.append("mockupColor", mockupColor);
         }
 
+        const controller = new AbortController();
+        abortControllersRef.current.push(controller);
         const response = await fetch(
           new URL("/api/mockup", getApiUrl()).toString(),
           {
             method: "POST",
             body: formData,
+            signal: controller.signal,
           },
         );
 
@@ -149,6 +164,10 @@ export default function BatchMockupProcessingScreen() {
 
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+          return;
+        }
+        if (isCancelledRef.current) return;
         console.error(`Mockup processing error for image ${i}:`, error);
         workingResults = workingResults.map((r, idx) =>
           idx === i
@@ -166,6 +185,7 @@ export default function BatchMockupProcessingScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
     setTimeout(() => {
+      if (isCancelledRef.current) return;
       const finalResults = workingResults.map((r) => {
         if (r.status === "pending" || r.status === "processing") {
           return { ...r, status: "failed" as const, error: "Not processed" };
@@ -254,6 +274,11 @@ export default function BatchMockupProcessingScreen() {
               contentContainerStyle={styles.thumbnailList}
             />
           </Animated.View>
+
+          <ProcessingTips
+            tips={DEFAULT_PROCESSING_TIPS}
+            style={styles.tipsContainer}
+          />
         </Animated.View>
       </View>
     </GradientBackground>
@@ -330,5 +355,9 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
     backgroundColor: "#FFF",
+  },
+  tipsContainer: {
+    marginTop: Spacing.xl,
+    width: "100%",
   },
 });

@@ -7,6 +7,8 @@ import {
   Pressable,
   Alert,
   Platform,
+  Share,
+  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
@@ -17,8 +19,19 @@ import Animated, {
   FadeIn,
   FadeInDown,
   FadeInUp,
+  FadeOut,
+  ZoomOut,
+  Layout,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+  Easing,
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
+import * as FileSystem from "expo-file-system/legacy";
+import * as Sharing from "expo-sharing";
+import JSZip from "jszip";
 
 import { ThemedText } from "@/components/ThemedText";
 import { GlassPill } from "@/components/GlassPill";
@@ -31,7 +44,7 @@ import { GlassCard } from "@/components/GlassCard";
 import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import {
-  getAllPlatforms,
+  getPlatformsForService,
   PlatformRequirement,
 } from "@/lib/platform-requirements";
 import {
@@ -47,11 +60,13 @@ type NavigationProp = NativeStackNavigationProp<
 >;
 type RouteProps = RouteProp<RootStackParamList, "PlatformSelection">;
 
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
 export default function PlatformSelectionScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
-  const { imageUri, originalUri, sourceService } = route.params;
+  const { imageUri, originalUri, sourceService, backgroundColor } = route.params;
 
   const [selectedPlatforms, setSelectedPlatforms] = useState<Set<string>>(
     new Set(),
@@ -60,12 +75,20 @@ export default function PlatformSelectionScreen() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [showPostSaveActions, setShowPostSaveActions] = useState(false);
   const [exportCount, setExportCount] = useState(0);
+  const [isDownloadingOriginal, setIsDownloadingOriginal] = useState(false);
+  const [originalDownloaded, setOriginalDownloaded] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+  const [cachedShareFiles, setCachedShareFiles] = useState<
+    Array<{ platformId: string; uri: string; format: string }>
+  >([]);
   const [imageDimensions, setImageDimensions] = useState<{
     width: number;
     height: number;
   } | null>(null);
 
-  const allPlatforms = getAllPlatforms();
+  const pinterestPulse = useSharedValue(1);
+
+  const allPlatforms = getPlatformsForService(sourceService);
 
   // Load image dimensions on mount
   useEffect(() => {
@@ -129,6 +152,166 @@ export default function PlatformSelectionScreen() {
     }
   };
 
+  const handleDownloadOriginal = async () => {
+    if (isDownloadingOriginal) return;
+    setIsDownloadingOriginal(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    try {
+      const result = await saveToFotoBoxAlbum(imageUri, "product_image");
+      if (result.success) {
+        setOriginalDownloaded(true);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else if (Platform.OS !== "web") {
+        Alert.alert("Save Failed", result.error || "Could not save the image.");
+      }
+    } catch (error) {
+      console.error("[PlatformSelection] Download original failed:", error);
+      if (Platform.OS !== "web") {
+        Alert.alert("Error", "Failed to save image. Please try again.");
+      }
+    } finally {
+      setIsDownloadingOriginal(false);
+    }
+  };
+
+  const handleShareOriginal = async () => {
+    if (isSharing) return;
+    setIsSharing(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      if (cachedShareFiles.length > 0) {
+        if (cachedShareFiles.length === 1) {
+          const only = cachedShareFiles[0];
+          const fileUri = only.uri;
+          if (Sharing.isAvailableAsync && (await Sharing.isAvailableAsync())) {
+            await Sharing.shareAsync(fileUri, {
+              mimeType:
+                only.format === "PNG" ? "image/png" : "image/jpeg",
+              dialogTitle: "Share Export",
+            });
+            return;
+          }
+
+          let shareUri = fileUri;
+          if (Platform.OS === "android" && shareUri.startsWith("file://")) {
+            shareUri = await FileSystem.getContentUriAsync(shareUri);
+          }
+          await Share.share({ url: shareUri });
+          return;
+        }
+
+        const zip = new JSZip();
+        for (const item of cachedShareFiles) {
+          let fileUri = item.uri;
+          if (!fileUri.startsWith("file://") && fileUri.startsWith("/")) {
+            fileUri = `file://${fileUri}`;
+          }
+          const base64Data = await FileSystem.readAsStringAsync(fileUri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          const ext = item.format === "PNG" ? "png" : "jpg";
+          zip.file(`fotobox_${item.platformId}.${ext}`, base64Data, {
+            base64: true,
+          });
+        }
+
+        const zipBase64 = await zip.generateAsync({ type: "base64" });
+        const zipPath = `${FileSystem.cacheDirectory}fotobox_export_${Date.now()}.zip`;
+        await FileSystem.writeAsStringAsync(zipPath, zipBase64, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+
+        if (Sharing.isAvailableAsync && (await Sharing.isAvailableAsync())) {
+          await Sharing.shareAsync(zipPath, {
+            mimeType: "application/zip",
+            dialogTitle: "Share Export (ZIP)",
+          });
+          return;
+        }
+
+        let shareUri = zipPath;
+        if (Platform.OS === "android" && shareUri.startsWith("file://")) {
+          shareUri = await FileSystem.getContentUriAsync(shareUri);
+        }
+        await Share.share({ url: shareUri });
+        return;
+      }
+
+      let shareUri = imageUri;
+      if (shareUri.startsWith("data:")) {
+        const base64Data = shareUri.split(",")[1];
+        const filename = `fotobox_${Date.now()}.jpg`;
+        const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+        await FileSystem.writeAsStringAsync(fileUri, base64Data, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        shareUri = fileUri;
+      } else if (shareUri.startsWith("/")) {
+        shareUri = `file://${shareUri}`;
+      }
+
+      if (Sharing.isAvailableAsync && (await Sharing.isAvailableAsync())) {
+        await Sharing.shareAsync(shareUri, {
+          mimeType: "image/jpeg",
+          dialogTitle: "Share Export",
+        });
+        return;
+      }
+
+      if (Platform.OS === "android" && shareUri.startsWith("file://")) {
+        shareUri = await FileSystem.getContentUriAsync(shareUri);
+      }
+
+      await Share.share({ url: shareUri });
+    } catch (error) {
+      console.error("[PlatformSelection] Share failed:", error);
+      try {
+        let fallbackUri = imageUri;
+        if (fallbackUri.startsWith("data:")) {
+          const base64Data = fallbackUri.split(",")[1];
+          const filename = `share_${Date.now()}.jpg`;
+          const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+          await FileSystem.writeAsStringAsync(fileUri, base64Data, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          fallbackUri = fileUri;
+        } else if (fallbackUri.startsWith("/")) {
+          fallbackUri = `file://${fallbackUri}`;
+        }
+        if (Platform.OS === "android" && fallbackUri.startsWith("file://")) {
+          fallbackUri = await FileSystem.getContentUriAsync(fallbackUri);
+        }
+        await Share.share({ url: fallbackUri });
+      } catch {
+        if (Platform.OS !== "web") {
+          Alert.alert(
+            "Share Failed",
+            "Please rebuild the app to enable sharing, or download and share from your gallery.",
+          );
+        }
+      }
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  useEffect(() => {
+    pinterestPulse.value = withRepeat(
+      withTiming(1.2, { duration: 800, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      true,
+    );
+  }, [pinterestPulse]);
+
+  const pinterestPulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pinterestPulse.value }],
+  }));
+  const pinterestRippleStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pinterestPulse.value }],
+    opacity: 2 - pinterestPulse.value,
+  }));
+
   const handleExport = async () => {
     if (selectedPlatforms.size === 0) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -148,7 +331,28 @@ export default function PlatformSelectionScreen() {
       const platforms = getSelectedRequirements();
 
       // Optimize for all selected platforms
-      const optimizedImages = await optimizeForPlatforms(imageUri, platforms);
+      const optimizedImages = await optimizeForPlatforms(
+        imageUri,
+        platforms,
+        undefined,
+        { backgroundColor },
+      );
+
+      const cacheFiles: Array<{
+        platformId: string;
+        uri: string;
+        format: string;
+      }> = [];
+      for (const [platformId, result] of optimizedImages.entries()) {
+        const base64Data = result.uri.split(",")[1];
+        const ext = result.format === "PNG" ? "png" : "jpg";
+        const fileUri = `${FileSystem.cacheDirectory}fotobox_${platformId}_${Date.now()}.${ext}`;
+        await FileSystem.writeAsStringAsync(fileUri, base64Data, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        cacheFiles.push({ platformId, uri: fileUri, format: result.format });
+      }
+      setCachedShareFiles(cacheFiles);
 
       // Save all optimized images
       const saveResult = await saveOptimizedImages(optimizedImages);
@@ -187,12 +391,24 @@ export default function PlatformSelectionScreen() {
     navigation.popToTop();
   };
 
-  const handlePostSaveAction = (
-    action: "background" | "mockup" | "lifestyle",
+  const handlePostSaveAction = async (
+    action: "background" | "mockup" | "lifestyle" | "share" | "download",
   ) => {
     const sourceUri = originalUri ?? imageUri;
-    setShowSuccess(false);
-    setShowPostSaveActions(false);
+    if (action !== "download" && action !== "share") {
+      setShowSuccess(false);
+      setShowPostSaveActions(false);
+    }
+
+    if (action === "share") {
+      await handleShareOriginal();
+      return;
+    }
+
+    if (action === "download") {
+      handleDownloadOriginal();
+      return;
+    }
 
     if (action === "background") {
       navigation.replace("BackgroundColorSelection", { imageUri: sourceUri });
@@ -208,6 +424,22 @@ export default function PlatformSelectionScreen() {
   };
 
   const postSaveActions = [
+    {
+      key: "download",
+      title: "Download Original",
+      subtitle: "Save the image as‑is",
+      icon: "download" as const,
+      color: Colors.editing.primary,
+      tint: Colors.editing.primarySubtle,
+    },
+    {
+      key: "share",
+      title: "Share Export",
+      subtitle: "Send or email your image",
+      icon: "share-2" as const,
+      color: "#0EA5E9",
+      tint: "rgba(14, 165, 233, 0.28)",
+    },
     {
       key: "background",
       title: "Remove Background",
@@ -235,7 +467,9 @@ export default function PlatformSelectionScreen() {
   ];
 
   const availablePostSaveActions = postSaveActions.filter(
-    (action) => action.key !== sourceService,
+    (action) =>
+      action.key !== sourceService &&
+      !(originalDownloaded && action.key === "download"),
   );
 
   return (
@@ -314,15 +548,80 @@ export default function PlatformSelectionScreen() {
             </ThemedText>
 
             <View style={styles.platformGrid}>
-              {allPlatforms.map((platform) => (
-                <PlatformChip
-                  key={platform.id}
-                  platform={platform}
-                  selected={selectedPlatforms.has(platform.id)}
-                  onPress={() => togglePlatform(platform.id)}
-                  disabled={isExporting}
-                />
-              ))}
+              {allPlatforms.map((platform) => {
+                const isSelected = selectedPlatforms.has(platform.id);
+                if (platform.id !== "pinterest") {
+                  return (
+                    <PlatformChip
+                      key={platform.id}
+                      platform={platform}
+                      selected={isSelected}
+                      onPress={() => togglePlatform(platform.id)}
+                      disabled={isExporting}
+                    />
+                  );
+                }
+
+                return (
+                  <View key={platform.id} style={styles.pinterestRow}>
+                    <View style={styles.pinterestChipWrap}>
+                      <PlatformChip
+                        platform={platform}
+                        selected={isSelected}
+                        onPress={() => togglePlatform(platform.id)}
+                        disabled={isExporting}
+                      />
+                      <Animated.View
+                        style={[styles.pinterestRipple, pinterestRippleStyle]}
+                      />
+                      <Animated.View
+                        style={[styles.pinterestInfoBadge, pinterestPulseStyle]}
+                      >
+                        <ThemedText style={styles.pinterestInfoText}>
+                          !
+                        </ThemedText>
+                      </Animated.View>
+                    </View>
+                    {isSelected && (
+                      <Animated.View
+                        entering={FadeInUp.duration(200)}
+                        style={styles.pinterestTooltipRight}
+                      >
+                        <View style={styles.pinterestTooltipArrowRight} />
+                        <ThemedText style={styles.pinterestTooltipTitle}>
+                          Heads up
+                        </ThemedText>
+                        <View style={styles.pinterestTooltipList}>
+                          <View style={styles.pinterestTooltipRow}>
+                            <View style={styles.pinterestBullet} />
+                            <ThemedText style={styles.pinterestTooltipText}>
+                              Pinterest crops to 2:3 (parts may be cut off).
+                            </ThemedText>
+                          </View>
+                          <View style={styles.pinterestTooltipRow}>
+                            <View style={styles.pinterestBullet} />
+                            <ThemedText style={styles.pinterestTooltipText}>
+                              Center the product and shoot a bit wider.
+                            </ThemedText>
+                          </View>
+                          <View style={styles.pinterestTooltipRow}>
+                            <View style={styles.pinterestBullet} />
+                            <ThemedText style={styles.pinterestTooltipText}>
+                              Use portrait framing when possible.
+                            </ThemedText>
+                          </View>
+                          <View style={styles.pinterestTooltipRow}>
+                            <View style={styles.pinterestBullet} />
+                            <ThemedText style={styles.pinterestTooltipText}>
+                              Download the original to crop it yourself.
+                            </ThemedText>
+                          </View>
+                        </View>
+                      </Animated.View>
+                    )}
+                  </View>
+                );
+              })}
             </View>
           </Animated.View>
 
@@ -337,6 +636,7 @@ export default function PlatformSelectionScreen() {
               currentHeight={imageDimensions?.height}
             />
           </Animated.View>
+
         </ScrollView>
 
         {/* Export Button */}
@@ -394,16 +694,35 @@ export default function PlatformSelectionScreen() {
                   <ThemedText style={styles.postSaveTitle}>
                     Keep going with the same photo
                   </ThemedText>
+                  {originalDownloaded && (
+                    <View style={styles.downloadedBadge}>
+                      <Feather name="check" size={12} color="#FFFFFF" />
+                      <ThemedText style={styles.downloadedBadgeText}>
+                        Original saved
+                      </ThemedText>
+                    </View>
+                  )}
                   <View style={styles.actionList}>
                     {availablePostSaveActions.map((action) => (
-                      <Pressable
+                      <AnimatedPressable
                         key={action.key}
+                        layout={Layout.springify()}
+                        exiting={
+                          action.key === "download"
+                            ? ZoomOut.duration(180)
+                            : FadeOut.duration(160)
+                        }
                         style={styles.actionRow}
                         onPress={() =>
                           handlePostSaveAction(
-                            action.key as "background" | "mockup" | "lifestyle",
+                            action.key as
+                              | "background"
+                              | "mockup"
+                              | "lifestyle"
+                              | "share",
                           )
                         }
+                        disabled={isSharing && action.key === "share"}
                       >
                         <View
                           style={[
@@ -411,11 +730,15 @@ export default function PlatformSelectionScreen() {
                             { backgroundColor: action.tint },
                           ]}
                         >
-                          <Feather
-                            name={action.icon}
-                            size={18}
-                            color={action.color}
-                          />
+                          {action.key === "share" && isSharing ? (
+                            <ActivityIndicator size="small" color="#FFFFFF" />
+                          ) : (
+                            <Feather
+                              name={action.icon}
+                              size={18}
+                              color={action.color}
+                            />
+                          )}
                         </View>
                         <View style={styles.actionCopy}>
                           <ThemedText style={styles.actionTitle}>
@@ -430,7 +753,7 @@ export default function PlatformSelectionScreen() {
                           size={18}
                           color="#FFFFFF"
                         />
-                      </Pressable>
+                      </AnimatedPressable>
                     ))}
                   </View>
                   <GradientButton
@@ -537,6 +860,101 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: Spacing.sm,
   },
+  pinterestRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  pinterestChipWrap: {
+    position: "relative",
+    alignItems: "center",
+  },
+  pinterestInfoBadge: {
+    position: "absolute",
+    top: -6,
+    left: -6,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#F59E0B",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: Colors.editing.backgroundDefault,
+  },
+  pinterestRipple: {
+    position: "absolute",
+    top: -10,
+    left: -10,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 2,
+    borderColor: "rgba(245, 158, 11, 0.45)",
+  },
+  pinterestInfoText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "700",
+    lineHeight: 14,
+  },
+  pinterestTooltipRight: {
+    maxWidth: 190,
+    minWidth: 150,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: BorderRadius.lg,
+    backgroundColor: "#FFF7ED",
+    borderWidth: 1,
+    borderColor: "#FDBA74",
+    position: "relative",
+    flexShrink: 1,
+    alignSelf: "flex-start",
+    shadowColor: "rgba(0, 0, 0, 0.2)",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  pinterestTooltipTitle: {
+    color: Colors.editing.text,
+    fontSize: 12,
+    fontWeight: "700",
+    marginBottom: 2,
+  },
+  pinterestTooltipText: {
+    color: Colors.editing.textSecondary,
+    fontSize: 11,
+    lineHeight: 14,
+    flexShrink: 1,
+  },
+  pinterestTooltipList: {
+    gap: 4,
+  },
+  pinterestTooltipRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 6,
+  },
+  pinterestBullet: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    marginTop: 5,
+    backgroundColor: "#FDBA74",
+  },
+  pinterestTooltipArrowRight: {
+    position: "absolute",
+    left: -6,
+    top: 16,
+    width: 10,
+    height: 10,
+    backgroundColor: "#FFF7ED",
+    borderLeftWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: "#FDBA74",
+    transform: [{ rotate: "45deg" }],
+  },
   previewSection: {
     marginTop: Spacing.xl,
   },
@@ -581,14 +999,35 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   actionList: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
     gap: Spacing.sm,
   },
-  actionRow: {
+  downloadedBadge: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.md,
+    alignSelf: "center",
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 6,
+    borderRadius: BorderRadius.full,
+    backgroundColor: "rgba(16, 185, 129, 0.28)",
+    borderWidth: 1,
+    borderColor: "rgba(16, 185, 129, 0.6)",
+  },
+  downloadedBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  actionRow: {
+    width: "48%",
+    flexDirection: "column",
+    alignItems: "flex-start",
+    gap: Spacing.xs,
     paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
+    paddingHorizontal: Spacing.sm,
     borderRadius: BorderRadius.lg,
     backgroundColor: "rgba(255, 255, 255, 0.18)",
     borderWidth: 1,
@@ -602,7 +1041,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   actionCopy: {
-    flex: 1,
+    width: "100%",
   },
   actionTitle: {
     color: "#FFFFFF",

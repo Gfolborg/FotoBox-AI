@@ -75,6 +75,7 @@ export type RootStackParamList = {
     imageUri: string;
     originalUri?: string;
     sourceService?: "background" | "lifestyle" | "mockup" | "edit";
+    backgroundColor?: string;
   };
   BatchPlatformSelection: {
     results: { originalUri: string; resultUri: string }[];

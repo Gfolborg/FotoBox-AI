@@ -53,12 +53,17 @@ const RETAKE_TIPS = [
   {
     icon: "target" as const,
     title: "Stay Centered",
-    description: "Keep the product centered and straight.",
+    description: "Keep the product centered and straight for better exports.",
   },
   {
     icon: "image" as const,
     title: "Plain Background",
     description: "Use a simple, uncluttered background.",
+  },
+  {
+    icon: "upload" as const,
+    title: "Best Source Image",
+    description: "If uploading, pick the cleanest, highest-quality photo.",
   },
   {
     icon: "zap" as const,
@@ -76,6 +81,7 @@ export default function CameraScreen() {
   const [isCapturing, setIsCapturing] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
   const [showTips, setShowTips] = useState(false);
+  const [isPickingImage, setIsPickingImage] = useState(false);
   const existingResults = route.params?.existingResults;
   const skipEnhancement = route.params?.skipEnhancement;
 
@@ -116,18 +122,49 @@ export default function CameraScreen() {
   };
 
   const handlePickSingleImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: false,
-      quality: 1,
-    });
+    console.log("[Camera] Gallery pressed");
+    if (isPickingImage) return;
+    setIsPickingImage(true);
+    const permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    console.log(
+      "[Camera] Gallery permission result:",
+      permissionResult.status,
+      permissionResult.granted,
+    );
+    if (!permissionResult.granted) {
+      if (Platform.OS !== "web") {
+        Alert.alert(
+          "Gallery Access Needed",
+          "Please allow photo access to pick from your gallery.",
+        );
+      }
+      setIsPickingImage(false);
+      return;
+    }
 
-    if (!result.canceled && result.assets[0]) {
-      navigation.navigate("QuickFix", {
-        imageUri: result.assets[0].uri,
-        existingResults,
-        skipEnhancement,
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 1,
       });
+      console.log("[Camera] Gallery result:", result.canceled);
+
+      if (!result.canceled && result.assets[0]) {
+        navigation.navigate("QuickFix", {
+          imageUri: result.assets[0].uri,
+          existingResults,
+          skipEnhancement,
+        });
+      }
+    } catch (error) {
+      console.error("[Camera] Gallery picker failed:", error);
+      if (Platform.OS !== "web") {
+        Alert.alert("Gallery Error", "Could not open your gallery.");
+      }
+    } finally {
+      setIsPickingImage(false);
     }
   };
 
@@ -208,85 +245,105 @@ export default function CameraScreen() {
   return (
     <GradientBackground theme="home">
       <StatusBar style="light" />
-      <CameraView ref={cameraRef} style={styles.camera} facing="back">
-        {/* Grid overlay */}
-        {showGrid && (
-          <View style={styles.gridOverlay}>
-            <View style={styles.gridRow}>
-              <View style={styles.gridCell} />
-              <View style={[styles.gridCell, styles.gridCellBorder]} />
-              <View style={styles.gridCell} />
-            </View>
-            <View style={[styles.gridRow, styles.gridRowBorder]}>
-              <View style={styles.gridCell} />
-              <View style={[styles.gridCell, styles.gridCellBorder]} />
-              <View style={styles.gridCell} />
-            </View>
-            <View style={styles.gridRow}>
-              <View style={styles.gridCell} />
-              <View style={[styles.gridCell, styles.gridCellBorder]} />
-              <View style={styles.gridCell} />
-            </View>
-          </View>
-        )}
+      <View style={styles.cameraContainer}>
+        <CameraView
+          ref={cameraRef}
+          style={styles.camera}
+          facing="back"
+          pointerEvents="none"
+          active={!isPickingImage}
+        />
 
-        <ThemedHeader title="Product Shot" transparent />
-
-        {/* Bottom controls */}
-        <Animated.View
-          entering={FadeInUp.delay(200).duration(400)}
-          style={[
-            styles.bottomControls,
-            { paddingBottom: insets.bottom + Spacing.xl },
-          ]}
-        >
-          {/* Gallery buttons */}
-          <View style={styles.sideButton}>
-            <IconButton
-              icon="image"
-              onPress={handlePickSingleImage}
-              size={52}
-              iconSize={24}
-              variant="glassDark"
-              color="#FFFFFF"
-            />
-            <ThemedText style={styles.sideButtonLabel}>Gallery</ThemedText>
-          </View>
-
-          {/* Capture button */}
-          <Pressable onPress={handleCapture} disabled={isCapturing}>
-            <Animated.View
-              style={[styles.captureButtonOuter, captureAnimatedStyle]}
-            >
-              <View style={styles.captureButtonInner}>
-                {isCapturing ? (
-                  <ActivityIndicator
-                    color={Colors.editing.backgroundRoot}
-                    size="small"
-                  />
-                ) : (
-                  <View style={styles.captureButtonCenter} />
-                )}
+        <View style={styles.cameraOverlay} pointerEvents="box-none">
+          {/* Grid overlay */}
+          {showGrid && (
+            <View style={styles.gridOverlay} pointerEvents="none">
+              <View style={styles.gridRow}>
+                <View style={styles.gridCell} />
+                <View style={[styles.gridCell, styles.gridCellBorder]} />
+                <View style={styles.gridCell} />
               </View>
-            </Animated.View>
-          </Pressable>
+              <View style={[styles.gridRow, styles.gridRowBorder]}>
+                <View style={styles.gridCell} />
+                <View style={[styles.gridCell, styles.gridCellBorder]} />
+                <View style={styles.gridCell} />
+              </View>
+              <View style={styles.gridRow}>
+                <View style={styles.gridCell} />
+                <View style={[styles.gridCell, styles.gridCellBorder]} />
+                <View style={styles.gridCell} />
+              </View>
+            </View>
+          )}
 
-          {/* Flash toggle placeholder for balance */}
-          <View style={styles.sideButton}>
+          <ThemedHeader title="Product Shot" transparent />
+          <View style={[styles.tipsButton, { top: insets.top + 72 }]}>
             <IconButton
-              icon="zap"
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              }}
-              size={52}
-              iconSize={24}
+              icon="help-circle"
+              onPress={() => setShowTips(true)}
+              size={44}
+              iconSize={20}
               variant="glassDark"
               color="#FFFFFF"
             />
-            <ThemedText style={styles.sideButtonLabel}>Flash</ThemedText>
           </View>
-        </Animated.View>
-      </CameraView>
+
+          {/* Bottom controls */}
+          <Animated.View
+            entering={FadeInUp.delay(200).duration(400)}
+            style={[
+              styles.bottomControls,
+              { paddingBottom: insets.bottom + Spacing.xl },
+            ]}
+          >
+            {/* Gallery buttons */}
+            <View style={styles.sideButton}>
+              <IconButton
+                icon="image"
+                onPress={handlePickSingleImage}
+                size={52}
+                iconSize={24}
+                variant="glassDark"
+                color="#FFFFFF"
+              />
+              <ThemedText style={styles.sideButtonLabel}>Gallery</ThemedText>
+            </View>
+
+            {/* Capture button */}
+            <Pressable onPress={handleCapture} disabled={isCapturing}>
+              <Animated.View
+                style={[styles.captureButtonOuter, captureAnimatedStyle]}
+              >
+                <View style={styles.captureButtonInner}>
+                  {isCapturing ? (
+                    <ActivityIndicator
+                      color={Colors.editing.backgroundRoot}
+                      size="small"
+                    />
+                  ) : (
+                    <View style={styles.captureButtonCenter} />
+                  )}
+                </View>
+              </Animated.View>
+            </Pressable>
+
+            {/* Flash toggle placeholder for balance */}
+            <View style={styles.sideButton}>
+              <IconButton
+                icon="zap"
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}
+                size={52}
+                iconSize={24}
+                variant="glassDark"
+                color="#FFFFFF"
+              />
+              <ThemedText style={styles.sideButtonLabel}>Flash</ThemedText>
+            </View>
+          </Animated.View>
+        </View>
+      </View>
 
       {/* Tips Modal */}
       <Modal
@@ -394,8 +451,17 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xl,
     width: "100%",
   },
+  cameraContainer: {
+    flex: 1,
+  },
   camera: {
     flex: 1,
+    zIndex: 0,
+  },
+  cameraOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 2,
+    elevation: 2,
   },
   gridOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -460,6 +526,11 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
   },
+  tipsButton: {
+    position: "absolute",
+    right: Spacing.md,
+    zIndex: 2,
+  },
   captureButtonOuter: {
     width: 80,
     height: 80,
@@ -512,7 +583,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   tipsTitle: {
-    color: Colors.editing.text,
+    color: "#FFFFFF",
   },
   tipsList: {
     gap: Spacing.md,
@@ -526,7 +597,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Colors.editing.primarySubtle,
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -534,13 +605,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   tipTitle: {
-    color: Colors.editing.text,
+    color: "#FFFFFF",
     fontWeight: "600",
     fontSize: 14,
     marginBottom: 2,
   },
   tipDescription: {
-    color: Colors.editing.textSecondary,
+    color: "rgba(255, 255, 255, 0.8)",
     fontSize: 13,
     lineHeight: 18,
   },

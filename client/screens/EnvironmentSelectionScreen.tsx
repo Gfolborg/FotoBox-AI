@@ -36,6 +36,7 @@ import { GradientButton } from "@/components/GradientButton";
 import { ProgressRing } from "@/components/ProgressRing";
 import { ScrollIndicator } from "@/components/ScrollIndicator";
 import { PlatformChip } from "@/components/PlatformChip";
+import { ProcessingTips, DEFAULT_PROCESSING_TIPS } from "@/components/ProcessingTips";
 import { GradientBackground } from "@/components/GradientBackground";
 import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
@@ -178,15 +179,13 @@ export default function EnvironmentSelectionScreen() {
   const handlePickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsMultipleSelection: true,
-      selectionLimit: 10 - selectedImages.length,
+      allowsMultipleSelection: false,
+      selectionLimit: 1,
       quality: 1,
     });
 
     if (!result.canceled && result.assets.length > 0) {
-      setSelectedImages((prev) =>
-        [...prev, ...result.assets.map((a) => a.uri)].slice(0, 10),
-      );
+      setSelectedImages([result.assets[0].uri]);
     }
   };
 
@@ -415,8 +414,8 @@ export default function EnvironmentSelectionScreen() {
                     <View style={styles.changeImageBadge}>
                       <Feather
                         name="camera"
-                        size={14}
-                        color={Colors.editing.text}
+                        size={15}
+                        color="#FFFFFF"
                       />
                       <ThemedText style={styles.changeImageText}>
                         Change
@@ -724,6 +723,11 @@ export default function EnvironmentSelectionScreen() {
                 <ThemedText style={styles.processingHint}>
                   This may take up to 30 seconds
                 </ThemedText>
+                <ProcessingTips
+                  tips={DEFAULT_PROCESSING_TIPS}
+                  style={styles.processingTips}
+                  variant="dark"
+                />
               </View>
             </GlassCard>
           </Animated.View>
@@ -1074,5 +1078,9 @@ const styles = StyleSheet.create({
     color: Colors.dark.textSecondary,
     fontSize: 14,
     textAlign: "center",
+  },
+  processingTips: {
+    width: "100%",
+    marginTop: Spacing.sm,
   },
 });

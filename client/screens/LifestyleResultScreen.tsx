@@ -500,11 +500,11 @@ export default function LifestyleResultScreen() {
             entering={FadeInUp.delay(200).duration(400)}
             style={styles.carouselContainer}
           >
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.actionCarousel}
-              >
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.actionCarousel}
+            >
                 <Pressable style={styles.actionCard} onPress={handleEditImage}>
                   <LinearGradient
                     colors={actionCardGradients.edit}

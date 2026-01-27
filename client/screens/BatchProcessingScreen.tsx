@@ -27,6 +27,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { GlassPill } from "@/components/GlassPill";
 import { GlassCard } from "@/components/GlassCard";
 import { ProgressRing } from "@/components/ProgressRing";
+import { ProcessingTips, DEFAULT_PROCESSING_TIPS } from "@/components/ProcessingTips";
 import { GradientBackground } from "@/components/GradientBackground";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
@@ -67,6 +68,8 @@ export default function BatchProcessingScreen() {
   );
   const [isComplete, setIsComplete] = React.useState(false);
   const resultsRef = React.useRef<ProcessingResult[]>(results);
+  const abortControllersRef = React.useRef<AbortController[]>([]);
+  const isCancelledRef = React.useRef(false);
 
   // Keep ref in sync with state
   React.useEffect(() => {
@@ -93,6 +96,14 @@ export default function BatchProcessingScreen() {
     processImages();
   }, []);
 
+  React.useEffect(() => {
+    return () => {
+      isCancelledRef.current = true;
+      abortControllersRef.current.forEach((controller) => controller.abort());
+      abortControllersRef.current = [];
+    };
+  }, []);
+
   const processImages = async () => {
     const limit = pLimit(5);
 
@@ -103,10 +114,13 @@ export default function BatchProcessingScreen() {
     await Promise.all(processingPromises);
 
     // Signal completion - navigation happens in useEffect
-    setIsComplete(true);
+    if (!isCancelledRef.current) {
+      setIsComplete(true);
+    }
   };
 
   const processImage = async (imageUri: string, index: number) => {
+    if (isCancelledRef.current) return;
     setResults((prev) =>
       prev.map((r, idx) =>
         idx === index ? { ...r, status: "processing" as const } : r,
@@ -139,6 +153,7 @@ export default function BatchProcessingScreen() {
       const endpoint = `${apiUrl}api/main-image?backgroundColor=${bgColorParam}`;
 
       const controller = new AbortController();
+      abortControllersRef.current.push(controller);
       const timeoutId = setTimeout(() => controller.abort(), 300000);
 
       const response = await fetch(endpoint, {
@@ -165,6 +180,7 @@ export default function BatchProcessingScreen() {
         reader.readAsDataURL(blob);
       });
 
+      if (isCancelledRef.current) return;
       setResults((prev) =>
         prev.map((r, idx) =>
           idx === index
@@ -179,6 +195,10 @@ export default function BatchProcessingScreen() {
         ),
       );
     } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        return;
+      }
+      if (isCancelledRef.current) return;
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error occurred";
 
@@ -256,6 +276,11 @@ export default function BatchProcessingScreen() {
             AI is removing backgrounds...
           </ThemedText>
         </Animated.View>
+
+        <ProcessingTips
+          tips={DEFAULT_PROCESSING_TIPS}
+          style={styles.tipsContainer}
+        />
       </Animated.View>
 
       {/* Image List */}
@@ -391,6 +416,10 @@ const styles = StyleSheet.create({
   hintText: {
     color: Colors.editing.textSecondary,
     fontSize: 14,
+  },
+  tipsContainer: {
+    marginTop: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
   },
   scrollView: {
     flex: 1,

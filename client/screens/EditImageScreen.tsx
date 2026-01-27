@@ -549,7 +549,7 @@ export default function EditImageScreen() {
                 color={Colors.editing.textTertiary}
               />
               <ThemedText style={styles.staticDragHintText}>
-                Drag up/down on image to adjust
+                Drag up/down on screen to adjust
               </ThemedText>
             </Animated.View>
           )}
@@ -744,12 +744,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: Spacing.xs,
     paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
     marginTop: Spacing.md,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    borderColor: Colors.editing.border,
+    alignSelf: "center",
   },
   staticDragHintText: {
-    color: Colors.editing.textTertiary,
-    fontSize: 13,
-    fontWeight: "500",
+    color: Colors.editing.text,
+    fontSize: 14,
+    fontWeight: "700",
   },
   processingOverlay: {
     ...StyleSheet.absoluteFillObject,

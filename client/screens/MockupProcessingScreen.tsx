@@ -10,6 +10,7 @@ import * as ImageManipulator from "expo-image-manipulator";
 import { ThemedText } from "@/components/ThemedText";
 import { GlassCard } from "@/components/GlassCard";
 import { ProgressRing } from "@/components/ProgressRing";
+import { ProcessingTips, DEFAULT_PROCESSING_TIPS } from "@/components/ProcessingTips";
 import { GradientBackground } from "@/components/GradientBackground";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
@@ -46,6 +47,8 @@ export default function MockupProcessingScreen() {
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState("Preparing your mockup...");
   const hasStartedRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const isCancelledRef = useRef(false);
 
   useEffect(() => {
     if (hasStartedRef.current) return;
@@ -54,8 +57,17 @@ export default function MockupProcessingScreen() {
     processMockup();
   }, []);
 
+  useEffect(() => {
+    return () => {
+      isCancelledRef.current = true;
+      abortControllerRef.current?.abort();
+      abortControllerRef.current = null;
+    };
+  }, []);
+
   const processMockup = async () => {
     try {
+      if (isCancelledRef.current) return;
       setProgress(10);
       setStatus("Uploading image...");
 
@@ -99,11 +111,14 @@ export default function MockupProcessingScreen() {
       setProgress(30);
       setStatus("Creating your mockup with AI...");
 
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
       const response = await fetch(
         new URL("/api/mockup", getApiUrl()).toString(),
         {
           method: "POST",
           body: formData,
+          signal: controller.signal,
         },
       );
 
@@ -117,12 +132,14 @@ export default function MockupProcessingScreen() {
 
       const data = await response.json();
 
+      if (isCancelledRef.current) return;
       setProgress(100);
       setStatus("Complete!");
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
       setTimeout(() => {
+        if (isCancelledRef.current) return;
         navigation.replace("MockupResult", {
           resultUri: data.resultUri,
           originalUri: imageUri,
@@ -138,6 +155,10 @@ export default function MockupProcessingScreen() {
         });
       }, 500);
     } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        return;
+      }
+      if (isCancelledRef.current) return;
       console.error("Mockup processing error:", error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setStatus(error instanceof Error ? error.message : "Processing failed");
@@ -194,6 +215,11 @@ export default function MockupProcessingScreen() {
               </View>
             </View>
           </Animated.View>
+
+          <ProcessingTips
+            tips={DEFAULT_PROCESSING_TIPS}
+            style={styles.tipsContainer}
+          />
         </Animated.View>
       </View>
     </GradientBackground>
@@ -263,5 +289,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
     color: Colors.light.text,
+  },
+  tipsContainer: {
+    marginTop: Spacing.xl,
+    width: "100%",
   },
 });

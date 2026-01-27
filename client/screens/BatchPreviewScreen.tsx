@@ -156,7 +156,7 @@ export default function BatchPreviewScreen() {
                   style={styles.removeButton}
                   onPress={() => handleRemoveImage(item)}
                 >
-                  <Feather name="x" size={14} color={Colors.editing.text} />
+                  <Feather name="x" size={16} color="#FFFFFF" />
                 </Pressable>
                 <View style={styles.indexBadge}>
                   <ThemedText style={styles.indexText}>{index + 1}</ThemedText>
@@ -393,14 +393,19 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: Spacing.xs,
     right: Spacing.xs,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(0, 0, 0, 0.75)",
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
+    borderColor: "rgba(255, 255, 255, 0.35)",
+    shadowColor: "rgba(0, 0, 0, 0.4)",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
   },
   indexBadge: {
     position: "absolute",

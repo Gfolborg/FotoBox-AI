@@ -118,6 +118,7 @@ export default function ResultScreen() {
         imageUri: fileUri,
         originalUri: originalUri,
         sourceService: "background",
+        backgroundColor,
       });
     } catch (error) {
       console.error("Failed to prepare image for platform selection:", error);

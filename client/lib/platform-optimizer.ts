@@ -3,6 +3,7 @@
  */
 
 import { Skia, ImageFormat, rect } from "@shopify/react-native-skia";
+import type { SkImage, ImageInfo } from "@shopify/react-native-skia";
 import * as FileSystem from "expo-file-system/legacy";
 import { Platform } from "react-native";
 import {
@@ -34,6 +35,177 @@ export interface BatchOptimizationProgress {
   error?: string;
   result?: OptimizationResult;
 }
+
+interface OptimizationOptions {
+  backgroundColor?: string;
+}
+
+type RGB = { r: number; g: number; b: number };
+
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(Math.max(value, min), max);
+
+const parseHexColor = (color?: string): RGB | null => {
+  if (!color) return null;
+  const hex = color.trim().toLowerCase();
+  if (!hex.startsWith("#")) return null;
+  const raw = hex.slice(1);
+  if (raw.length === 3) {
+    const r = parseInt(raw[0] + raw[0], 16);
+    const g = parseInt(raw[1] + raw[1], 16);
+    const b = parseInt(raw[2] + raw[2], 16);
+    return { r, g, b };
+  }
+  if (raw.length === 6) {
+    const r = parseInt(raw.slice(0, 2), 16);
+    const g = parseInt(raw.slice(2, 4), 16);
+    const b = parseInt(raw.slice(4, 6), 16);
+    return { r, g, b };
+  }
+  return null;
+};
+
+const getCornerAverage = (image: SkImage) => {
+  const info = image.getImageInfo() as ImageInfo;
+  const pixels = image.readPixels(0, 0, info) as Uint8Array | null;
+  if (!pixels) return null;
+
+  const width = info.width;
+  const height = info.height;
+  const maxDim = Math.max(width, height);
+  const step = Math.max(1, Math.floor(maxDim / 800));
+  const cornerSize = Math.max(8, Math.floor(maxDim * 0.04));
+
+  let rSum = 0;
+  let gSum = 0;
+  let bSum = 0;
+  let count = 0;
+
+  const sample = (startX: number, startY: number) => {
+    const endX = Math.min(width, startX + cornerSize);
+    const endY = Math.min(height, startY + cornerSize);
+    for (let y = startY; y < endY; y += step) {
+      const rowOffset = y * width * 4;
+      for (let x = startX; x < endX; x += step) {
+        const idx = rowOffset + x * 4;
+        const a = pixels[idx + 3];
+        if (a < 10) continue;
+        rSum += pixels[idx];
+        gSum += pixels[idx + 1];
+        bSum += pixels[idx + 2];
+        count += 1;
+      }
+    }
+  };
+
+  sample(0, 0);
+  sample(width - cornerSize, 0);
+  sample(0, height - cornerSize);
+  sample(width - cornerSize, height - cornerSize);
+
+  if (!count) return null;
+
+  return {
+    r: Math.round(rSum / count),
+    g: Math.round(gSum / count),
+    b: Math.round(bSum / count),
+  };
+};
+
+const getContentBounds = (image: SkImage, bg: RGB) => {
+  const info = image.getImageInfo() as ImageInfo;
+  const pixels = image.readPixels(0, 0, info) as Uint8Array | null;
+  if (!pixels) return null;
+
+  const width = info.width;
+  const height = info.height;
+  const maxDim = Math.max(width, height);
+  const step = Math.max(1, Math.floor(maxDim / 800));
+  const tolerance = 28;
+
+  let minX = width;
+  let minY = height;
+  let maxX = 0;
+  let maxY = 0;
+  let found = false;
+
+  for (let y = 0; y < height; y += step) {
+    const rowOffset = y * width * 4;
+    for (let x = 0; x < width; x += step) {
+      const idx = rowOffset + x * 4;
+      const r = pixels[idx];
+      const g = pixels[idx + 1];
+      const b = pixels[idx + 2];
+      const a = pixels[idx + 3];
+
+      if (a < 10) continue;
+
+      const diff = Math.abs(r - bg.r) + Math.abs(g - bg.g) + Math.abs(b - bg.b);
+      if (diff > tolerance) {
+        found = true;
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
+      }
+    }
+  }
+
+  if (!found) return null;
+
+  const pad = Math.max(1, step * 2);
+  return {
+    minX: clamp(minX - pad, 0, width - 1),
+    minY: clamp(minY - pad, 0, height - 1),
+    maxX: clamp(maxX + pad, 0, width - 1),
+    maxY: clamp(maxY + pad, 0, height - 1),
+  };
+};
+
+const getSmartCropRect = (
+  width: number,
+  height: number,
+  targetRatio: number,
+  bounds: { minX: number; minY: number; maxX: number; maxY: number },
+) => {
+  const srcRatio = width / height;
+  let cropX = 0;
+  let cropY = 0;
+  let cropWidth = width;
+  let cropHeight = height;
+
+  if (Math.abs(srcRatio - targetRatio) <= 0.01) {
+    return { cropX, cropY, cropWidth, cropHeight };
+  }
+
+  if (srcRatio > targetRatio) {
+    cropWidth = Math.round(height * targetRatio);
+    cropHeight = height;
+    const centerX = (bounds.minX + bounds.maxX) / 2;
+    cropX = Math.round(centerX - cropWidth / 2);
+    cropX = clamp(cropX, 0, width - cropWidth);
+
+    if (bounds.minX < cropX) {
+      cropX = clamp(bounds.minX, 0, width - cropWidth);
+    } else if (bounds.maxX > cropX + cropWidth) {
+      cropX = clamp(bounds.maxX - cropWidth, 0, width - cropWidth);
+    }
+  } else {
+    cropHeight = Math.round(width / targetRatio);
+    cropWidth = width;
+    const centerY = (bounds.minY + bounds.maxY) / 2;
+    cropY = Math.round(centerY - cropHeight / 2);
+    cropY = clamp(cropY, 0, height - cropHeight);
+
+    if (bounds.minY < cropY) {
+      cropY = clamp(bounds.minY, 0, height - cropHeight);
+    } else if (bounds.maxY > cropY + cropHeight) {
+      cropY = clamp(bounds.maxY - cropHeight, 0, height - cropHeight);
+    }
+  }
+
+  return { cropX, cropY, cropWidth, cropHeight };
+};
 
 /**
  * Check if an image meets platform requirements
@@ -152,6 +324,7 @@ export async function getImageDimensions(
 export async function optimizeForPlatform(
   imageUri: string,
   platform: PlatformRequirement,
+  options?: OptimizationOptions,
 ): Promise<OptimizationResult> {
   console.log(`[PlatformOptimizer] Optimizing for ${platform.name}`);
 
@@ -174,18 +347,60 @@ export async function optimizeForPlatform(
   let cropHeight = srcHeight;
 
   if (Math.abs(srcRatio - targetRatio) > 0.01) {
-    if (srcRatio > targetRatio) {
-      // Source is wider than target - crop sides (center crop)
-      cropWidth = Math.round(srcHeight * targetRatio);
-      cropX = Math.round((srcWidth - cropWidth) / 2);
-      cropHeight = srcHeight;
-      cropY = 0;
+    let useSmartCrop = false;
+    let backgroundRgb = parseHexColor(options?.backgroundColor);
+    if (!backgroundRgb) {
+      backgroundRgb = getCornerAverage(sourceImage);
+    }
+    if (backgroundRgb) {
+      console.log(
+        `[PlatformOptimizer] Detected background RGB: ${backgroundRgb.r},${backgroundRgb.g},${backgroundRgb.b}`,
+      );
     } else {
-      // Source is taller than target - crop top/bottom (center crop)
-      cropHeight = Math.round(srcWidth / targetRatio);
-      cropY = Math.round((srcHeight - cropHeight) / 2);
-      cropWidth = srcWidth;
-      cropX = 0;
+      console.log("[PlatformOptimizer] No background color detected");
+    }
+
+    if (platform.id === "pinterest" && backgroundRgb) {
+      const bounds = getContentBounds(sourceImage, backgroundRgb);
+      if (bounds) {
+        console.log(
+          `[PlatformOptimizer] Content bounds: minX=${bounds.minX}, maxX=${bounds.maxX}, minY=${bounds.minY}, maxY=${bounds.maxY}`,
+        );
+      } else {
+        console.log("[PlatformOptimizer] Content bounds not found");
+      }
+      if (bounds) {
+        const smartRect = getSmartCropRect(
+          srcWidth,
+          srcHeight,
+          targetRatio,
+          bounds,
+        );
+        cropX = smartRect.cropX;
+        cropY = smartRect.cropY;
+        cropWidth = smartRect.cropWidth;
+        cropHeight = smartRect.cropHeight;
+        useSmartCrop = true;
+      }
+    }
+    console.log(
+      `[PlatformOptimizer] Smart crop ${useSmartCrop ? "enabled" : "disabled"}`,
+    );
+
+    if (!useSmartCrop) {
+      if (srcRatio > targetRatio) {
+        // Source is wider than target - crop sides (center crop)
+        cropWidth = Math.round(srcHeight * targetRatio);
+        cropX = Math.round((srcWidth - cropWidth) / 2);
+        cropHeight = srcHeight;
+        cropY = 0;
+      } else {
+        // Source is taller than target - crop top/bottom (center crop)
+        cropHeight = Math.round(srcWidth / targetRatio);
+        cropY = Math.round((srcHeight - cropHeight) / 2);
+        cropWidth = srcWidth;
+        cropX = 0;
+      }
     }
   }
 
@@ -252,6 +467,7 @@ export async function optimizeForPlatforms(
   imageUri: string,
   platforms: PlatformRequirement[],
   onProgress?: (progress: BatchOptimizationProgress) => void,
+  options?: OptimizationOptions,
 ): Promise<Map<string, OptimizationResult>> {
   const results = new Map<string, OptimizationResult>();
 
@@ -263,7 +479,7 @@ export async function optimizeForPlatforms(
     });
 
     try {
-      const result = await optimizeForPlatform(imageUri, platform);
+      const result = await optimizeForPlatform(imageUri, platform, options);
       results.set(platform.id, result);
 
       onProgress?.({
@@ -337,14 +553,32 @@ export async function saveOptimizedImages(
 export async function batchOptimizeAndSave(
   imageUris: string[],
   platforms: PlatformRequirement[],
+  backgroundColors?: Array<string | undefined>,
   onProgress?: (
     imageIndex: number,
     platformId: string,
     status: "optimizing" | "saving" | "done" | "failed",
   ) => void,
-): Promise<{ totalImages: number; totalSaved: number; totalFailed: number }> {
+  options?: { cacheOptimized?: boolean },
+): Promise<{
+  totalImages: number;
+  totalSaved: number;
+  totalFailed: number;
+  cached?: Array<{
+    imageIndex: number;
+    platformId: string;
+    uri: string;
+    format: string;
+  }>;
+}> {
   let totalSaved = 0;
   let totalFailed = 0;
+  const cached: Array<{
+    imageIndex: number;
+    platformId: string;
+    uri: string;
+    format: string;
+  }> = [];
 
   const hasPermission = await ensureMediaLibraryPermission();
   if (!hasPermission) {
@@ -353,12 +587,29 @@ export async function batchOptimizeAndSave(
 
   for (let i = 0; i < imageUris.length; i++) {
     const imageUri = imageUris[i];
+    const backgroundColor = backgroundColors?.[i];
 
     for (const platform of platforms) {
       try {
         // Optimize
         onProgress?.(i, platform.id, "optimizing");
-        const optimized = await optimizeForPlatform(imageUri, platform);
+        const optimized = await optimizeForPlatform(imageUri, platform, {
+          backgroundColor,
+        });
+        if (options?.cacheOptimized) {
+          const base64Data = optimized.uri.split(",")[1];
+          const ext = optimized.format === "PNG" ? "png" : "jpg";
+          const cachePath = `${FileSystem.cacheDirectory}fotobox_export_${i + 1}_${platform.id}.${ext}`;
+          await FileSystem.writeAsStringAsync(cachePath, base64Data, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          cached.push({
+            imageIndex: i,
+            platformId: platform.id,
+            uri: cachePath,
+            format: optimized.format,
+          });
+        }
 
         // Save
         onProgress?.(i, platform.id, "saving");
@@ -390,5 +641,6 @@ export async function batchOptimizeAndSave(
     totalImages: imageUris.length,
     totalSaved,
     totalFailed,
+    cached: options?.cacheOptimized ? cached : undefined,
   };
 }

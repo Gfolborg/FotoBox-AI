@@ -10,6 +10,7 @@ import Animated, { FadeIn, FadeInUp } from "react-native-reanimated";
 import { ThemedText } from "@/components/ThemedText";
 import { GlassCard } from "@/components/GlassCard";
 import { ProgressRing } from "@/components/ProgressRing";
+import { ProcessingTips, DEFAULT_PROCESSING_TIPS } from "@/components/ProcessingTips";
 import { GradientBackground } from "@/components/GradientBackground";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
@@ -51,12 +52,22 @@ export default function BatchLifestyleProcessingScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const processingRef = useRef(false);
   const resultsRef = useRef<ProcessingResult[]>([]);
+  const abortControllersRef = useRef<AbortController[]>([]);
+  const isCancelledRef = useRef(false);
 
   useEffect(() => {
     if (!processingRef.current) {
       processingRef.current = true;
       processImages();
     }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      isCancelledRef.current = true;
+      abortControllersRef.current.forEach((controller) => controller.abort());
+      abortControllersRef.current = [];
+    };
   }, []);
 
   const processImages = async () => {
@@ -67,6 +78,7 @@ export default function BatchLifestyleProcessingScreen() {
     }));
 
     for (let i = 0; i < imageUris.length; i++) {
+      if (isCancelledRef.current) return;
       setCurrentIndex(i);
       resultsRef.current[i] = {
         ...resultsRef.current[i],
@@ -76,6 +88,7 @@ export default function BatchLifestyleProcessingScreen() {
 
       try {
         const resultUri = await processImage(imageUris[i]);
+        if (isCancelledRef.current) return;
         resultsRef.current[i] = {
           ...resultsRef.current[i],
           resultUri,
@@ -83,6 +96,10 @@ export default function BatchLifestyleProcessingScreen() {
         };
         setResults([...resultsRef.current]);
       } catch (error) {
+        if (isCancelledRef.current) return;
+        if (error instanceof Error && error.name === "AbortError") {
+          return;
+        }
         resultsRef.current[i] = {
           ...resultsRef.current[i],
           status: "failed",
@@ -92,7 +109,9 @@ export default function BatchLifestyleProcessingScreen() {
       }
     }
 
+    if (isCancelledRef.current) return;
     setTimeout(() => {
+      if (isCancelledRef.current) return;
       navigation.replace("BatchLifestyleResult", {
         results: resultsRef.current.map((r) => ({
           ...r,
@@ -108,6 +127,9 @@ export default function BatchLifestyleProcessingScreen() {
   };
 
   const processImage = async (imageUri: string): Promise<string> => {
+    if (isCancelledRef.current) {
+      throw new Error("Cancelled");
+    }
     const formData = new FormData();
     formData.append("file", {
       uri: imageUri,
@@ -136,6 +158,7 @@ export default function BatchLifestyleProcessingScreen() {
     endpoint += `?${params.toString()}`;
 
     const controller = new AbortController();
+    abortControllersRef.current.push(controller);
     const timeoutId = setTimeout(() => controller.abort(), 300000);
 
     try {
@@ -250,6 +273,11 @@ export default function BatchLifestyleProcessingScreen() {
             ~{(imageUris.length - completedCount - failedCount) * 15}s remaining
           </ThemedText>
         </Animated.View>
+
+        <ProcessingTips
+          tips={DEFAULT_PROCESSING_TIPS}
+          style={styles.tipsContainer}
+        />
       </View>
     </GradientBackground>
   );
@@ -335,5 +363,9 @@ const styles = StyleSheet.create({
   estimateText: {
     fontSize: 14,
     color: Colors.editing.textSecondary,
+  },
+  tipsContainer: {
+    marginTop: Spacing.lg,
+    width: "100%",
   },
 });

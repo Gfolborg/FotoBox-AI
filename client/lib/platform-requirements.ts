@@ -22,6 +22,23 @@ export interface PlatformRequirement {
 
 export const DEFAULT_EXPORT_LONG_EDGE = 3500;
 
+export const LIFESTYLE_ORIGINAL_PLATFORM: PlatformRequirement = {
+  id: "original_16x9",
+  name: "Original 16:9",
+  icon: "image",
+  color: "#2563EB",
+  minWidth: 1280,
+  minHeight: 720,
+  optimalWidth: 1920,
+  optimalHeight: 1080,
+  aspectRatio: 16 / 9,
+  aspectRatioLabel: "16:9",
+  format: "JPEG",
+  quality: 100,
+  backgroundPreference: "any",
+  notes: "Keeps the original AI scene aspect ratio",
+};
+
 export function getExportDimensions(
   platform: PlatformRequirement,
   maxLongEdge: number = DEFAULT_EXPORT_LONG_EDGE,
@@ -179,6 +196,16 @@ export const PLATFORM_REQUIREMENTS: Record<string, PlatformRequirement> = {
  */
 export function getAllPlatforms(): PlatformRequirement[] {
   return Object.values(PLATFORM_REQUIREMENTS);
+}
+
+export function getPlatformsForService(
+  sourceService?: string,
+): PlatformRequirement[] {
+  const platforms = getAllPlatforms();
+  if (sourceService === "lifestyle") {
+    return [LIFESTYLE_ORIGINAL_PLATFORM, ...platforms];
+  }
+  return platforms;
 }
 
 /**
