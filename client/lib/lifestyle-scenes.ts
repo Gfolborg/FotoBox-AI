@@ -5,27 +5,28 @@ export interface Scene {
   image: any;
 }
 
+// Optimized WebP images (300x300, ~99% smaller than original PNGs)
 const SCENE_IMAGES: Record<string, any> = {
-  kitchen: require("../../attached_assets/generated_images/modern_kitchen_countertop_scene.png"),
-  living: require("../../attached_assets/generated_images/cozy_scandinavian_living_room.png"),
-  office: require("../../attached_assets/generated_images/modern_office_desk_setup.png"),
-  bedroom: require("../../attached_assets/generated_images/serene_modern_bedroom_scene.png"),
-  bathroom: require("../../attached_assets/generated_images/spa-like_bathroom_vanity.png"),
-  dining: require("../../attached_assets/generated_images/elegant_dining_table_setting.png"),
-  cafe: require("../../attached_assets/generated_images/cozy_rustic_cafe_interior.png"),
-  outdoor: require("../../attached_assets/generated_images/lush_outdoor_nature_scene.png"),
-  park: require("../../attached_assets/generated_images/golden_hour_park_setting.png"),
-  trail: require("../../attached_assets/generated_images/adventure_hiking_trail_path.png"),
-  beach: require("../../attached_assets/generated_images/sunset_beach_tropical_scene.png"),
-  garden: require("../../attached_assets/generated_images/botanical_garden_patio_scene.png"),
-  urban: require("../../attached_assets/generated_images/urban_city_street_night.png"),
-  industrial: require("../../attached_assets/generated_images/industrial_loft_interior_scene.png"),
-  studio: require("../../attached_assets/generated_images/professional_studio_setup_backdrop.png"),
-  minimal: require("../../attached_assets/generated_images/minimalist_clean_white_scene.png"),
-  lifestyle: require("../../attached_assets/generated_images/authentic_lifestyle_home_moment.png"),
-  gym: require("../../attached_assets/generated_images/modern_gym_fitness_interior.png"),
-  garage: require("../../attached_assets/generated_images/organized_garage_workshop_scene.png"),
-  playroom: require("../../attached_assets/generated_images/colorful_playroom_fun_scene.png"),
+  kitchen: require("../../assets/images/scenes/modern_kitchen_countertop_scene.webp"),
+  living: require("../../assets/images/scenes/cozy_scandinavian_living_room.webp"),
+  office: require("../../assets/images/scenes/modern_office_desk_setup.webp"),
+  bedroom: require("../../assets/images/scenes/serene_modern_bedroom_scene.webp"),
+  bathroom: require("../../assets/images/scenes/spa-like_bathroom_vanity.webp"),
+  dining: require("../../assets/images/scenes/elegant_dining_table_setting.webp"),
+  cafe: require("../../assets/images/scenes/cozy_rustic_cafe_interior.webp"),
+  outdoor: require("../../assets/images/scenes/lush_outdoor_nature_scene.webp"),
+  park: require("../../assets/images/scenes/golden_hour_park_setting.webp"),
+  trail: require("../../assets/images/scenes/adventure_hiking_trail_path.webp"),
+  beach: require("../../assets/images/scenes/sunset_beach_tropical_scene.webp"),
+  garden: require("../../assets/images/scenes/botanical_garden_patio_scene.webp"),
+  urban: require("../../assets/images/scenes/urban_city_street_night.webp"),
+  industrial: require("../../assets/images/scenes/industrial_loft_interior_scene.webp"),
+  studio: require("../../assets/images/scenes/professional_studio_setup_backdrop.webp"),
+  minimal: require("../../assets/images/scenes/minimalist_clean_white_scene.webp"),
+  lifestyle: require("../../assets/images/scenes/authentic_lifestyle_home_moment.webp"),
+  gym: require("../../assets/images/scenes/modern_gym_fitness_interior.webp"),
+  garage: require("../../assets/images/scenes/organized_garage_workshop_scene.webp"),
+  playroom: require("../../assets/images/scenes/colorful_playroom_fun_scene.webp"),
 };
 
 // Expanded list of scenes
