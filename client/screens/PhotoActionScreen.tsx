@@ -15,9 +15,12 @@ import * as Haptics from "expo-haptics";
 import { ThemedHeader } from "@/components/ThemedHeader";
 import { ThemedText } from "@/components/ThemedText";
 import { GradientBackground } from "@/components/GradientBackground";
+import { UpgradePrompt } from "@/components/UpgradePrompt";
+import { CreditIndicator } from "@/components/CreditIndicator";
 import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { buildMockupWizardState } from "@/lib/mockup-templates";
+import { useCredits } from "@/hooks/useCredits";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const IMAGE_PREVIEW_SIZE = Math.min(SCREEN_WIDTH - Spacing.lg * 2, 350);
@@ -83,6 +86,8 @@ export default function PhotoActionScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const { imageUri, existingResults } = route.params;
+  const { canGenerate, creditsRemaining, requiresWatermark } = useCredits();
+  const [showUpgradePrompt, setShowUpgradePrompt] = React.useState(false);
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
@@ -90,20 +95,34 @@ export default function PhotoActionScreen() {
     });
   }, [navigation]);
 
+  const checkCreditsAndProceed = (action: () => void) => {
+    if (!canGenerate) {
+      setShowUpgradePrompt(true);
+      return;
+    }
+    action();
+  };
+
   const handleRemoveBackground = () => {
-    navigation.navigate("BackgroundColorSelection", {
-      imageUri,
-      existingResults,
+    checkCreditsAndProceed(() => {
+      navigation.navigate("BackgroundColorSelection", {
+        imageUri,
+        existingResults,
+      });
     });
   };
 
   const handleCreateLifestyle = () => {
-    navigation.navigate("EnvironmentSelection", { imageUri });
+    checkCreditsAndProceed(() => {
+      navigation.navigate("EnvironmentSelection", { imageUri });
+    });
   };
 
   const handleCreateMockup = () => {
-    navigation.navigate("MockupWizardPath", {
-      wizardState: buildMockupWizardState([imageUri]),
+    checkCreditsAndProceed(() => {
+      navigation.navigate("MockupWizardPath", {
+        wizardState: buildMockupWizardState([imageUri]),
+      });
     });
   };
 
@@ -118,6 +137,18 @@ export default function PhotoActionScreen() {
             { paddingBottom: insets.bottom + Spacing.xl },
           ]}
         >
+          <Animated.View
+            entering={FadeIn.delay(100).duration(400)}
+            style={styles.creditRow}
+          >
+            <CreditIndicator />
+            {requiresWatermark && (
+              <ThemedText style={styles.watermarkNote}>
+                Images will have watermark
+              </ThemedText>
+            )}
+          </Animated.View>
+
           <Animated.View
             entering={FadeIn.delay(100).duration(400)}
             style={styles.imagePreviewContainer}
@@ -163,6 +194,11 @@ export default function PhotoActionScreen() {
           <View style={styles.retakeContainer} />
         </View>
       </View>
+      
+      <UpgradePrompt
+        visible={showUpgradePrompt}
+        onClose={() => setShowUpgradePrompt(false)}
+      />
     </GradientBackground>
   );
 }
@@ -175,6 +211,18 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: Spacing.lg,
     paddingHorizontal: Spacing.lg,
+  },
+  creditRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  watermarkNote: {
+    fontSize: 12,
+    color: Colors.light.textSecondary,
+    fontStyle: "italic",
   },
   imagePreviewContainer: {
     alignSelf: "center",
