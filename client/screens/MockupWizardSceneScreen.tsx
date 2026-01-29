@@ -376,7 +376,7 @@ export default function MockupWizardSceneScreen() {
           <View style={styles.inputCard}>
             <TextInput
               style={[styles.inputText, styles.inputMultiline]}
-              placeholder="Add specific scene details..."
+              placeholder="e.g., Warm morning light on a wooden shelf next to a plant"
               placeholderTextColor={Colors.light.textTertiary}
               value={sceneNotes}
               onChangeText={(text) =>
