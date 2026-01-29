@@ -3,11 +3,54 @@ import { createServer, type Server } from "node:http";
 import multer from "multer";
 import sharp from "sharp";
 import { GoogleGenAI, Modality } from "@google/genai";
+import { storage } from "./storage";
+import { authenticateToken, optionalAuth, AuthRequest } from "./auth";
 
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
 });
+
+async function addWatermark(imageBuffer: Buffer): Promise<Buffer> {
+  const image = sharp(imageBuffer);
+  const metadata = await image.metadata();
+  const width = metadata.width || 2000;
+  const height = metadata.height || 2000;
+  
+  const fontSize = Math.floor(Math.min(width, height) * 0.08);
+  const padding = fontSize * 0.5;
+  
+  const svgWatermark = `
+    <svg width="${width}" height="${height}">
+      <defs>
+        <style>
+          .watermark { 
+            fill: rgba(255, 255, 255, 0.7); 
+            font-size: ${fontSize}px; 
+            font-family: Arial, sans-serif; 
+            font-weight: bold;
+          }
+          .watermark-shadow { 
+            fill: rgba(0, 0, 0, 0.3); 
+            font-size: ${fontSize}px; 
+            font-family: Arial, sans-serif; 
+            font-weight: bold;
+          }
+        </style>
+      </defs>
+      <text x="${width - padding}" y="${height - padding}" text-anchor="end" class="watermark-shadow" transform="translate(2, 2)">FotoBox</text>
+      <text x="${width - padding}" y="${height - padding}" text-anchor="end" class="watermark">FotoBox</text>
+    </svg>
+  `;
+  
+  return sharp(imageBuffer)
+    .composite([{
+      input: Buffer.from(svgWatermark),
+      gravity: 'southeast',
+    }])
+    .jpeg({ quality: 95 })
+    .toBuffer();
+}
 
 // Helper function to convert hex color to RGB values
 function hexToRGB(hex: string): { r: number; g: number; b: number } {
@@ -392,6 +435,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Extract platform parameter, default to 'amazon'
         const platform =
           (req.query.platform as string)?.toLowerCase() || "amazon";
+        // Check if watermark should be applied (for free tier users)
+        const applyWatermark = req.query.applyWatermark === "true";
 
         // Fix EXIF orientation by auto-rotating the image before processing
         // This ensures the image is displayed correctly regardless of camera orientation
@@ -616,6 +661,12 @@ The background MUST be completely removed and replaced with the exact solid colo
         const imageMimeType =
           imagePart.inlineData.mimeType || "image/jpeg";
 
+        // Apply watermark for free tier users
+        let finalBuffer: Buffer = generatedImageBuffer;
+        if (applyWatermark) {
+          finalBuffer = await addWatermark(generatedImageBuffer);
+        }
+
         res.set("Content-Type", imageMimeType);
         res.set(
           "Content-Disposition",
@@ -623,7 +674,8 @@ The background MUST be completely removed and replaced with the exact solid colo
         );
         // Add header to indicate if background was verified
         res.set("X-Background-Verified", backgroundVerified ? "true" : "false");
-        res.send(generatedImageBuffer);
+        res.set("X-Watermarked", applyWatermark ? "true" : "false");
+        res.send(finalBuffer);
       } catch (error) {
         console.error("Error processing image:", error);
         const errorMessage =
@@ -853,6 +905,7 @@ The background MUST be completely removed and replaced with the exact solid colo
         const platform = (req.query.platform as string | undefined)?.toLowerCase();
         const aspectRatio = getAspectRatioForPlatform(platform);
         const iterationNotes = req.query.iterationNotes as string | undefined;
+        const applyWatermark = req.query.applyWatermark === "true";
 
         const imageBuffer = req.file.buffer;
         const base64Image = imageBuffer.toString("base64");
@@ -941,13 +994,20 @@ The background MUST be completely removed and replaced with the exact solid colo
           console.log(`[/api/lifestyle-scene] Upscaled from ${currentWidth}x${currentHeight} to ${newWidth}x${newHeight}`);
         }
 
+        // Apply watermark for free tier users
+        let outputBuffer: Buffer = finalBuffer;
+        if (applyWatermark) {
+          outputBuffer = await addWatermark(finalBuffer);
+        }
+
         res.set("Content-Type", "image/png");
         res.set(
           "Content-Disposition",
           'attachment; filename="lifestyle-scene.png"',
         );
         res.set("X-Trimmed-Borders", trimmedResult.trimmed ? "true" : "false");
-        res.send(finalBuffer);
+        res.set("X-Watermarked", applyWatermark ? "true" : "false");
+        res.send(outputBuffer);
       } catch (error) {
         console.error("Error generating lifestyle scene:", error);
         const errorMessage =
@@ -995,6 +1055,7 @@ The background MUST be completely removed and replaced with the exact solid colo
         const sceneVibe = req.body?.sceneVibe || "casual";
         const cameraOption = req.body?.cameraOption || "medium";
         const mockupColor = req.body?.mockupColor;
+        const applyWatermark = req.query.applyWatermark === "true";
 
         const imageBuffer = req.file.buffer;
         const base64Image = imageBuffer.toString("base64");
@@ -1090,8 +1151,14 @@ CRITICAL INSTRUCTIONS:
           );
         }
 
+        // Apply watermark for free tier users
+        let outputBuffer: Buffer = finalBuffer;
+        if (applyWatermark) {
+          outputBuffer = await addWatermark(finalBuffer);
+        }
+
         // Return as base64 data URI for easy handling on client
-        const base64Result = finalBuffer.toString("base64");
+        const base64Result = outputBuffer.toString("base64");
         const resultUri = `data:image/png;base64,${base64Result}`;
 
         res.json({
@@ -1099,6 +1166,7 @@ CRITICAL INSTRUCTIONS:
           mockupType,
           sceneVibe,
           cameraOption,
+          watermarked: applyWatermark,
         });
       } catch (error) {
         console.error("Error generating mockup:", error);
