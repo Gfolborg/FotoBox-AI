@@ -6,8 +6,11 @@ A mobile-first AI product photo editor built with Expo React Native. The app cap
 ## Current State
 - MVP complete with camera capture, AI background removal, and gallery save functionality
 - Express backend with Gemini AI integration for image processing
-- Premium UI design with glassmorphism effects and dark editing theme
+- Premium UI design with glassmorphism effects and light brand theme
 - Complete workflow: Camera → Preview → Generate → Edit → Save
+- User authentication with JWT-based login/register
+- Subscription system with free tier (3 credits + watermark), Pro ($6.99/mo), and Unlimited ($14.99/mo)
+- Credit tracking for authenticated users and local AsyncStorage for guests
 
 ## Tech Stack
 - **Frontend**: Expo React Native (SDK 54), React Navigation 7
@@ -95,6 +98,45 @@ assets/images/      # App icons, splash screens, and optimized preview images
 - **Batch Edit Photos Flow (January 2026)**:
   - Fixed to open gallery with multi-select instead of camera
   - Supports selecting up to 20 images at once
+- **Monetization System (January 2026)**:
+  - User authentication with JWT (login/register screens)
+  - Subscription plans: Free (3 credits + watermark), Pro ($6.99/mo, 100 credits), Unlimited ($14.99/mo)
+  - Credit tracking via PostgreSQL for authenticated users, AsyncStorage for guests
+  - Watermark applied server-side for free tier users (FotoBox branding overlay)
+  - UpgradePrompt modal when credits exhausted
+  - CreditIndicator component showing remaining credits
+  - PaywallScreen with subscription plan details
+
+## Subscription & Credits System
+
+### Subscription Plans
+| Plan | Price | Credits | Watermark |
+|------|-------|---------|-----------|
+| Free | $0 | 3 | Yes |
+| Pro | $6.99/mo | 100 | No |
+| Unlimited | $14.99/mo | Unlimited | No |
+
+### Credit Flow
+1. Guest users: 3 free uses tracked in AsyncStorage with watermark
+2. Authenticated free users: 3 credits tracked in database with watermark
+3. Pro/Unlimited users: credits tracked in database, no watermark
+
+### Key Files for Monetization
+- `client/context/AuthContext.tsx` - Authentication state and credit consumption
+- `client/hooks/useCredits.ts` - Credit state management hook
+- `client/screens/LoginScreen.tsx` - User login
+- `client/screens/RegisterScreen.tsx` - User registration
+- `client/screens/PaywallScreen.tsx` - Subscription plan display
+- `client/components/CreditIndicator.tsx` - Credits display widget
+- `client/components/UpgradePrompt.tsx` - Upgrade modal for out-of-credits
+- `server/auth.ts` - JWT authentication middleware
+- `server/storage.ts` - Database operations for users/subscriptions
+- `shared/schema.ts` - Database schema (users, subscriptions, usage)
+
+### Watermark Implementation
+- Watermark applied server-side via Sharp.js composite
+- Query parameter `applyWatermark=true` triggers watermark on all AI endpoints
+- Watermark text: "FotoBox" in semi-transparent white with shadow
 
 ## Troubleshooting: Network/Server Connectivity Issues
 
