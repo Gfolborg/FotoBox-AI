@@ -34,6 +34,7 @@
     "@types/pg": "^8.16.0",
     "bcryptjs": "^3.0.3",
     "expo": "^54.0.23",
+    "expo-apple-authentication": "^8.0.8",
     "expo-auth-session": "^7.0.10",
     "expo-blur": "^15.0.8",
     "expo-camera": "^17.0.10",

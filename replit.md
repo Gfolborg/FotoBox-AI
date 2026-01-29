@@ -8,7 +8,7 @@ A mobile-first AI product photo editor built with Expo React Native. The app cap
 - Express backend with Gemini AI integration for image processing
 - Premium UI design with glassmorphism effects and light brand theme
 - Complete workflow: Camera → Preview → Generate → Edit → Save
-- User authentication with JWT-based login/register
+- OAuth authentication with Google and Apple Sign-In (unified AuthScreen)
 - Subscription system with free tier (3 credits + watermark), Pro ($6.99/mo), and Unlimited ($14.99/mo)
 - Credit tracking for authenticated users and local AsyncStorage for guests
 
@@ -122,10 +122,9 @@ assets/images/      # App icons, splash screens, and optimized preview images
 3. Pro/Unlimited users: credits tracked in database, no watermark
 
 ### Key Files for Monetization
-- `client/context/AuthContext.tsx` - Authentication state and credit consumption
+- `client/context/AuthContext.tsx` - Authentication state, OAuth login, and credit consumption
 - `client/hooks/useCredits.ts` - Credit state management hook
-- `client/screens/LoginScreen.tsx` - User login
-- `client/screens/RegisterScreen.tsx` - User registration
+- `client/screens/AuthScreen.tsx` - OAuth sign-in (Google, Apple) with guest mode
 - `client/screens/PaywallScreen.tsx` - Subscription plan display
 - `client/components/CreditIndicator.tsx` - Credits display widget
 - `client/components/UpgradePrompt.tsx` - Upgrade modal for out-of-credits
