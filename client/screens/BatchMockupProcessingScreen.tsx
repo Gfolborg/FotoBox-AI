@@ -20,6 +20,7 @@ import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { getApiUrl } from "@/lib/query-client";
 import { getMockupPrompt } from "@/lib/mockup-presets";
+import { useCredits } from "@/hooks/useCredits";
 
 type BatchMockupProcessingScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -42,6 +43,7 @@ export default function BatchMockupProcessingScreen() {
   const navigation = useNavigation<BatchMockupProcessingScreenNavigationProp>();
   const route = useRoute<BatchMockupProcessingScreenRouteProp>();
   const insets = useSafeAreaInsets();
+  const { requiresWatermark, consumeCredit } = useCredits();
 
   const {
     imageUris,
@@ -163,8 +165,12 @@ export default function BatchMockupProcessingScreen() {
 
         const controller = new AbortController();
         abortControllersRef.current.push(controller);
+        const mockupUrl = new URL("/api/mockup", getApiUrl());
+        if (requiresWatermark) {
+          mockupUrl.searchParams.set("applyWatermark", "true");
+        }
         const response = await fetch(
-          new URL("/api/mockup", getApiUrl()).toString(),
+          mockupUrl.toString(),
           {
             method: "POST",
             body: formData,
@@ -178,6 +184,9 @@ export default function BatchMockupProcessingScreen() {
         }
 
         const data = await response.json();
+        
+        // Consume a credit for successful generation
+        await consumeCredit("mockup");
 
         workingResults = workingResults.map((r, idx) =>
           idx === i

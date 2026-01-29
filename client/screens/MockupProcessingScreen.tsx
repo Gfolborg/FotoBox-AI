@@ -19,6 +19,7 @@ import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { getApiUrl, apiRequest } from "@/lib/query-client";
 import { getMockupPrompt } from "@/lib/mockup-presets";
+import { useCredits } from "@/hooks/useCredits";
 
 type MockupProcessingScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -34,6 +35,7 @@ export default function MockupProcessingScreen() {
   const navigation = useNavigation<MockupProcessingScreenNavigationProp>();
   const route = useRoute<MockupProcessingScreenRouteProp>();
   const insets = useSafeAreaInsets();
+  const { requiresWatermark, consumeCredit } = useCredits();
 
   const {
     imageUri,
@@ -136,8 +138,12 @@ export default function MockupProcessingScreen() {
 
       const controller = new AbortController();
       abortControllerRef.current = controller;
+      const mockupUrl = new URL("/api/mockup", getApiUrl());
+      if (requiresWatermark) {
+        mockupUrl.searchParams.set("applyWatermark", "true");
+      }
       const response = await fetch(
-        new URL("/api/mockup", getApiUrl()).toString(),
+        mockupUrl.toString(),
         {
           method: "POST",
           body: formData,
@@ -156,6 +162,10 @@ export default function MockupProcessingScreen() {
       const data = await response.json();
 
       if (isCancelledRef.current) return;
+      
+      // Consume a credit for successful generation
+      await consumeCredit("mockup");
+      
       setProgress(100);
       setStatus("Complete!");
 

@@ -15,6 +15,7 @@ import { GradientBackground } from "@/components/GradientBackground";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getApiUrl } from "@/lib/query-client";
+import { useCredits } from "@/hooks/useCredits";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const PREVIEW_SIZE = Math.min(SCREEN_WIDTH * 0.5, 300);
@@ -33,6 +34,7 @@ export default function BatchLifestyleProcessingScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
+  const { requiresWatermark, consumeCredit } = useCredits();
   const {
     imageUris,
     environment,
@@ -89,6 +91,10 @@ export default function BatchLifestyleProcessingScreen() {
       try {
         const resultUri = await processImage(imageUris[i]);
         if (isCancelledRef.current) return;
+        
+        // Consume a credit for successful generation
+        await consumeCredit("lifestyle-scene");
+        
         resultsRef.current[i] = {
           ...resultsRef.current[i],
           resultUri,
@@ -153,6 +159,9 @@ export default function BatchLifestyleProcessingScreen() {
     }
     if (platform) {
       params.append("platform", platform);
+    }
+    if (requiresWatermark) {
+      params.append("applyWatermark", "true");
     }
 
     endpoint += `?${params.toString()}`;

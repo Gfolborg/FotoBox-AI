@@ -32,6 +32,7 @@ import { GradientBackground } from "@/components/GradientBackground";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getApiUrl } from "@/lib/query-client";
+import { useCredits } from "@/hooks/useCredits";
 
 type NavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -52,6 +53,7 @@ export default function BatchProcessingScreen() {
   const insets = useSafeAreaInsets();
   const route = useRoute<RouteProps>();
   const navigation = useNavigation<NavigationProp>();
+  const { requiresWatermark, consumeCredit, canGenerate, creditsRemaining } = useCredits();
   const {
     imageUris,
     backgroundColor = "#FFFFFF",
@@ -150,7 +152,8 @@ export default function BatchProcessingScreen() {
 
       const apiUrl = getApiUrl();
       const bgColorParam = encodeURIComponent(backgroundColor);
-      const endpoint = `${apiUrl}api/main-image?backgroundColor=${bgColorParam}`;
+      const watermarkParam = requiresWatermark ? "&applyWatermark=true" : "";
+      const endpoint = `${apiUrl}api/main-image?backgroundColor=${bgColorParam}${watermarkParam}`;
 
       const controller = new AbortController();
       abortControllersRef.current.push(controller);
@@ -181,6 +184,10 @@ export default function BatchProcessingScreen() {
       });
 
       if (isCancelledRef.current) return;
+      
+      // Consume a credit for successful generation
+      await consumeCredit("main-image");
+      
       setResults((prev) =>
         prev.map((r, idx) =>
           idx === index
