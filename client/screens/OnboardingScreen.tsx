@@ -18,13 +18,16 @@ import { GradientBackground } from "@/components/GradientBackground";
 import { Colors, Spacing, BorderRadius, Gradients } from "@/constants/theme";
 
 const logoImage = require("../../assets/images/fotobox-logo.png");
+const scenesExample = require("../../assets/images/onboarding/scenes-example.webp");
+const mockupExample = require("../../assets/images/onboarding/mockup-example.webp");
+const batchExample = require("../../assets/images/onboarding/batch-example.webp");
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 const onboardingSlides = [
   {
     id: "1",
-    icon: "logo",
+    type: "logo" as const,
     title: "",
     description:
       "Create professional product images with one tap. Our AI removes backgrounds and creates perfect listings.",
@@ -32,7 +35,8 @@ const onboardingSlides = [
   },
   {
     id: "2",
-    icon: "image",
+    type: "image" as const,
+    image: scenesExample,
     title: "AI-Powered Scenes",
     description:
       "Place your products in beautiful, AI-generated lifestyle environments to attract more customers.",
@@ -40,7 +44,8 @@ const onboardingSlides = [
   },
   {
     id: "3",
-    icon: "figma",
+    type: "image" as const,
+    image: mockupExample,
     title: "Create Realistic Mockups",
     description:
       "Instantly generate professional mockups for your products. Showcase your designs on t-shirts, mugs, and more.",
@@ -48,7 +53,8 @@ const onboardingSlides = [
   },
   {
     id: "4",
-    icon: "layers",
+    type: "image" as const,
+    image: batchExample,
     title: "Batch Edit Like a Pro",
     description:
       "Save time by processing multiple images at once. Edit and enhance your entire product line in minutes.",
@@ -74,26 +80,19 @@ const OnboardingSlide = ({ item, index }: OnboardingSlideProps) => (
       entering={FadeIn.delay(index * 100).duration(600)}
       style={styles.slideContent}
     >
-      {item.icon === "logo" ? (
+      {item.type === "logo" ? (
         <Image
           source={logoImage}
           style={styles.fullLogo}
           resizeMode="contain"
         />
       ) : (
-        <View style={styles.iconContainer}>
-          <LinearGradient
-            colors={Gradients.primary as [string, string]}
-            style={styles.iconGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            <Feather
-              name={item.icon as any}
-              size={48}
-              color={Colors.light.buttonText}
-            />
-          </LinearGradient>
+        <View style={styles.exampleImageContainer}>
+          <Image
+            source={item.image}
+            style={styles.exampleImage}
+            resizeMode="cover"
+          />
         </View>
       )}
 
@@ -268,6 +267,22 @@ const styles = StyleSheet.create({
     width: 360,
     height: 130,
     marginBottom: Spacing.xl,
+  },
+  exampleImageContainer: {
+    width: 240,
+    height: 240,
+    borderRadius: BorderRadius.xl,
+    overflow: "hidden",
+    marginBottom: Spacing.xl,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  exampleImage: {
+    width: "100%",
+    height: "100%",
   },
   slideTitle: {
     color: Colors.light.text,
