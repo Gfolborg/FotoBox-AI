@@ -126,6 +126,13 @@ export default function BatchLifestyleResultScreen() {
       throw new Error("Missing result image");
     }
 
+    // Check if user has credits (unless unlimited)
+    const isUnlimited = creditsRemaining === -1;
+    if (!isUnlimited && !canGenerate) {
+      showNotification("No credits remaining. Please upgrade to continue.", "error");
+      throw new Error("No credits remaining");
+    }
+
     const formData = new FormData();
     let imageUri = item.resultUri;
 
@@ -168,6 +175,9 @@ export default function BatchLifestyleResultScreen() {
       params.append("platform", platform);
     }
     params.append("iterationNotes", notes);
+    if (requiresWatermark) {
+      params.append("applyWatermark", "true");
+    }
 
     endpoint += `?${params.toString()}`;
 
@@ -197,6 +207,11 @@ export default function BatchLifestyleResultScreen() {
       reader.onerror = () => reject(new Error("Failed to read generated image"));
       reader.readAsDataURL(blob);
     });
+
+    // Consume credit for successful iteration (unless unlimited)
+    if (creditsRemaining !== -1) {
+      await consumeCredit("lifestyle-scene");
+    }
 
     return base64data;
   };

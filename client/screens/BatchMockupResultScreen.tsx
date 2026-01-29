@@ -165,6 +165,13 @@ export default function BatchMockupResultScreen() {
       throw new Error("Missing result image");
     }
 
+    // Check if user has credits (unless unlimited)
+    const isUnlimited = creditsRemaining === -1;
+    if (!isUnlimited && !canGenerate) {
+      showNotification("No credits remaining. Please upgrade to continue.", "error");
+      throw new Error("No credits remaining");
+    }
+
     const prompt = `${getMockupPrompt(
       mockupItem,
       sceneVibe,
@@ -232,8 +239,9 @@ export default function BatchMockupResultScreen() {
       formData.append("mockupColor", mockupColor);
     }
 
+    const watermarkParam = requiresWatermark ? "?applyWatermark=true" : "";
     const response = await fetch(
-      new URL("/api/mockup", getApiUrl()).toString(),
+      new URL(`/api/mockup${watermarkParam}`, getApiUrl()).toString(),
       {
         method: "POST",
         body: formData,
@@ -246,6 +254,11 @@ export default function BatchMockupResultScreen() {
     }
 
     const data = await response.json();
+
+    // Consume credit for successful iteration (unless unlimited)
+    if (creditsRemaining !== -1) {
+      await consumeCredit("mockup");
+    }
 
     return data.resultUri as string;
   };

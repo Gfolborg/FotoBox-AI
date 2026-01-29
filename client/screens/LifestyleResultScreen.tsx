@@ -142,6 +142,13 @@ export default function LifestyleResultScreen() {
   };
 
   const handleIterateSubmit = async (notes: string, currentResultUri: string) => {
+    // Check if user has credits (unless unlimited)
+    const isUnlimited = creditsRemaining === -1;
+    if (!isUnlimited && !canGenerate) {
+      showNotification("No credits remaining. Please upgrade to continue.", "error");
+      throw new Error("No credits remaining");
+    }
+    
     const formData = new FormData();
     let imageUri = currentResultUri;
 
@@ -185,6 +192,9 @@ export default function LifestyleResultScreen() {
       params.append("platform", platform);
     }
     params.append("iterationNotes", notes);
+    if (requiresWatermark) {
+      params.append("applyWatermark", "true");
+    }
 
     endpoint += `?${params.toString()}`;
 
@@ -214,6 +224,11 @@ export default function LifestyleResultScreen() {
       reader.onerror = () => reject(new Error("Failed to read generated image"));
       reader.readAsDataURL(blob);
     });
+
+    // Consume credit for successful iteration (unless unlimited)
+    if (creditsRemaining !== -1) {
+      await consumeCredit("lifestyle-scene");
+    }
 
     return base64data;
   };
