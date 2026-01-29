@@ -265,8 +265,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   fullLogo: {
-    width: 280,
-    height: 100,
+    width: 360,
+    height: 130,
     marginBottom: Spacing.xl,
   },
   slideTitle: {
