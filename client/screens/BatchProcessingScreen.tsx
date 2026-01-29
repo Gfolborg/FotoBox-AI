@@ -53,7 +53,7 @@ export default function BatchProcessingScreen() {
   const insets = useSafeAreaInsets();
   const route = useRoute<RouteProps>();
   const navigation = useNavigation<NavigationProp>();
-  const { requiresWatermark, consumeCredit, canGenerate, creditsRemaining } = useCredits();
+  const { requiresWatermark, consumeCredit, canGenerate, creditsRemaining, isPremium } = useCredits();
   const {
     imageUris,
     backgroundColor = "#FFFFFF",
@@ -108,8 +108,27 @@ export default function BatchProcessingScreen() {
 
   const processImages = async () => {
     const limit = pLimit(5);
+    
+    // Determine how many images can be processed based on credits
+    // -1 means unlimited, otherwise limit to available credits
+    const isUnlimited = creditsRemaining === -1 || isPremium;
+    const maxToProcess = isUnlimited ? imageUris.length : Math.min(imageUris.length, creditsRemaining);
+    
+    // Mark images beyond credit limit as skipped
+    if (!isUnlimited && maxToProcess < imageUris.length) {
+      setResults((prev) =>
+        prev.map((r, idx) =>
+          idx >= maxToProcess
+            ? { ...r, status: "failed" as const, error: "Insufficient credits" }
+            : r,
+        ),
+      );
+    }
+    
+    // Only process images within credit limit
+    const urisToProcess = imageUris.slice(0, maxToProcess);
 
-    const processingPromises = imageUris.map((uri, i) =>
+    const processingPromises = urisToProcess.map((uri, i) =>
       limit(() => processImage(uri, i)),
     );
 

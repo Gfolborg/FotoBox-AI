@@ -38,6 +38,7 @@ import { getApiUrl } from "@/lib/query-client";
 import { useBatchEdit } from "@/context/BatchEditContext";
 import { useNotification } from "@/context/NotificationContext";
 import { buildMockupWizardState } from "@/lib/mockup-templates";
+import { useCredits } from "@/hooks/useCredits";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "Result">;
 type ResultRouteProp = RouteProp<RootStackParamList, "Result">;
@@ -68,6 +69,7 @@ export default function ResultScreen() {
   
   const { pendingEditResult, setPendingEditResult } = useBatchEdit();
   const { showNotification } = useNotification();
+  const { requiresWatermark, consumeCredit, canGenerate, creditsRemaining } = useCredits();
 
   useEffect(() => {
     let isMounted = true;
@@ -169,6 +171,13 @@ export default function ResultScreen() {
   };
 
   const handleRetry = async () => {
+    // Check if user has credits (unless unlimited)
+    const isUnlimited = creditsRemaining === -1;
+    if (!isUnlimited && !canGenerate) {
+      showNotification("No credits remaining. Please upgrade to continue.", "error");
+      return;
+    }
+    
     setIsRetrying(true);
     setRetryError(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -198,7 +207,8 @@ export default function ResultScreen() {
 
       const apiUrl = getApiUrl();
       const bgColorParam = encodeURIComponent(backgroundColor);
-      const endpoint = `${apiUrl}api/main-image?backgroundColor=${bgColorParam}`;
+      const watermarkParam = requiresWatermark ? "&applyWatermark=true" : "";
+      const endpoint = `${apiUrl}api/main-image?backgroundColor=${bgColorParam}${watermarkParam}`;
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 300000);
@@ -234,6 +244,12 @@ export default function ResultScreen() {
       });
 
       setResultUri(base64data);
+      
+      // Consume credit for successful regeneration (unless unlimited)
+      if (creditsRemaining !== -1) {
+        await consumeCredit("main-image");
+      }
+      
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       showNotification("Image regenerated successfully!", "success");
     } catch (err) {
