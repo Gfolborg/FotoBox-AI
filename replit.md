@@ -31,7 +31,11 @@ server/
 ├── routes.ts       # API endpoints (/api/health, /api/amazon-main)
 └── index.ts        # Express server setup
 
-assets/images/      # App icons and splash screens
+assets/images/      # App icons, splash screens, and optimized preview images
+├── scenes/         # Lifestyle scene previews (20 WebP images, ~644KB)
+├── mockups/        # Mockup template previews (optimized WebP)
+├── platforms/      # E-commerce platform previews (8 WebP images, ~80KB)
+└── ui/             # UI illustrations (tips, states, hero)
 ```
 
 ## Key Features
