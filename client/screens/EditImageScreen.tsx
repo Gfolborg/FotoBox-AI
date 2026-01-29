@@ -56,6 +56,7 @@ import { getPresetById } from "@/lib/preset-storage";
 import { useNotification } from "@/context/NotificationContext";
 import { useBatchEdit } from "@/context/BatchEditContext";
 import { saveToFotoBoxAlbum } from "@/lib/save-to-album";
+import { buildMockupWizardState } from "@/lib/mockup-templates";
 import * as FileSystem from "expo-file-system/legacy";
 import * as ImageManipulator from "expo-image-manipulator";
 
@@ -314,7 +315,9 @@ export default function EditImageScreen() {
         encoding: FileSystem.EncodingType.Base64,
       });
 
-      navigation.navigate("MockupWizardImages", { imageUri: fileUri });
+      navigation.navigate("MockupWizardPath", {
+        wizardState: buildMockupWizardState([fileUri]),
+      });
     } catch (error) {
       console.error("Failed to prepare image:", error);
       showNotification("Failed to prepare image. Please try again.", "error");

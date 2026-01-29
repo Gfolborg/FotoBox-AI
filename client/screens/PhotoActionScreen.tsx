@@ -17,6 +17,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { GradientBackground } from "@/components/GradientBackground";
 import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
+import { buildMockupWizardState } from "@/lib/mockup-templates";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const IMAGE_PREVIEW_SIZE = Math.min(SCREEN_WIDTH - Spacing.lg * 2, 350);
@@ -101,7 +102,9 @@ export default function PhotoActionScreen() {
   };
 
   const handleCreateMockup = () => {
-    navigation.navigate("MockupWizardImages", { imageUri });
+    navigation.navigate("MockupWizardPath", {
+      wizardState: buildMockupWizardState([imageUri]),
+    });
   };
 
   return (

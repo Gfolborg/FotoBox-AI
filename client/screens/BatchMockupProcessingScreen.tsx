@@ -11,7 +11,10 @@ import * as ImageManipulator from "expo-image-manipulator";
 import { ThemedText } from "@/components/ThemedText";
 import { GlassCard } from "@/components/GlassCard";
 import { ProgressRing } from "@/components/ProgressRing";
-import { ProcessingTips, DEFAULT_PROCESSING_TIPS } from "@/components/ProcessingTips";
+import {
+  ProcessingTips,
+  DEFAULT_PROCESSING_TIPS,
+} from "@/components/ProcessingTips";
 import { GradientBackground } from "@/components/GradientBackground";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
@@ -50,6 +53,16 @@ export default function BatchMockupProcessingScreen() {
     modelOption,
     customScenePrompt,
     negativePrompt,
+    useCase,
+    adStyle,
+    productCategoryId,
+    desiredMockup,
+    templatePrompt,
+    productMaterial,
+    productSize,
+    hasDesign,
+    sceneType,
+    sceneSetting,
   } = route.params;
 
   const [results, setResults] = useState<ProcessingResult[]>(
@@ -94,6 +107,17 @@ export default function BatchMockupProcessingScreen() {
       modelOption,
       customScenePrompt,
       negativePrompt,
+      useCase,
+      adStyle,
+      productCategoryId,
+      desiredMockup,
+      templatePrompt,
+      undefined,
+      productMaterial,
+      productSize,
+      hasDesign,
+      sceneType,
+      sceneSetting,
     );
 
     let workingResults: ProcessingResult[] = imageUris.map((uri) => ({
@@ -204,6 +228,16 @@ export default function BatchMockupProcessingScreen() {
         customDescription,
         mockupItem,
         mockupColor,
+        useCase,
+        adStyle,
+        productCategoryId,
+        desiredMockup,
+        templatePrompt,
+        productMaterial,
+        productSize,
+        hasDesign,
+        sceneType,
+        sceneSetting,
       });
     }, 1000);
   };

@@ -10,7 +10,10 @@ import * as ImageManipulator from "expo-image-manipulator";
 import { ThemedText } from "@/components/ThemedText";
 import { GlassCard } from "@/components/GlassCard";
 import { ProgressRing } from "@/components/ProgressRing";
-import { ProcessingTips, DEFAULT_PROCESSING_TIPS } from "@/components/ProcessingTips";
+import {
+  ProcessingTips,
+  DEFAULT_PROCESSING_TIPS,
+} from "@/components/ProcessingTips";
 import { GradientBackground } from "@/components/GradientBackground";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
@@ -42,6 +45,16 @@ export default function MockupProcessingScreen() {
     modelOption,
     customScenePrompt,
     negativePrompt,
+    useCase,
+    adStyle,
+    productCategoryId,
+    desiredMockup,
+    templatePrompt,
+    productMaterial,
+    productSize,
+    hasDesign,
+    sceneType,
+    sceneSetting,
   } = route.params;
 
   const [progress, setProgress] = useState(0);
@@ -71,11 +84,10 @@ export default function MockupProcessingScreen() {
       setProgress(10);
       setStatus("Uploading image...");
 
-      const manipulated = await ImageManipulator.manipulateAsync(
-        imageUri,
-        [],
-        { compress: 0.95, format: ImageManipulator.SaveFormat.JPEG },
-      );
+      const manipulated = await ImageManipulator.manipulateAsync(imageUri, [], {
+        compress: 0.95,
+        format: ImageManipulator.SaveFormat.JPEG,
+      });
 
       const formData = new FormData();
       formData.append("file", {
@@ -93,6 +105,17 @@ export default function MockupProcessingScreen() {
         modelOption,
         customScenePrompt,
         negativePrompt,
+        useCase,
+        adStyle,
+        productCategoryId,
+        desiredMockup,
+        templatePrompt,
+        undefined,
+        productMaterial,
+        productSize,
+        hasDesign,
+        sceneType,
+        sceneSetting,
       );
       formData.append("prompt", prompt);
       if (customScenePrompt) {
@@ -152,6 +175,16 @@ export default function MockupProcessingScreen() {
           modelOption,
           customScenePrompt,
           negativePrompt,
+          useCase,
+          adStyle,
+          productCategoryId,
+          desiredMockup,
+          templatePrompt,
+          productMaterial,
+          productSize,
+          hasDesign,
+          sceneType,
+          sceneSetting,
         });
       }, 500);
     } catch (error) {

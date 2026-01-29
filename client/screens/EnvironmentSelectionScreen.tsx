@@ -42,7 +42,7 @@ import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getApiUrl } from "@/lib/query-client";
 import { SCENES, Scene } from "@/lib/lifestyle-scenes";
-import { getAllPlatforms } from "@/lib/platform-requirements";
+import { getPlatformsForService } from "@/lib/platform-requirements";
 import { usePromptHistory } from "@/hooks/usePromptHistory";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -147,7 +147,7 @@ export default function EnvironmentSelectionScreen() {
 
   const isBatchMode = selectedImages.length > 1;
   const imageUri = selectedImages[0] || null;
-  const allPlatforms = getAllPlatforms();
+  const allPlatforms = getPlatformsForService("lifestyle");
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
@@ -461,7 +461,7 @@ export default function EnvironmentSelectionScreen() {
             </ThemedText>
             <View style={styles.inputContainer}>
               <TextInput
-                style={styles.textInput}
+                style={[styles.textInput, styles.sceneTextInput]}
                 placeholder="e.g., On a marble countertop next to a plant"
                 placeholderTextColor={Colors.editing.textTertiary}
                 value={customScene}
@@ -469,7 +469,8 @@ export default function EnvironmentSelectionScreen() {
                   setCustomScene(text);
                   if (text.trim()) setShowSceneError(false);
                 }}
-                multiline={false}
+                multiline
+                numberOfLines={3}
                 returnKeyType="done"
               />
             </View>
@@ -537,12 +538,13 @@ export default function EnvironmentSelectionScreen() {
             </ThemedText>
             <View style={styles.inputContainer}>
               <TextInput
-                style={styles.textInput}
+                style={[styles.textInput, styles.sceneTextInput]}
                 placeholder="e.g., red glossy lipstick"
                 placeholderTextColor={Colors.editing.textTertiary}
                 value={productKeywords}
                 onChangeText={setProductKeywords}
-                multiline={false}
+                multiline
+                numberOfLines={3}
                 returnKeyType="done"
               />
             </View>
@@ -887,6 +889,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.editing.text,
     minHeight: 50,
+  },
+  sceneTextInput: {
+    minHeight: 90,
+    textAlignVertical: "top",
   },
   historyContainer: {
     marginTop: Spacing.md,

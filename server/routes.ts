@@ -292,7 +292,7 @@ function getLifestyleScenePrompt(
   }
 
   const iterationBlock = iterationNotes?.trim()
-    ? `\n\nITERATION REQUEST:\n - Refine the provided image while keeping the product and overall scene consistent.\n - Apply ONLY these changes: ${iterationNotes.trim()}\n - Do not add text, borders, or padding.`
+    ? `\n\nITERATION REQUEST:\n - Keep the product identity and key design features from the input image. You may change the camera angle, crop, and distance.\n - Apply ONLY these changes: ${iterationNotes.trim()}\n - Do not add text, borders, or padding.`
     : "";
 
   return `${basePrompt}

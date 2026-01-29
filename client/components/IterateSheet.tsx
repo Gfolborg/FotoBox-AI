@@ -17,6 +17,12 @@ import { ThemedText } from "./ThemedText";
 import { GlassCard } from "./GlassCard";
 import { GradientButton } from "./GradientButton";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
+import {
+  MOCKUP_USE_CASES,
+  MOCKUP_AD_STYLES,
+  MockupUseCase,
+  MockupAdStyle,
+} from "@/lib/mockup-presets";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -68,6 +74,11 @@ interface IterateSheetProps {
   onClose: () => void;
   onSubmit: () => void;
   isSubmitting?: boolean;
+  showUseCaseOptions?: boolean;
+  useCase?: MockupUseCase;
+  adStyle?: MockupAdStyle;
+  onUseCaseChange?: (value: MockupUseCase) => void;
+  onAdStyleChange?: (value: MockupAdStyle) => void;
 }
 
 export function IterateSheet({
@@ -77,6 +88,11 @@ export function IterateSheet({
   onClose,
   onSubmit,
   isSubmitting = false,
+  showUseCaseOptions = false,
+  useCase = "neutral",
+  adStyle = "simple",
+  onUseCaseChange,
+  onAdStyleChange,
 }: IterateSheetProps) {
   const insets = useSafeAreaInsets();
 
@@ -144,18 +160,6 @@ export function IterateSheet({
                   end={{ x: 1, y: 1 }}
                   style={styles.inputGradient}
                 />
-                <LinearGradient
-                  colors={["rgba(0, 0, 0, 0.12)", "rgba(0, 0, 0, 0)"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 0, y: 1 }}
-                  style={styles.inputInsetTop}
-                />
-                <LinearGradient
-                  colors={["rgba(0, 0, 0, 0)", "rgba(0, 0, 0, 0.12)"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 0, y: 1 }}
-                  style={styles.inputInsetBottom}
-                />
                 <TextInput
                   style={styles.input}
                   placeholder="e.g., brighter light, cleaner background, tighter crop"
@@ -166,6 +170,65 @@ export function IterateSheet({
                   numberOfLines={3}
                 />
               </View>
+
+              {showUseCaseOptions && (
+                <>
+                  <ThemedText style={styles.sectionLabel}>Use Case</ThemedText>
+                  <View style={styles.optionRow}>
+                    {MOCKUP_USE_CASES.map((option) => {
+                      const isSelected = useCase === option.id;
+                      return (
+                        <Pressable
+                          key={option.id}
+                          onPress={() => onUseCaseChange?.(option.id)}
+                          style={[
+                            styles.optionChip,
+                            isSelected && styles.optionChipSelected,
+                          ]}
+                        >
+                          <ThemedText
+                            style={[
+                              styles.optionChipText,
+                              isSelected && styles.optionChipTextSelected,
+                            ]}
+                          >
+                            {option.label}
+                          </ThemedText>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                  {useCase === "ad" && (
+                    <>
+                      <ThemedText style={styles.sectionLabel}>Ad Style</ThemedText>
+                      <View style={styles.optionRow}>
+                        {MOCKUP_AD_STYLES.map((option) => {
+                          const isSelected = adStyle === option.id;
+                          return (
+                            <Pressable
+                              key={option.id}
+                              onPress={() => onAdStyleChange?.(option.id)}
+                              style={[
+                                styles.optionChip,
+                                isSelected && styles.optionChipSelected,
+                              ]}
+                            >
+                              <ThemedText
+                                style={[
+                                  styles.optionChipText,
+                                  isSelected && styles.optionChipTextSelected,
+                                ]}
+                              >
+                                {option.label}
+                              </ThemedText>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    </>
+                  )}
+                </>
+              )}
 
               <ThemedText style={styles.sectionLabel}>Quick tweaks</ThemedText>
               <View style={styles.suggestions}>
@@ -305,27 +368,13 @@ const styles = StyleSheet.create({
   inputShell: {
     padding: Spacing.md,
     borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    borderColor: "rgba(59, 130, 246, 0.2)",
-    backgroundColor: "rgba(255, 255, 255, 0.6)",
+    borderWidth: 1.5,
+    borderColor: "rgba(14, 165, 233, 0.45)",
+    backgroundColor: "rgba(255, 255, 255, 0.92)",
     overflow: "hidden",
   },
   inputGradient: {
     ...StyleSheet.absoluteFillObject,
-  },
-  inputInsetTop: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 18,
-  },
-  inputInsetBottom: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 18,
   },
   input: {
     fontSize: 14,
@@ -340,6 +389,31 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: Spacing.sm,
   },
+  optionRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.sm,
+  },
+  optionChip: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    borderWidth: 1,
+    borderColor: "rgba(14, 165, 233, 0.25)",
+  },
+  optionChipSelected: {
+    backgroundColor: "rgba(14, 165, 233, 0.18)",
+    borderColor: "rgba(14, 165, 233, 0.6)",
+  },
+  optionChipText: {
+    fontSize: 12,
+    color: Colors.light.textSecondary,
+    fontWeight: "600",
+  },
+  optionChipTextSelected: {
+    color: Colors.light.text,
+  },
   footer: {
     marginTop: Spacing.md,
   },
@@ -350,11 +424,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(14, 165, 233, 0.14)",
     borderWidth: 1,
     borderColor: "rgba(14, 165, 233, 0.35)",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 3,
   },
   suggestionText: {
     fontSize: 12,

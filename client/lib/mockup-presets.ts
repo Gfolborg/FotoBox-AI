@@ -105,6 +105,154 @@ export interface ModelOption {
   blurhash: string;
 }
 
+export type MockupUseCase = "neutral" | "listing" | "ad";
+export type MockupAdStyle = "simple" | "exaggerated" | "trending";
+
+export interface ProductMaterial {
+  id: string;
+  label: string;
+  icon: string;
+}
+
+export interface ProductSize {
+  id: string;
+  label: string;
+  description: string;
+  icon: string;
+}
+
+export interface SceneType {
+  id: string;
+  label: string;
+  description: string;
+  icon: string;
+}
+
+export interface SceneSetting {
+  id: string;
+  label: string;
+  group: "indoor" | "outdoor";
+}
+
+export const PRODUCT_MATERIALS: ProductMaterial[] = [
+  { id: "metal", label: "Metal", icon: "shield" },
+  { id: "wood", label: "Wood", icon: "box" },
+  { id: "fabric", label: "Fabric", icon: "feather" },
+  { id: "plastic", label: "Plastic", icon: "archive" },
+  { id: "glass", label: "Glass", icon: "aperture" },
+  { id: "ceramic", label: "Ceramic", icon: "coffee" },
+  { id: "paper", label: "Paper", icon: "file-text" },
+  { id: "leather", label: "Leather", icon: "briefcase" },
+  { id: "stone", label: "Stone", icon: "hexagon" },
+  { id: "food", label: "Food", icon: "heart" },
+  { id: "liquid", label: "Liquid", icon: "droplet" },
+  { id: "other", label: "Other", icon: "more-horizontal" },
+];
+
+export const PRODUCT_SIZES: ProductSize[] = [
+  {
+    id: "pocket",
+    label: "Pocket",
+    description: "Fits in hand or pocket",
+    icon: "smartphone",
+  },
+  {
+    id: "tabletop",
+    label: "Tabletop",
+    description: "Sits on a surface",
+    icon: "monitor",
+  },
+  {
+    id: "oversized",
+    label: "Oversized",
+    description: "Furniture-scale",
+    icon: "maximize-2",
+  },
+];
+
+export const SCENE_TYPES: SceneType[] = [
+  {
+    id: "studio",
+    label: "Studio",
+    description: "Clean backdrop, professional lighting",
+    icon: "aperture",
+  },
+  {
+    id: "lifestyle",
+    label: "Lifestyle",
+    description: "Real-world setting with context",
+    icon: "home",
+  },
+  {
+    id: "flatlay",
+    label: "Flat Lay",
+    description: "Top-down styled arrangement",
+    icon: "grid",
+  },
+  {
+    id: "action",
+    label: "Action",
+    description: "Product in use",
+    icon: "activity",
+  },
+];
+
+export const SCENE_SETTINGS: SceneSetting[] = [
+  { id: "home", label: "Home", group: "indoor" },
+  { id: "kitchen", label: "Kitchen", group: "indoor" },
+  { id: "office", label: "Office", group: "indoor" },
+  { id: "cafe", label: "Cafe", group: "indoor" },
+  { id: "store", label: "Store", group: "indoor" },
+  { id: "garden", label: "Garden", group: "outdoor" },
+  { id: "street", label: "Street", group: "outdoor" },
+  { id: "beach", label: "Beach", group: "outdoor" },
+  { id: "park", label: "Park", group: "outdoor" },
+];
+
+export const MOCKUP_USE_CASES: {
+  id: MockupUseCase;
+  label: string;
+  description: string;
+}[] = [
+  {
+    id: "neutral",
+    label: "Balanced",
+    description: "Natural, authentic presentation",
+  },
+  {
+    id: "listing",
+    label: "Listing",
+    description: "Clean, retail-ready product shot",
+  },
+  {
+    id: "ad",
+    label: "Advertise",
+    description: "Styled marketing scene",
+  },
+];
+
+export const MOCKUP_AD_STYLES: {
+  id: MockupAdStyle;
+  label: string;
+  description: string;
+}[] = [
+  {
+    id: "simple",
+    label: "Simple",
+    description: "Tasteful props, subtle mood",
+  },
+  {
+    id: "exaggerated",
+    label: "Exaggerated",
+    description: "Bold, dramatic, high impact",
+  },
+  {
+    id: "trending",
+    label: "Trending",
+    description: "Trend-forward, social-ready",
+  },
+];
+
 export const MOCKUP_CATEGORIES: MockupCategory[] = [
   {
     id: "apparel",
@@ -190,8 +338,8 @@ export const MOCKUP_CATEGORIES: MockupCategory[] = [
     ],
   },
   {
-    id: "tech",
-    label: "Tech",
+    id: "phone_cases",
+    label: "Phone Cases",
     icon: "smartphone",
     items: [
       {
@@ -203,29 +351,11 @@ export const MOCKUP_CATEGORIES: MockupCategory[] = [
         image: phoneCaseImage,
         blurhash: BLURHASH.phoneCase,
       },
-      {
-        id: "laptopsleeve",
-        label: "Laptop Sleeve",
-        description: "Padded laptop sleeve",
-        hasColorPicker: true,
-        defaultColors: ["#1F2937", "#000000", "#6B7280"],
-        image: laptopSleeveImage,
-        blurhash: BLURHASH.laptopSleeve,
-      },
-      {
-        id: "airpodscase",
-        label: "AirPods Case",
-        description: "Wireless earbuds case",
-        hasColorPicker: true,
-        defaultColors: ["#FFFFFF", "#000000", "#F97316"],
-        image: phoneCaseImage,
-        blurhash: BLURHASH.phoneCase,
-      },
     ],
   },
   {
-    id: "print",
-    label: "Print",
+    id: "posters_prints",
+    label: "Posters / Prints",
     icon: "image",
     items: [
       {
@@ -253,10 +383,17 @@ export const MOCKUP_CATEGORIES: MockupCategory[] = [
         image: posterImage,
         blurhash: BLURHASH.poster,
       },
+    ],
+  },
+  {
+    id: "stickers_labels",
+    label: "Stickers / Labels",
+    icon: "tag",
+    items: [
       {
-        id: "billboard",
-        label: "Billboard",
-        description: "Large outdoor billboard",
+        id: "sticker",
+        label: "Sticker",
+        description: "Die-cut vinyl sticker",
         hasColorPicker: false,
         image: posterImage,
         blurhash: BLURHASH.poster,
@@ -264,9 +401,9 @@ export const MOCKUP_CATEGORIES: MockupCategory[] = [
     ],
   },
   {
-    id: "accessories",
-    label: "Accessories",
-    icon: "gift",
+    id: "tote_bags",
+    label: "Tote Bags",
+    icon: "shopping-bag",
     items: [
       {
         id: "totebag",
@@ -277,6 +414,13 @@ export const MOCKUP_CATEGORIES: MockupCategory[] = [
         image: toteBagImage,
         blurhash: BLURHASH.toteBag,
       },
+    ],
+  },
+  {
+    id: "hats",
+    label: "Hats",
+    icon: "sun",
+    items: [
       {
         id: "hat",
         label: "Hat",
@@ -286,6 +430,72 @@ export const MOCKUP_CATEGORIES: MockupCategory[] = [
         image: capImage,
         blurhash: BLURHASH.cap,
       },
+    ],
+  },
+  {
+    id: "tech_accessories",
+    label: "Tech Accessories",
+    icon: "cpu",
+    items: [
+      {
+        id: "laptopsleeve",
+        label: "Laptop Sleeve",
+        description: "Padded laptop sleeve",
+        hasColorPicker: true,
+        defaultColors: ["#1F2937", "#000000", "#6B7280"],
+        image: laptopSleeveImage,
+        blurhash: BLURHASH.laptopSleeve,
+      },
+      {
+        id: "airpodscase",
+        label: "AirPods Case",
+        description: "Wireless earbuds case",
+        hasColorPicker: true,
+        defaultColors: ["#FFFFFF", "#000000", "#F97316"],
+        image: phoneCaseImage,
+        blurhash: BLURHASH.phoneCase,
+      },
+    ],
+  },
+  {
+    id: "beauty_skincare",
+    label: "Beauty / Skincare",
+    icon: "droplet",
+    items: [
+      {
+        id: "skincare_bottle",
+        label: "Skincare Bottle",
+        description: "Cosmetic pump bottle",
+        hasColorPicker: true,
+        defaultColors: ["#FFFFFF", "#F5F5F5", "#1F2937"],
+        image: tumblerImage,
+        blurhash: BLURHASH.tumbler,
+      },
+      {
+        id: "cosmetic_jar",
+        label: "Cosmetic Jar",
+        description: "Round skincare jar",
+        hasColorPicker: true,
+        defaultColors: ["#FFFFFF", "#F5F5F5", "#1F2937"],
+        image: mugImage,
+        blurhash: BLURHASH.mug,
+      },
+      {
+        id: "skincare_tube",
+        label: "Skincare Tube",
+        description: "Soft squeeze tube",
+        hasColorPicker: true,
+        defaultColors: ["#FFFFFF", "#F5F5F5", "#1F2937"],
+        image: tumblerImage,
+        blurhash: BLURHASH.tumbler,
+      },
+    ],
+  },
+  {
+    id: "home_goods",
+    label: "Home Goods",
+    icon: "home",
+    items: [
       {
         id: "pillow",
         label: "Pillow",
@@ -294,14 +504,6 @@ export const MOCKUP_CATEGORIES: MockupCategory[] = [
         defaultColors: ["#FFFFFF", "#000000", "#F5F5DC"],
         image: toteBagImage,
         blurhash: BLURHASH.toteBag,
-      },
-      {
-        id: "sticker",
-        label: "Sticker",
-        description: "Die-cut vinyl sticker",
-        hasColorPicker: false,
-        image: posterImage,
-        blurhash: BLURHASH.poster,
       },
     ],
   },
@@ -457,6 +659,17 @@ export function getMockupPrompt(
   modelOption?: ModelOption,
   customScenePrompt?: string,
   negativePrompt?: string,
+  useCase: MockupUseCase = "neutral",
+  adStyle: MockupAdStyle = "simple",
+  productCategoryId?: string,
+  desiredMockup?: string,
+  templatePrompt?: string,
+  outputFormatInstruction?: string,
+  productMaterial?: string,
+  productSize?: string,
+  hasDesign?: boolean,
+  sceneType?: string,
+  sceneSetting?: string,
 ): string {
   // Prompt requirements: docs/ai-prompt-requirements.md
   const isCustomProduct = mockupItem.id === "custom";
@@ -500,15 +713,98 @@ export function getMockupPrompt(
   };
 
   const productInstruction = isCustomProduct
-    ? `IMPORTANT: The user specifically wants their design/logo placed on a "${productName}". Create a realistic ${productName} with their design for use in advertising and marketing materials.`
-    : `Create a professional product mockup of the provided design/logo placed on a ${productName}. This is for advertising, marketing, and e-commerce use.`;
+    ? `IMPORTANT: The user specifically wants their design/logo placed on a "${productName}". Create a realistic ${productName} with their design.`
+    : `Create a professional product mockup of the provided design/logo placed on a ${productName}.`;
+
+  const designIntegrityInstruction =
+    hasDesign === false
+      ? ""
+      : "Keep the provided design/logo exactly as supplied (no edits, no recoloring, no stretching, no repositioning).";
+
+  const categoryInstructions: Record<string, string> = {
+    apparel:
+      "Render realistic fabric texture, folds, and seams. The design should appear naturally printed or embroidered on the garment with correct perspective.",
+    drinkware:
+      "Render realistic curvature, gloss, and reflections. The design should wrap naturally around the surface.",
+    phone_cases:
+      "Render a realistic phone case with correct edge curvature and material finish. The design should align cleanly on the back surface.",
+    posters_prints:
+      "Render a flat print with crisp edges and accurate scale. The design should look professionally printed on paper or canvas.",
+    stickers_labels:
+      "Render a realistic sticker or label with clean edges and proper adhesion to the surface. Keep the design crisp and legible.",
+    tote_bags:
+      "Render realistic canvas texture and natural folds. The design should sit naturally on the bag surface.",
+    hats: "Render realistic fabric texture and seams. The design should follow the curvature of the hat panel.",
+    tech_accessories:
+      "Render realistic materials and product geometry. The design should align correctly on the product surface.",
+    beauty_skincare:
+      "Render a clean, premium cosmetic package with accurate materials and soft reflections. The design should appear professionally printed.",
+    home_goods:
+      "Render realistic textiles or surfaces with natural folds and texture. The design should sit naturally on the product.",
+  };
+
+  const categoryInstruction =
+    productCategoryId && categoryInstructions[productCategoryId]
+      ? ` ${categoryInstructions[productCategoryId]}`
+      : "";
+
+  const materialLabel = productMaterial
+    ? PRODUCT_MATERIALS.find((m) => m.id === productMaterial)?.label
+    : undefined;
+  const materialInstruction = materialLabel
+    ? ` Material: ${materialLabel}. Render realistic ${materialLabel.toLowerCase()} texture, weight, and light interaction.`
+    : "";
+
+  const sizeLabel = productSize
+    ? PRODUCT_SIZES.find((s) => s.id === productSize)?.label
+    : undefined;
+  const sizeInstruction = sizeLabel
+    ? ` Product size: ${sizeLabel}. Frame composition accordingly.`
+    : "";
+
+  const sceneTypeObj = sceneType
+    ? SCENE_TYPES.find((s) => s.id === sceneType)
+    : undefined;
+  const sceneTypeInstruction = sceneTypeObj
+    ? ` Scene type: ${sceneTypeObj.description}.`
+    : "";
+
+  const settingLabel = sceneSetting
+    ? SCENE_SETTINGS.find((s) => s.id === sceneSetting)?.label
+    : undefined;
+  const settingInstruction = settingLabel
+    ? ` Setting: ${settingLabel} environment.`
+    : "";
+
+  const customProductInstruction = isCustomProduct
+    ? ` Use the user's product description as the primary specification.${materialInstruction || " Infer realistic material, shape, size, and surface based on that description."}`
+    : "";
+
+  const desiredMockupInstruction = desiredMockup?.trim()
+    ? ` Desired mockup request: ${desiredMockup.trim()}. Prioritize this request while keeping the product realistic and the design accurate.`
+    : "";
+
+  const templateInstruction = templatePrompt?.trim()
+    ? ` Template direction: ${templatePrompt.trim()}`
+    : "";
+
+  const useCaseInstruction =
+    useCase === "neutral"
+      ? "Create a balanced, natural product presentation. Avoid heavy marketing styling. Keep lighting realistic, props minimal, and focus on clarity and authenticity. The product should feel real and unforced."
+      : useCase === "listing"
+        ? "Create a clean, retail-ready listing image. Keep the product clearly visible, evenly lit, and accurately represented. Use minimal props and a tidy background to maximize clarity and product detail. No distracting elements."
+        : adStyle === "exaggerated"
+          ? "Create a bold, high-impact advertising scene with dramatic lighting, dynamic props, and a striking composition. Make the product feel heroic while keeping the product and design accurate."
+          : adStyle === "trending"
+            ? "Create a trend-forward advertising scene optimized for social engagement. Use vibrant styling, modern props, and eye-catching composition. Keep the product and design accurate while making it feel current and shareable. Use slightly higher saturation and contrast for a punchier look."
+            : "Create a tasteful advertising scene with subtle props and mood lighting. Keep the product as the clear focal point. The scene should feel premium but restrained.";
 
   const modelInstruction =
     modelOption && modelOption.id !== "none"
       ? ` ${modelDescriptions[modelOption.id]}`
       : "";
 
-  const basePrompt = `${productInstruction} ${colorDesc}${modelInstruction} The scene should be ${vibeDescriptions[sceneVibe.id] || vibeDescriptions.casual} ${cameraDescriptions[cameraOption.id] || cameraDescriptions.medium} CRITICAL: The camera angle must be followed precisely and must apply to the product framing and how the product is photographed (not just the background scene).`;
+  const basePrompt = `${productInstruction} ${designIntegrityInstruction}${categoryInstruction}${customProductInstruction}${sizeInstruction}${sceneTypeInstruction}${settingInstruction} ${useCaseInstruction}${templateInstruction}${desiredMockupInstruction} ${colorDesc}${modelInstruction} The scene should be ${vibeDescriptions[sceneVibe.id] || vibeDescriptions.casual} ${cameraDescriptions[cameraOption.id] || cameraDescriptions.medium} CRITICAL: The camera angle must be followed precisely and must apply to the product framing and how the product is photographed (not just the background scene).`;
 
   const customAddition = customDescription
     ? ` Additional context: ${customDescription}`
@@ -519,5 +815,9 @@ export function getMockupPrompt(
     : "";
   const negativeAddition = negativePrompt ? ` Avoid: ${negativePrompt}` : "";
 
-  return `Generate a 16:9 aspect ratio image (horizontal, widescreen). ${basePrompt} CRITICAL: Camera angle applies to the product framing, not just the scene. ${customAddition}${customSceneAddition}${negativeAddition} The product placement should look natural and realistic with proper perspective, lighting, and shadows. The scene must fill the entire frame edge-to-edge with no padding or borders. High quality, photorealistic result.`;
+  const formatInstruction = outputFormatInstruction?.trim()
+    ? ` ${outputFormatInstruction.trim()}`
+    : "";
+
+  return `Generate a high quality, photorealistic image.${formatInstruction} ${basePrompt} CRITICAL: Camera angle applies to the product framing, not just the scene. ${customAddition}${customSceneAddition}${negativeAddition} The product placement should look natural and realistic with proper perspective, lighting, and shadows. The scene must fill the entire frame edge-to-edge with no padding or borders.`;
 }

@@ -25,6 +25,7 @@ import { GlassPill } from "@/components/GlassPill";
 import { GradientBackground } from "@/components/GradientBackground";
 import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
+import { buildMockupWizardState } from "@/lib/mockup-templates";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const PREVIEW_SIZE = 100;
@@ -106,7 +107,9 @@ export default function BatchActionSelectionScreen() {
   };
 
   const handleCreateMockup = () => {
-    navigation.replace("MockupWizardImages", { imageUris });
+    navigation.replace("MockupWizardPath", {
+      wizardState: buildMockupWizardState(imageUris),
+    });
   };
 
   return (

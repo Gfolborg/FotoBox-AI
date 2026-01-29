@@ -48,6 +48,7 @@ import {
 } from "@/lib/platform-requirements";
 import { batchOptimizeAndSave, optimizeForPlatform } from "@/lib/platform-optimizer";
 import { saveToFotoBoxAlbum, ensureMediaLibraryPermission } from "@/lib/save-to-album";
+import { buildMockupWizardState } from "@/lib/mockup-templates";
 
 type NavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -474,7 +475,9 @@ export default function BatchPlatformSelectionScreen() {
     }
 
     if (action === "mockup") {
-      navigation.replace("MockupWizardImages", { imageUris });
+      navigation.replace("MockupWizardPath", {
+        wizardState: buildMockupWizardState(imageUris),
+      });
       return;
     }
 

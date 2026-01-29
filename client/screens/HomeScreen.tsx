@@ -11,7 +11,7 @@ import { WorkflowCard } from "@/components/WorkflowCard";
 
 import { GradientBackground } from "@/components/GradientBackground";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
-import { Colors, Spacing } from "@/constants/theme";
+import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 
 const logoImage = require("../../assets/images/fotobox-logo.png");
 
@@ -144,7 +144,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   footerText: {
-    color: Colors.light.textTertiary,
-    fontSize: 12,
+    color: Colors.light.text,
+    fontSize: 14,
+    fontWeight: "700",
+    letterSpacing: 0.2,
+    backgroundColor: "rgba(14, 165, 233, 0.12)",
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: "rgba(14, 165, 233, 0.25)",
   },
 });

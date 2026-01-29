@@ -37,6 +37,7 @@ import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getApiUrl } from "@/lib/query-client";
 import { useBatchEdit } from "@/context/BatchEditContext";
 import { useNotification } from "@/context/NotificationContext";
+import { buildMockupWizardState } from "@/lib/mockup-templates";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "Result">;
 type ResultRouteProp = RouteProp<RootStackParamList, "Result">;
@@ -296,8 +297,8 @@ export default function ResultScreen() {
         encoding: FileSystem.EncodingType.Base64,
       });
 
-      navigation.navigate("MockupWizardImages", {
-        imageUri: fileUri,
+      navigation.navigate("MockupWizardPath", {
+        wizardState: buildMockupWizardState([fileUri]),
       });
     } catch (error) {
       console.error("Failed to prepare image for mockup:", error);

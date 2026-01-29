@@ -53,6 +53,7 @@ import {
   getImageDimensions,
 } from "@/lib/platform-optimizer";
 import { saveToFotoBoxAlbum } from "@/lib/save-to-album";
+import { buildMockupWizardState } from "@/lib/mockup-templates";
 
 type NavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -416,7 +417,9 @@ export default function PlatformSelectionScreen() {
     }
 
     if (action === "mockup") {
-      navigation.replace("MockupWizardImages", { imageUri: sourceUri });
+      navigation.replace("MockupWizardPath", {
+        wizardState: buildMockupWizardState([sourceUri]),
+      });
       return;
     }
 

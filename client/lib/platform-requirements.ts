@@ -202,10 +202,7 @@ export function getPlatformsForService(
   sourceService?: string,
 ): PlatformRequirement[] {
   const platforms = getAllPlatforms();
-  if (sourceService === "lifestyle") {
-    return [LIFESTYLE_ORIGINAL_PLATFORM, ...platforms];
-  }
-  return platforms;
+  return [LIFESTYLE_ORIGINAL_PLATFORM, ...platforms];
 }
 
 /**
