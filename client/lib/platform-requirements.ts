@@ -21,16 +21,16 @@ export interface PlatformRequirement {
   notes: string;
 }
 
-// Platform brand icons
+// Platform brand icons (optimized WebP, 128x128)
 const PLATFORM_ICONS: Record<string, any> = {
-  amazon: require("../../assets/images/platforms/icon_amazon.png"),
-  shopify: require("../../assets/images/platforms/icon_shopify.png"),
-  etsy: require("../../assets/images/platforms/icon_etsy.png"),
-  ebay: require("../../assets/images/platforms/icon_ebay.png"),
-  walmart: require("../../assets/images/platforms/icon_walmart.png"),
-  facebook: require("../../assets/images/platforms/icon_instagram.png"),
-  google: require("../../assets/images/platforms/icon_google.png"),
-  pinterest: require("../../assets/images/platforms/icon_pinterest.png"),
+  amazon: require("../../assets/images/platforms/icon_amazon.webp"),
+  shopify: require("../../assets/images/platforms/icon_shopify.webp"),
+  etsy: require("../../assets/images/platforms/icon_etsy.webp"),
+  ebay: require("../../assets/images/platforms/icon_ebay.webp"),
+  walmart: require("../../assets/images/platforms/icon_walmart.webp"),
+  facebook: require("../../assets/images/platforms/icon_instagram.webp"),
+  google: require("../../assets/images/platforms/icon_google.webp"),
+  pinterest: require("../../assets/images/platforms/icon_pinterest.webp"),
 };
 
 export const DEFAULT_EXPORT_LONG_EDGE = 3500;
