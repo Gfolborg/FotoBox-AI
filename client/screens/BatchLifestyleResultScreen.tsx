@@ -8,6 +8,8 @@ import * as FileSystem from "expo-file-system/legacy";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getApiUrl } from "@/lib/query-client";
 import { BatchResultScreenLayout, BatchResultItem } from "@/components/BatchResultScreenLayout";
+import { useCredits } from "@/hooks/useCredits";
+import { useNotification } from "@/context/NotificationContext";
 
 const getExtensionFromDataUri = (dataUri: string): string => {
   const match = dataUri.match(/^data:image\/([a-zA-Z0-9+]+);base64,/);
@@ -26,6 +28,8 @@ type RouteProps = RouteProp<RootStackParamList, "BatchLifestyleResult">;
 export default function BatchLifestyleResultScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
+  const { requiresWatermark, consumeCredit, canGenerate, creditsRemaining } = useCredits();
+  const { showNotification } = useNotification();
   const {
     results: initialResults,
     environment,
@@ -47,6 +51,13 @@ export default function BatchLifestyleResultScreen() {
   };
 
   const handleRetrySelected = async (item: BatchResultItem) => {
+    // Check if user has credits (unless unlimited)
+    const isUnlimited = creditsRemaining === -1;
+    if (!isUnlimited && !canGenerate) {
+      showNotification("No credits remaining. Please upgrade to continue.", "error");
+      throw new Error("No credits remaining");
+    }
+    
     const formData = new FormData();
     formData.append("file", {
       uri: item.originalUri,
@@ -69,6 +80,9 @@ export default function BatchLifestyleResultScreen() {
     }
     if (platform) {
       params.append("platform", platform);
+    }
+    if (requiresWatermark) {
+      params.append("applyWatermark", "true");
     }
     endpoint += `?${params.toString()}`;
 
@@ -98,6 +112,11 @@ export default function BatchLifestyleResultScreen() {
       reader.onerror = () => reject(new Error("Failed to read generated image"));
       reader.readAsDataURL(blob);
     });
+
+    // Consume credit for successful regeneration (unless unlimited)
+    if (creditsRemaining !== -1) {
+      await consumeCredit("lifestyle-scene");
+    }
 
     return base64data;
   };
