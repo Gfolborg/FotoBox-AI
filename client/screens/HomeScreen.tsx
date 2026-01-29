@@ -8,7 +8,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
 import { ThemedText } from "@/components/ThemedText";
 import { WorkflowCard } from "@/components/WorkflowCard";
-
+import { CreditIndicator } from "@/components/CreditIndicator";
 import { GradientBackground } from "@/components/GradientBackground";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
@@ -57,6 +57,11 @@ export default function HomeScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
+        {/* Credit Indicator - Always visible at top */}
+        <Animated.View entering={FadeIn.duration(400)} style={styles.creditRow}>
+          <CreditIndicator />
+        </Animated.View>
+
         {/* Animated Header with Logo */}
         <Animated.View entering={FadeIn.duration(600)} style={styles.header}>
           <Image source={logoImage} style={styles.logo} resizeMode="contain" />
@@ -116,6 +121,10 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: Spacing.lg,
     justifyContent: "center",
+  },
+  creditRow: {
+    alignItems: "flex-end",
+    marginBottom: Spacing.md,
   },
   header: {
     marginBottom: Spacing.xl,

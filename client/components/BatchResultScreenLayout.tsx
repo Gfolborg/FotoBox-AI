@@ -325,7 +325,7 @@ export function BatchResultScreenLayout({
           <Feather
             name={isSuccess ? "edit-2" : "refresh-cw"}
             size={12}
-            color={Colors.editing.text}
+            color="#FFFFFF"
           />
           <ThemedText style={styles.tapBadgeText}>
             {isSuccess ? "Tap for options" : "Tap to retry"}
@@ -667,7 +667,6 @@ const styles = StyleSheet.create({
   tapBadge: {
     position: "absolute",
     left: Spacing.xs,
-    right: Spacing.xs,
     bottom: Spacing.xs,
     borderRadius: BorderRadius.md,
     paddingVertical: 4,
@@ -677,17 +676,17 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   tapBadgeSuccess: {
-    backgroundColor: "rgba(14, 165, 233, 0.2)",
-    borderColor: "rgba(14, 165, 233, 0.4)",
+    backgroundColor: "rgba(14, 165, 233, 0.45)",
+    borderColor: "rgba(14, 165, 233, 0.6)",
     borderWidth: 1,
   },
   tapBadgeRetry: {
-    backgroundColor: "rgba(249, 115, 22, 0.2)",
-    borderColor: "rgba(249, 115, 22, 0.4)",
+    backgroundColor: "rgba(249, 115, 22, 0.45)",
+    borderColor: "rgba(249, 115, 22, 0.6)",
     borderWidth: 1,
   },
   tapBadgeText: {
-    color: Colors.editing.text,
+    color: "#FFFFFF",
     fontSize: 12,
     fontWeight: "600",
   },
