@@ -17,18 +17,26 @@ const casualVibeImage = require("../../assets/images/mockups/casual_vibe_style_p
 const premiumVibeImage = require("../../assets/images/mockups/premium_vibe_style_preview.webp");
 const funVibeImage = require("../../assets/images/mockups/fun_vibe_style_preview.webp");
 
-const closeupCameraImage = require("../../assets/images/mockups/close-up_camera_angle_preview.webp");
-const mediumCameraImage = require("../../assets/images/mockups/medium_camera_angle_preview.webp");
-const wideCameraImage = require("../../assets/images/mockups/wide_camera_angle_preview.webp");
-const flatlayCameraImage = require("../../assets/images/mockups/flat_lay_camera_angle_preview.webp");
-const actionCameraImage = require("../../assets/images/mockups/action_camera_angle_preview.webp");
-const handheldCameraImage = require("../../assets/images/mockups/in-use_camera_angle_preview.webp");
+// Scene type preview images (dedicated)
+const studioSceneImage = require("../../assets/images/mockups/scene_type_studio.webp");
+const lifestyleSceneImage = require("../../assets/images/mockups/scene_type_lifestyle.webp");
+const flatlaySceneImage = require("../../assets/images/mockups/scene_type_flatlay.webp");
+const actionSceneImage = require("../../assets/images/mockups/scene_type_action.webp");
 
-const noModelImage = require("../../assets/images/mockups/no_model_preview.webp");
-const femaleModelImage = require("../../assets/images/mockups/female_model_preview.webp");
-const maleModelImage = require("../../assets/images/mockups/male_model_preview.webp");
-const diverseGroupImage = require("../../assets/images/mockups/diverse_group_preview.webp");
-const handsOnlyImage = require("../../assets/images/mockups/hands_only_preview.webp");
+// Camera angle preview images (dedicated)
+const closeupCameraImage = require("../../assets/images/mockups/camera_closeup.webp");
+const mediumCameraImage = require("../../assets/images/mockups/camera_medium.webp");
+const wideCameraImage = require("../../assets/images/mockups/camera_wide.webp");
+const flatlayCameraImage = require("../../assets/images/mockups/camera_flatlay.webp");
+const actionCameraImage = require("../../assets/images/mockups/camera_action.webp");
+const handheldCameraImage = require("../../assets/images/mockups/camera_inuse.webp");
+
+// Model option preview images (dedicated)
+const noModelImage = require("../../assets/images/mockups/model_none.webp");
+const femaleModelImage = require("../../assets/images/mockups/model_female.webp");
+const maleModelImage = require("../../assets/images/mockups/model_male.webp");
+const diverseGroupImage = require("../../assets/images/mockups/model_diverse.webp");
+const handsOnlyImage = require("../../assets/images/mockups/model_hands.webp");
 
 // Blurhash placeholders for instant loading preview
 export const BLURHASH = {
@@ -59,6 +67,11 @@ export const BLURHASH = {
   male: "UXD]uN~qx]%M?bxuNGRjD%IoM|M{D%RjxZs:",
   diverse: "UNI#ZB?^D*8_~Wt-V?t8IVg4x]xuM{M|ozV@",
   handsOnly: "UNIhKj-;~q?cibo#9Z9ZoekXE1RjkD4otRxu",
+  // Scene type previews
+  studio: "UGF=lC~qfQ-;?bxuofWB_3RjM{of_3t7t7t7",
+  lifestyle: "UJHoTo~Vxu?b-;WBWBM{_3ofRjay9FofM{t7",
+  sceneTypeFlatlay: "ULJb~p~q9F?b-;M{M{M{_3t7ayof4nt7M{Rj",
+  sceneTypeAction: "UCFic~9F~W%M?bxaM{M{_3WBxuay00ofD%t7",
 };
 
 export interface MockupCategory {
@@ -178,32 +191,32 @@ export const SCENE_TYPES: SceneType[] = [
     label: "Studio",
     description: "Clean backdrop, professional lighting",
     icon: "aperture",
-    image: professionalVibeImage,
-    blurhash: BLURHASH.professional,
+    image: studioSceneImage,
+    blurhash: BLURHASH.studio,
   },
   {
     id: "lifestyle",
     label: "Lifestyle",
     description: "Real-world setting with context",
     icon: "home",
-    image: casualVibeImage,
-    blurhash: BLURHASH.casual,
+    image: lifestyleSceneImage,
+    blurhash: BLURHASH.lifestyle,
   },
   {
     id: "flatlay",
     label: "Flat Lay",
     description: "Top-down styled arrangement",
     icon: "grid",
-    image: flatlayCameraImage,
-    blurhash: BLURHASH.flatlay,
+    image: flatlaySceneImage,
+    blurhash: BLURHASH.sceneTypeFlatlay,
   },
   {
     id: "action",
     label: "Action",
     description: "Product in use",
     icon: "activity",
-    image: actionCameraImage,
-    blurhash: BLURHASH.action,
+    image: actionSceneImage,
+    blurhash: BLURHASH.sceneTypeAction,
   },
 ];
 
