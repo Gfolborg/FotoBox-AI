@@ -849,14 +849,23 @@ The background MUST be completely removed and replaced with the exact solid colo
           pipeline = pipeline.tint(tintColor);
         }
 
+        // Check if watermark should be applied (for free tier users)
+        const applyWatermark = req.query.applyWatermark === "true";
+
         // Convert to JPEG with high quality
-        const editedBuffer = await pipeline.jpeg({ quality: 100 }).toBuffer();
+        let editedBuffer = await pipeline.jpeg({ quality: 100 }).toBuffer();
+
+        // Apply watermark for free tier users
+        if (applyWatermark) {
+          editedBuffer = await addWatermark(editedBuffer);
+        }
 
         res.set("Content-Type", "image/jpeg");
         res.set(
           "Content-Disposition",
           'attachment; filename="edited-image.jpg"',
         );
+        res.set("X-Watermarked", applyWatermark ? "true" : "false");
         res.send(editedBuffer);
       } catch (error) {
         console.error("Error editing image:", error);
