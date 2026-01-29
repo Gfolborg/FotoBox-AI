@@ -5,6 +5,8 @@ import {
   ScrollView,
   Pressable,
   TextInput,
+  Image,
+  Dimensions,
 } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -37,6 +39,9 @@ type NavigationProp = NativeStackNavigationProp<
 >;
 
 type RouteProps = RouteProp<RootStackParamList, "MockupWizardFinalize">;
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const IMAGE_CARD_SIZE = (SCREEN_WIDTH - Spacing.lg * 2 - Spacing.sm * 2) / 3;
 
 const CUSTOM_CATEGORY_ID = "custom";
 const CUSTOM_PRODUCT_ITEM_ID = "custom-product";
@@ -304,7 +309,7 @@ export default function MockupWizardFinalizeScreen() {
 
         <View style={styles.section}>
           <ThemedText style={styles.sectionLabel}>Camera angle</ThemedText>
-          <View style={styles.chipGrid}>
+          <View style={styles.imageGrid}>
             {cameraOptions.map((option) => {
               const isActive = selectedCameraId === option.id;
               return (
@@ -314,22 +319,29 @@ export default function MockupWizardFinalizeScreen() {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     setSelectedCameraId(option.id);
                   }}
-                  style={[styles.chipWide, isActive && styles.chipActive]}
+                  style={[styles.imageCard, isActive && styles.imageCardActive]}
                 >
-                  <View style={styles.chipIcon}>
-                    <Feather
-                      name="camera"
-                      size={14}
-                      color={
-                        isActive ? Colors.light.primary : Colors.light.text
-                      }
-                    />
+                  <Image
+                    source={option.image}
+                    style={styles.cardImage}
+                    resizeMode="cover"
+                  />
+                  <View style={styles.cardLabelContainer}>
+                    <ThemedText
+                      style={[
+                        styles.cardLabel,
+                        isActive && styles.cardLabelActive,
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {option.label}
+                    </ThemedText>
                   </View>
-                  <ThemedText
-                    style={[styles.chipText, isActive && styles.chipTextActive]}
-                  >
-                    {option.label}
-                  </ThemedText>
+                  {isActive && (
+                    <View style={styles.cardCheck}>
+                      <Feather name="check" size={12} color="#fff" />
+                    </View>
+                  )}
                 </Pressable>
               );
             })}
@@ -374,7 +386,7 @@ export default function MockupWizardFinalizeScreen() {
           </View>
 
           {includePeople && (
-            <View style={styles.chipRow}>
+            <View style={styles.imageGrid}>
               {modelOptions.map((option) => {
                 const isActive = selectedModelId === option.id;
                 return (
@@ -384,16 +396,29 @@ export default function MockupWizardFinalizeScreen() {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       setSelectedModelId(option.id);
                     }}
-                    style={[styles.chip, isActive && styles.chipActive]}
+                    style={[styles.imageCard, isActive && styles.imageCardActive]}
                   >
-                    <ThemedText
-                      style={[
-                        styles.chipText,
-                        isActive && styles.chipTextActive,
-                      ]}
-                    >
-                      {option.label}
-                    </ThemedText>
+                    <Image
+                      source={option.image}
+                      style={styles.cardImage}
+                      resizeMode="cover"
+                    />
+                    <View style={styles.cardLabelContainer}>
+                      <ThemedText
+                        style={[
+                          styles.cardLabel,
+                          isActive && styles.cardLabelActive,
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {option.label}
+                      </ThemedText>
+                    </View>
+                    {isActive && (
+                      <View style={styles.cardCheck}>
+                        <Feather name="check" size={12} color="#fff" />
+                      </View>
+                    )}
                   </Pressable>
                 );
               })}
@@ -490,6 +515,52 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: Spacing.xs,
+  },
+  imageGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.sm,
+  },
+  imageCard: {
+    width: IMAGE_CARD_SIZE,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    overflow: "hidden",
+  },
+  imageCardActive: {
+    borderColor: Colors.light.primary,
+    borderWidth: 2,
+  },
+  cardImage: {
+    width: "100%",
+    height: IMAGE_CARD_SIZE * 0.75,
+    backgroundColor: Colors.light.backgroundTertiary,
+  },
+  cardLabelContainer: {
+    paddingHorizontal: Spacing.xs,
+    paddingVertical: Spacing.xs,
+    alignItems: "center",
+  },
+  cardLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: Colors.light.text,
+  },
+  cardLabelActive: {
+    color: Colors.light.primary,
+  },
+  cardCheck: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: Colors.light.primary,
+    alignItems: "center",
+    justifyContent: "center",
   },
   chip: {
     paddingHorizontal: Spacing.sm,
