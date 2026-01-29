@@ -32,7 +32,7 @@ export function UpgradePrompt({
     if (isAuthenticated) {
       navigation.navigate("Paywall");
     } else {
-      navigation.navigate("Login");
+      navigation.navigate("Auth");
     }
   };
 

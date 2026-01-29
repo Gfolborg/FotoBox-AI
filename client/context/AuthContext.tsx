@@ -5,6 +5,8 @@ import { getApiUrl } from "@/lib/query-client";
 interface User {
   id: string;
   username: string;
+  displayName?: string;
+  avatarUrl?: string;
 }
 
 interface Subscription {
@@ -15,6 +17,14 @@ interface Subscription {
   expiresAt: string | null;
 }
 
+interface OAuthParams {
+  provider: "google" | "apple";
+  idToken: string;
+  email?: string;
+  displayName?: string;
+  avatarUrl?: string;
+}
+
 interface AuthContextType {
   user: User | null;
   subscription: Subscription | null;
@@ -23,6 +33,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (username: string, password: string, confirmPassword: string) => Promise<{ success: boolean; error?: string }>;
+  oauthLogin: (params: OAuthParams) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshSubscription: () => Promise<void>;
   useCredit: (action: string) => Promise<{ success: boolean; creditsRemaining: number; requiresUpgrade?: boolean; error?: string }>;
@@ -132,6 +143,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const oauthLogin = async (params: OAuthParams) => {
+    try {
+      const baseUrl = getApiUrl();
+      const res = await fetch(new URL("/api/auth/oauth", baseUrl).toString(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(params),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        return { success: false, error: data.error || "OAuth login failed" };
+      }
+
+      await AsyncStorage.setItem(AUTH_TOKEN_KEY, data.token);
+      setToken(data.token);
+      setUser(data.user);
+      setSubscription(data.subscription);
+
+      return { success: true };
+    } catch (error) {
+      console.error("OAuth error:", error);
+      return { success: false, error: "Network error. Please try again." };
+    }
+  };
+
   const logout = async () => {
     await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
     setToken(null);
@@ -202,6 +240,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!user,
         login,
         register,
+        oauthLogin,
         logout,
         refreshSubscription,
         useCredit,

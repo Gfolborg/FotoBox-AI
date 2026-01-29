@@ -30,8 +30,7 @@ import MockupWizardFinalizeScreen from "@/screens/MockupWizardFinalizeScreen";
 import QuickFixScreen from "@/screens/QuickFixScreen";
 import PlatformSelectionScreen from "@/screens/PlatformSelectionScreen";
 import BatchPlatformSelectionScreen from "@/screens/BatchPlatformSelectionScreen";
-import LoginScreen from "@/screens/LoginScreen";
-import RegisterScreen from "@/screens/RegisterScreen";
+import AuthScreen from "@/screens/AuthScreen";
 import PaywallScreen from "@/screens/PaywallScreen";
 import {
   MockupItem,
@@ -51,8 +50,7 @@ export type BackgroundBatchResult = {
 };
 
 export type RootStackParamList = {
-  Login: undefined;
-  Register: undefined;
+  Auth: undefined;
   Paywall: { returnTo?: string } | undefined;
   Home: undefined;
   Camera:
@@ -287,13 +285,8 @@ export default function RootStackNavigator() {
   return (
     <Stack.Navigator screenOptions={screenOptions}>
       <Stack.Screen
-        name="Login"
-        component={LoginScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="Register"
-        component={RegisterScreen}
+        name="Auth"
+        component={AuthScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen

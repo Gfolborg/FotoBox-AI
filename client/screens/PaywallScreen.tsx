@@ -67,7 +67,7 @@ export default function PaywallScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
     if (!isAuthenticated) {
-      navigation.navigate("Login");
+      navigation.navigate("Auth");
       return;
     }
 
@@ -80,7 +80,7 @@ export default function PaywallScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
     if (!isAuthenticated) {
-      navigation.navigate("Login");
+      navigation.navigate("Auth");
       return;
     }
 
