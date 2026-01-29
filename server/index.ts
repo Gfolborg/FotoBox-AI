@@ -1,6 +1,7 @@
 import express from "express";
 import type { Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
+import { registerAuthRoutes } from "./auth";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -39,7 +40,7 @@ function setupCors(app: express.Application) {
       "Access-Control-Allow-Methods",
       "GET, POST, PUT, DELETE, OPTIONS",
     );
-    res.header("Access-Control-Allow-Headers", "Content-Type, Accept");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Accept, Authorization");
     res.header("Access-Control-Allow-Credentials", "true");
 
     if (req.method === "OPTIONS") {
@@ -226,6 +227,7 @@ function setupErrorHandler(app: express.Application) {
 
   configureExpoAndLanding(app);
 
+  registerAuthRoutes(app);
   const server = await registerRoutes(app);
 
   setupErrorHandler(app);
