@@ -6,6 +6,7 @@ import {
   Pressable,
   TextInput,
   Dimensions,
+  Image,
 } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -261,40 +262,27 @@ export default function MockupWizardSceneScreen() {
                   }}
                   style={[styles.sceneCard, isActive && styles.sceneCardActive]}
                 >
-                  <View
-                    style={[
-                      styles.sceneIcon,
-                      isActive && styles.sceneIconActive,
-                    ]}
-                  >
-                    <Feather
-                      name={scene.icon as keyof typeof Feather.glyphMap}
-                      size={18}
-                      color={
-                        isActive
-                          ? Colors.light.primary
-                          : Colors.light.textSecondary
-                      }
-                    />
+                  <Image
+                    source={scene.image}
+                    style={styles.sceneImage}
+                    resizeMode="cover"
+                  />
+                  <View style={styles.sceneContent}>
+                    <ThemedText
+                      style={[
+                        styles.sceneLabel,
+                        isActive && styles.sceneLabelActive,
+                      ]}
+                    >
+                      {scene.label}
+                    </ThemedText>
+                    <ThemedText style={styles.sceneDesc} numberOfLines={2}>
+                      {scene.description}
+                    </ThemedText>
                   </View>
-                  <ThemedText
-                    style={[
-                      styles.sceneLabel,
-                      isActive && styles.sceneLabelActive,
-                    ]}
-                  >
-                    {scene.label}
-                  </ThemedText>
-                  <ThemedText style={styles.sceneDesc}>
-                    {scene.description}
-                  </ThemedText>
                   {isActive && (
                     <View style={styles.sceneCheck}>
-                      <Feather
-                        name="check"
-                        size={14}
-                        color={Colors.light.primary}
-                      />
+                      <Feather name="check" size={12} color="#fff" />
                     </View>
                   )}
                 </Pressable>
@@ -563,31 +551,24 @@ const styles = StyleSheet.create({
   },
   sceneCard: {
     width: GRID_CARD_WIDTH,
-    minHeight: 96,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
     borderColor: Colors.light.border,
     backgroundColor: "rgba(255, 255, 255, 0.95)",
-    gap: 4,
+    overflow: "hidden",
   },
   sceneCardActive: {
     borderColor: Colors.light.primary,
-    borderWidth: 1.5,
-    backgroundColor: "#D8F1FB",
+    borderWidth: 2,
   },
-  sceneIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(14, 165, 233, 0.08)",
-    marginBottom: 2,
+  sceneImage: {
+    width: "100%",
+    height: GRID_CARD_WIDTH * 0.65,
+    backgroundColor: Colors.light.backgroundTertiary,
   },
-  sceneIconActive: {
-    backgroundColor: "rgba(14, 165, 233, 0.18)",
+  sceneContent: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.sm,
   },
   sceneLabel: {
     fontSize: 13,
@@ -600,11 +581,18 @@ const styles = StyleSheet.create({
   sceneDesc: {
     fontSize: 10,
     color: Colors.light.textSecondary,
+    marginTop: 2,
   },
   sceneCheck: {
     position: "absolute",
-    top: Spacing.sm,
-    right: Spacing.sm,
+    top: 6,
+    right: 6,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: Colors.light.primary,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   // Chips

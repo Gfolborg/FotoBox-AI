@@ -126,6 +126,8 @@ export interface SceneType {
   label: string;
   description: string;
   icon: string;
+  image: any;
+  blurhash: string;
 }
 
 export interface SceneSetting {
@@ -176,24 +178,32 @@ export const SCENE_TYPES: SceneType[] = [
     label: "Studio",
     description: "Clean backdrop, professional lighting",
     icon: "aperture",
+    image: professionalVibeImage,
+    blurhash: BLURHASH.professional,
   },
   {
     id: "lifestyle",
     label: "Lifestyle",
     description: "Real-world setting with context",
     icon: "home",
+    image: casualVibeImage,
+    blurhash: BLURHASH.casual,
   },
   {
     id: "flatlay",
     label: "Flat Lay",
     description: "Top-down styled arrangement",
     icon: "grid",
+    image: flatlayCameraImage,
+    blurhash: BLURHASH.flatlay,
   },
   {
     id: "action",
     label: "Action",
     description: "Product in use",
     icon: "activity",
+    image: actionCameraImage,
+    blurhash: BLURHASH.action,
   },
 ];
 
