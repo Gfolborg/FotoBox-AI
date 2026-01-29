@@ -28,6 +28,7 @@ import {
 } from "@/constants/theme";
 
 const logoImage = require("../../assets/images/fotobox-logo.png");
+const errorIllustration = require("../../assets/images/ui/error_state.webp");
 
 export type ErrorFallbackProps = {
   error: Error;
@@ -73,21 +74,16 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
       ) : null}
 
       <Animated.View entering={FadeIn.duration(600)} style={styles.content}>
-        {/* Error Icon */}
+        {/* Error Illustration */}
         <Animated.View
           entering={FadeInUp.delay(100).duration(500)}
           style={styles.iconContainer}
         >
-          <LinearGradient
-            colors={["rgba(255, 99, 71, 0.2)", "rgba(255, 99, 71, 0.05)"]}
-            style={styles.iconGradient}
-          >
-            <Feather
-              name="alert-triangle"
-              size={48}
-              color={Colors.editing.error}
-            />
-          </LinearGradient>
+          <Image 
+            source={errorIllustration} 
+            style={styles.errorIllustration} 
+            resizeMode="contain" 
+          />
         </Animated.View>
 
         {/* Logo */}
@@ -294,5 +290,10 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     color: Colors.editing.text,
     fontFamily: Fonts?.mono || "monospace",
+  },
+  errorIllustration: {
+    width: 160,
+    height: 160,
+    borderRadius: BorderRadius.lg,
   },
 });

@@ -1,5 +1,5 @@
 import React from "react";
-import { Pressable, View, StyleSheet } from "react-native";
+import { Pressable, View, StyleSheet, Image } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import Animated, {
   useAnimatedStyle,
@@ -60,19 +60,27 @@ export function PlatformChip({
           animatedStyle,
         ]}
       >
-        {/* Platform Icon */}
-        <View
-          style={[
-            styles.iconContainer,
-            { backgroundColor: `${platform.color}20` },
-          ]}
-        >
-          <Feather
-            name={platform.icon as keyof typeof Feather.glyphMap}
-            size={20}
-            color={platform.color}
+        {/* Platform Image or Icon */}
+        {platform.image ? (
+          <Image
+            source={platform.image}
+            style={[styles.platformImage, { borderColor: `${platform.color}40` }]}
+            resizeMode="cover"
           />
-        </View>
+        ) : (
+          <View
+            style={[
+              styles.iconContainer,
+              { backgroundColor: `${platform.color}20` },
+            ]}
+          >
+            <Feather
+              name={platform.icon as keyof typeof Feather.glyphMap}
+              size={20}
+              color={platform.color}
+            />
+          </View>
+        )}
 
         {/* Platform Name */}
         <ThemedText
@@ -125,6 +133,12 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
+  },
+  platformImage: {
+    width: 50,
+    height: 50,
+    borderRadius: BorderRadius.md,
+    borderWidth: 2,
   },
   name: {
     fontSize: 11,

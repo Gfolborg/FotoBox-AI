@@ -8,6 +8,7 @@ export interface PlatformRequirement {
   name: string;
   icon: string; // Feather icon name
   color: string;
+  image?: any; // Optional preview image
   minWidth: number;
   minHeight: number;
   optimalWidth: number;
@@ -19,6 +20,18 @@ export interface PlatformRequirement {
   backgroundPreference?: "white" | "transparent" | "any";
   notes: string;
 }
+
+// Platform preview images
+const PLATFORM_IMAGES: Record<string, any> = {
+  amazon: require("../../assets/images/platforms/platform_amazon.webp"),
+  shopify: require("../../assets/images/platforms/platform_shopify.webp"),
+  etsy: require("../../assets/images/platforms/platform_etsy.webp"),
+  ebay: require("../../assets/images/platforms/platform_ebay.webp"),
+  walmart: require("../../assets/images/platforms/platform_walmart.webp"),
+  facebook: require("../../assets/images/platforms/platform_instagram.webp"),
+  google: require("../../assets/images/platforms/platform_google.webp"),
+  pinterest: require("../../assets/images/platforms/platform_pinterest.webp"),
+};
 
 export const DEFAULT_EXPORT_LONG_EDGE = 3500;
 
@@ -66,6 +79,7 @@ export const PLATFORM_REQUIREMENTS: Record<string, PlatformRequirement> = {
     name: "Amazon",
     icon: "shopping-bag",
     color: "#FF9900",
+    image: PLATFORM_IMAGES.amazon,
     minWidth: 1000,
     minHeight: 1000,
     optimalWidth: 2000,
@@ -82,6 +96,7 @@ export const PLATFORM_REQUIREMENTS: Record<string, PlatformRequirement> = {
     name: "Shopify",
     icon: "shopping-cart",
     color: "#96BF48",
+    image: PLATFORM_IMAGES.shopify,
     minWidth: 800,
     minHeight: 800,
     optimalWidth: 2048,
@@ -98,6 +113,7 @@ export const PLATFORM_REQUIREMENTS: Record<string, PlatformRequirement> = {
     name: "Etsy",
     icon: "tag",
     color: "#F56400",
+    image: PLATFORM_IMAGES.etsy,
     minWidth: 2000,
     minHeight: 2000,
     optimalWidth: 2000,
@@ -114,6 +130,7 @@ export const PLATFORM_REQUIREMENTS: Record<string, PlatformRequirement> = {
     name: "eBay",
     icon: "package",
     color: "#0064D2",
+    image: PLATFORM_IMAGES.ebay,
     minWidth: 500,
     minHeight: 500,
     optimalWidth: 2000,
@@ -130,6 +147,7 @@ export const PLATFORM_REQUIREMENTS: Record<string, PlatformRequirement> = {
     name: "Walmart",
     icon: "grid",
     color: "#0071CE",
+    image: PLATFORM_IMAGES.walmart,
     minWidth: 1500,
     minHeight: 1500,
     optimalWidth: 2000,
@@ -146,6 +164,7 @@ export const PLATFORM_REQUIREMENTS: Record<string, PlatformRequirement> = {
     name: "Facebook/Instagram",
     icon: "instagram",
     color: "#E1306C",
+    image: PLATFORM_IMAGES.facebook,
     minWidth: 600,
     minHeight: 600,
     optimalWidth: 1080,
@@ -162,6 +181,7 @@ export const PLATFORM_REQUIREMENTS: Record<string, PlatformRequirement> = {
     name: "Google Shopping",
     icon: "search",
     color: "#4285F4",
+    image: PLATFORM_IMAGES.google,
     minWidth: 800,
     minHeight: 800,
     optimalWidth: 2000,
@@ -178,6 +198,7 @@ export const PLATFORM_REQUIREMENTS: Record<string, PlatformRequirement> = {
     name: "Pinterest",
     icon: "compass",
     color: "#E60023",
+    image: PLATFORM_IMAGES.pinterest,
     minWidth: 1000,
     minHeight: 1500,
     optimalWidth: 1000,
