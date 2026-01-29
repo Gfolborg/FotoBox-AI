@@ -14,6 +14,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { NotificationProvider } from "@/context/NotificationProvider";
 import { BatchEditProvider } from "@/context/BatchEditContext";
 import { MockupVariantsProvider } from "@/context/MockupVariantsContext";
+import { AuthProvider } from "@/context/AuthContext";
 
 export default function App() {
   return (
@@ -22,16 +23,18 @@ export default function App() {
         <SafeAreaProvider>
           <GestureHandlerRootView style={styles.root}>
             <KeyboardProvider>
-              <NotificationProvider>
-                <BatchEditProvider>
-                  <MockupVariantsProvider>
-                    <NavigationContainer>
-                      <RootStackNavigator />
-                    </NavigationContainer>
-                    <StatusBar style="auto" />
-                  </MockupVariantsProvider>
-                </BatchEditProvider>
-              </NotificationProvider>
+              <AuthProvider>
+                <NotificationProvider>
+                  <BatchEditProvider>
+                    <MockupVariantsProvider>
+                      <NavigationContainer>
+                        <RootStackNavigator />
+                      </NavigationContainer>
+                      <StatusBar style="auto" />
+                    </MockupVariantsProvider>
+                  </BatchEditProvider>
+                </NotificationProvider>
+              </AuthProvider>
             </KeyboardProvider>
           </GestureHandlerRootView>
         </SafeAreaProvider>

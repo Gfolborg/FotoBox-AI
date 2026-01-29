@@ -30,6 +30,9 @@ import MockupWizardFinalizeScreen from "@/screens/MockupWizardFinalizeScreen";
 import QuickFixScreen from "@/screens/QuickFixScreen";
 import PlatformSelectionScreen from "@/screens/PlatformSelectionScreen";
 import BatchPlatformSelectionScreen from "@/screens/BatchPlatformSelectionScreen";
+import LoginScreen from "@/screens/LoginScreen";
+import RegisterScreen from "@/screens/RegisterScreen";
+import PaywallScreen from "@/screens/PaywallScreen";
 import {
   MockupItem,
   SceneVibe,
@@ -48,6 +51,9 @@ export type BackgroundBatchResult = {
 };
 
 export type RootStackParamList = {
+  Login: undefined;
+  Register: undefined;
+  Paywall: { returnTo?: string } | undefined;
   Home: undefined;
   Camera:
     | {
@@ -280,6 +286,21 @@ export default function RootStackNavigator() {
 
   return (
     <Stack.Navigator screenOptions={screenOptions}>
+      <Stack.Screen
+        name="Login"
+        component={LoginScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Register"
+        component={RegisterScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Paywall"
+        component={PaywallScreen}
+        options={{ headerShown: false }}
+      />
       <Stack.Screen
         name="Home"
         component={HomeScreen}
