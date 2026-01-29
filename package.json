@@ -54,6 +54,7 @@
     "expo-symbols": "~1.0.7",
     "expo-system-ui": "~6.0.8",
     "expo-web-browser": "~15.0.9",
+    "google-auth-library": "^10.5.0",
     "jsonwebtoken": "^9.0.3",
     "jszip": "^3.10.1",
     "p-limit": "^7.2.0",

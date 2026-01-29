@@ -1,9 +1,12 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { storage } from "./storage";
-import { loginSchema, registerSchema } from "../shared/schema";
+import { loginSchema, registerSchema, oauthLoginSchema } from "../shared/schema";
+import { OAuth2Client } from "google-auth-library";
 
 const JWT_SECRET = process.env.SESSION_SECRET || "fotobox-secret-key";
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 export interface AuthRequest extends Request {
   user?: {
@@ -133,6 +136,85 @@ export function registerAuthRoutes(app: Express) {
     } catch (error) {
       console.error("Login error:", error);
       res.status(500).json({ error: "Login failed" });
+    }
+  });
+
+  app.post("/api/auth/oauth", async (req: Request, res: Response) => {
+    try {
+      const parsed = oauthLoginSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors[0].message });
+      }
+
+      const { provider, idToken, email, displayName, avatarUrl } = parsed.data;
+      let providerId: string;
+      let verifiedEmail = email;
+      let verifiedName = displayName;
+      let verifiedAvatar = avatarUrl;
+
+      if (provider === "google") {
+        try {
+          const ticket = await googleClient.verifyIdToken({
+            idToken,
+            audience: GOOGLE_CLIENT_ID,
+          });
+          const payload = ticket.getPayload();
+          if (!payload) {
+            return res.status(401).json({ error: "Invalid Google token" });
+          }
+          providerId = payload.sub;
+          verifiedEmail = payload.email || email;
+          verifiedName = payload.name || displayName;
+          verifiedAvatar = payload.picture || avatarUrl;
+        } catch (error) {
+          console.error("Google token verification error:", error);
+          return res.status(401).json({ error: "Invalid Google token" });
+        }
+      } else if (provider === "apple") {
+        providerId = idToken;
+      } else {
+        return res.status(400).json({ error: "Unsupported provider" });
+      }
+
+      let user = await storage.getUserByProviderId(provider, providerId);
+
+      if (!user) {
+        user = await storage.createOAuthUser({
+          provider,
+          providerId,
+          email: verifiedEmail,
+          displayName: verifiedName,
+          avatarUrl: verifiedAvatar,
+        });
+      }
+
+      const subscription = await storage.getSubscription(user.id);
+
+      const token = jwt.sign(
+        { id: user.id, username: user.username },
+        JWT_SECRET,
+        { expiresIn: "30d" }
+      );
+
+      res.json({
+        token,
+        user: {
+          id: user.id,
+          username: user.username,
+          displayName: user.displayName,
+          avatarUrl: user.avatarUrl,
+        },
+        subscription: subscription ? {
+          plan: subscription.plan,
+          status: subscription.status,
+          creditsRemaining: subscription.creditsRemaining,
+          creditsTotal: subscription.creditsTotal,
+          expiresAt: subscription.expiresAt,
+        } : null,
+      });
+    } catch (error) {
+      console.error("OAuth error:", error);
+      res.status(500).json({ error: "OAuth login failed" });
     }
   });
 

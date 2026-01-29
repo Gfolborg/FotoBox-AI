@@ -1,12 +1,22 @@
 import { db } from "./db";
 import { users, subscriptions, usageHistory } from "../shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+
+export interface OAuthUserData {
+  provider: string;
+  providerId: string;
+  email?: string;
+  displayName?: string;
+  avatarUrl?: string;
+}
 
 export interface IStorage {
   createUser(username: string, password: string): Promise<typeof users.$inferSelect>;
+  createOAuthUser(data: OAuthUserData): Promise<typeof users.$inferSelect>;
   getUserByUsername(username: string): Promise<typeof users.$inferSelect | undefined>;
   getUserById(id: string): Promise<typeof users.$inferSelect | undefined>;
+  getUserByProviderId(provider: string, providerId: string): Promise<typeof users.$inferSelect | undefined>;
   validatePassword(password: string, hashedPassword: string): Promise<boolean>;
   getSubscription(userId: string): Promise<typeof subscriptions.$inferSelect | undefined>;
   createSubscription(userId: string): Promise<typeof subscriptions.$inferSelect>;
@@ -28,8 +38,30 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async createOAuthUser(data: OAuthUserData) {
+    const username = data.email || `${data.provider}_${data.providerId}`;
+    const [user] = await db.insert(users).values({
+      username,
+      email: data.email,
+      displayName: data.displayName,
+      avatarUrl: data.avatarUrl,
+      provider: data.provider,
+      providerId: data.providerId,
+    }).returning();
+    
+    await this.createSubscription(user.id);
+    
+    return user;
+  }
+
   async getUserByUsername(username: string) {
     const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async getUserByProviderId(provider: string, providerId: string) {
+    const [user] = await db.select().from(users)
+      .where(and(eq(users.provider, provider), eq(users.providerId, providerId)));
     return user;
   }
 

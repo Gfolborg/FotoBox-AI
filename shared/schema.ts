@@ -8,8 +8,12 @@ export const users = pgTable("users", {
     .primaryKey()
     .default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+  password: text("password"),
   email: text("email"),
+  displayName: text("display_name"),
+  avatarUrl: text("avatar_url"),
+  provider: text("provider").default("email"),
+  providerId: text("provider_id"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -60,6 +64,14 @@ export const registerSchema = z.object({
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
+});
+
+export const oauthLoginSchema = z.object({
+  provider: z.enum(["google", "apple"]),
+  idToken: z.string().min(1),
+  email: z.string().email().optional(),
+  displayName: z.string().optional(),
+  avatarUrl: z.string().optional(),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
