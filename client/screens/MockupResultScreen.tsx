@@ -12,6 +12,8 @@ import { getApiUrl } from "@/lib/query-client";
 import { getMockupPrompt } from "@/lib/mockup-presets";
 import { buildMockupWizardState } from "@/lib/mockup-templates";
 import { ResultScreenLayout } from "@/components/ResultScreenLayout";
+import { useCredits } from "@/hooks/useCredits";
+import { useNotification } from "@/context/NotificationContext";
 
 const getExtensionFromDataUri = (dataUri: string): string => {
   const match = dataUri.match(/^data:image\/([a-zA-Z0-9+]+);base64,/);
@@ -30,6 +32,8 @@ type RouteProps = RouteProp<RootStackParamList, "MockupResult">;
 export default function MockupResultScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
+  const { requiresWatermark, consumeCredit, canGenerate, creditsRemaining } = useCredits();
+  const { showNotification } = useNotification();
 
   const {
     resultUri: initialResultUri,
@@ -87,6 +91,13 @@ export default function MockupResultScreen() {
   };
 
   const handleRetryGeneration = async () => {
+    // Check if user has credits (unless unlimited)
+    const isUnlimited = creditsRemaining === -1;
+    if (!isUnlimited && !canGenerate) {
+      showNotification("No credits remaining. Please upgrade to continue.", "error");
+      throw new Error("No credits remaining");
+    }
+    
     const prompt = getMockupPrompt(
       mockupItem,
       sceneVibe,
@@ -135,8 +146,9 @@ export default function MockupResultScreen() {
       formData.append("mockupColor", mockupColor);
     }
 
+    const watermarkParam = requiresWatermark ? "?applyWatermark=true" : "";
     const response = await fetch(
-      new URL("/api/mockup", getApiUrl()).toString(),
+      new URL(`/api/mockup${watermarkParam}`, getApiUrl()).toString(),
       {
         method: "POST",
         body: formData,
@@ -149,6 +161,11 @@ export default function MockupResultScreen() {
     }
 
     const data = await response.json();
+
+    // Consume credit for successful regeneration (unless unlimited)
+    if (creditsRemaining !== -1) {
+      await consumeCredit("mockup");
+    }
 
     return data.resultUri as string;
   };

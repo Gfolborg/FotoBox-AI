@@ -40,6 +40,7 @@ import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { useBatchEdit } from "@/context/BatchEditContext";
 import { getApiUrl } from "@/lib/query-client";
 import { useNotification } from "@/context/NotificationContext";
+import { useCredits } from "@/hooks/useCredits";
 
 type NavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -56,6 +57,7 @@ export default function BatchResultScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { results, backgroundColor = "#FFFFFF" } = route.params;
   const { showNotification } = useNotification();
+  const { requiresWatermark, consumeCredit, canGenerate, creditsRemaining } = useCredits();
 
   const [deletedUris, setDeletedUris] = React.useState<Set<string>>(new Set());
   const [retryingUris, setRetryingUris] = React.useState<Set<string>>(
@@ -188,6 +190,13 @@ export default function BatchResultScreen() {
       return;
     }
 
+    // Check if user has credits (unless unlimited)
+    const isUnlimited = creditsRemaining === -1;
+    if (!isUnlimited && !canGenerate) {
+      showNotification("No credits remaining. Please upgrade to continue.", "error");
+      return;
+    }
+
     const targetResult = updatedResults.find(
       (item) => item.originalUri === originalUri,
     );
@@ -225,7 +234,8 @@ export default function BatchResultScreen() {
 
       const apiUrl = getApiUrl();
       const bgColorParam = encodeURIComponent(targetBackgroundColor);
-      const endpoint = `${apiUrl}api/main-image?backgroundColor=${bgColorParam}`;
+      const watermarkParam = requiresWatermark ? "&applyWatermark=true" : "";
+      const endpoint = `${apiUrl}api/main-image?backgroundColor=${bgColorParam}${watermarkParam}`;
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 300000);
@@ -273,6 +283,11 @@ export default function BatchResultScreen() {
         newSet.delete(originalUri);
         return newSet;
       });
+      
+      // Consume credit for successful regeneration (unless unlimited)
+      if (creditsRemaining !== -1) {
+        await consumeCredit("main-image");
+      }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error occurred";

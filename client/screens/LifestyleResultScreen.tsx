@@ -9,6 +9,8 @@ import * as Haptics from "expo-haptics";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getApiUrl } from "@/lib/query-client";
 import { ResultScreenLayout } from "@/components/ResultScreenLayout";
+import { useCredits } from "@/hooks/useCredits";
+import { useNotification } from "@/context/NotificationContext";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, "LifestyleResult">;
@@ -26,6 +28,8 @@ const getExtensionFromDataUri = (dataUri: string): string => {
 export default function LifestyleResultScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
+  const { requiresWatermark, consumeCredit, canGenerate, creditsRemaining } = useCredits();
+  const { showNotification } = useNotification();
 
   const {
     resultUri: initialResultUri,
@@ -64,6 +68,13 @@ export default function LifestyleResultScreen() {
   };
 
   const handleRetryGeneration = async () => {
+    // Check if user has credits (unless unlimited)
+    const isUnlimited = creditsRemaining === -1;
+    if (!isUnlimited && !canGenerate) {
+      showNotification("No credits remaining. Please upgrade to continue.", "error");
+      throw new Error("No credits remaining");
+    }
+    
     const formData = new FormData();
     formData.append("file", {
       uri: originalUri,
@@ -87,6 +98,9 @@ export default function LifestyleResultScreen() {
     }
     if (platform) {
       params.append("platform", platform);
+    }
+    if (requiresWatermark) {
+      params.append("applyWatermark", "true");
     }
 
     endpoint += `?${params.toString()}`;
@@ -118,6 +132,11 @@ export default function LifestyleResultScreen() {
       reader.onerror = () => reject(new Error("Failed to read generated image"));
       reader.readAsDataURL(blob);
     });
+
+    // Consume credit for successful regeneration (unless unlimited)
+    if (creditsRemaining !== -1) {
+      await consumeCredit("lifestyle-scene");
+    }
 
     return base64data;
   };
