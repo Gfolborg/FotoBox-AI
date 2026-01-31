@@ -1,4 +1,5 @@
 import * as React from "react";
+import { UpgradePrompt } from "@/components/UpgradePrompt";
 import {
   View,
   StyleSheet,
@@ -58,6 +59,7 @@ export default function BatchResultScreen() {
   const { results, backgroundColor = "#FFFFFF" } = route.params;
   const { showNotification } = useNotification();
   const { requiresWatermark, consumeCredit, canGenerate, creditsRemaining } = useCredits();
+  const [showUpgradePrompt, setShowUpgradePrompt] = React.useState(false);
 
   const [deletedUris, setDeletedUris] = React.useState<Set<string>>(new Set());
   const [retryingUris, setRetryingUris] = React.useState<Set<string>>(
@@ -193,7 +195,7 @@ export default function BatchResultScreen() {
     // Check if user has credits (unless unlimited)
     const isUnlimited = creditsRemaining === -1;
     if (!isUnlimited && !canGenerate) {
-      showNotification("No credits remaining. Please upgrade to continue.", "error");
+      setShowUpgradePrompt(true);
       return;
     }
 
@@ -286,7 +288,10 @@ export default function BatchResultScreen() {
       
       // Consume credit for successful regeneration (unless unlimited)
       if (creditsRemaining !== -1) {
-        await consumeCredit("main-image");
+        const creditResult = await consumeCredit("main-image");
+        if (creditResult.creditsRemaining === 1) {
+          showNotification("1 credit left! Grab more to keep going.", "warning");
+        }
       }
     } catch (error) {
       const errorMessage =
@@ -386,6 +391,7 @@ export default function BatchResultScreen() {
   };
 
   return (
+    <>
     <GradientBackground theme="home">
       <StatusBar style="dark" />
 
@@ -612,6 +618,11 @@ export default function BatchResultScreen() {
         />
       </View>
     </GradientBackground>
+      <UpgradePrompt
+        visible={showUpgradePrompt}
+        onClose={() => setShowUpgradePrompt(false)}
+      />
+    </>
   );
 }
 

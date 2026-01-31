@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { Alert, Platform } from "react-native";
+import { UpgradePrompt } from "@/components/UpgradePrompt";
 import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import * as ImagePicker from "expo-image-picker";
@@ -36,6 +37,7 @@ export default function BatchMockupResultScreen() {
   const route = useRoute<RouteProps>();
   const { requiresWatermark, consumeCredit, canGenerate, creditsRemaining } = useCredits();
   const { showNotification } = useNotification();
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const {
     results: initialResults,
     sceneVibe,
@@ -81,7 +83,7 @@ export default function BatchMockupResultScreen() {
     // Check if user has credits (unless unlimited)
     const isUnlimited = creditsRemaining === -1;
     if (!isUnlimited && !canGenerate) {
-      showNotification("No credits remaining. Please upgrade to continue.", "error");
+      setShowUpgradePrompt(true);
       throw new Error("No credits remaining");
     }
     
@@ -151,7 +153,10 @@ export default function BatchMockupResultScreen() {
 
     // Consume credit for successful regeneration (unless unlimited)
     if (creditsRemaining !== -1) {
-      await consumeCredit("mockup");
+      const creditResult = await consumeCredit("mockup");
+      if (creditResult.creditsRemaining === 1) {
+        showNotification("1 credit left! Grab more to keep going.", "warning");
+      }
     }
 
     return data.resultUri as string;
@@ -168,7 +173,7 @@ export default function BatchMockupResultScreen() {
     // Check if user has credits (unless unlimited)
     const isUnlimited = creditsRemaining === -1;
     if (!isUnlimited && !canGenerate) {
-      showNotification("No credits remaining. Please upgrade to continue.", "error");
+      setShowUpgradePrompt(true);
       throw new Error("No credits remaining");
     }
 
@@ -257,7 +262,10 @@ export default function BatchMockupResultScreen() {
 
     // Consume credit for successful iteration (unless unlimited)
     if (creditsRemaining !== -1) {
-      await consumeCredit("mockup");
+      const creditResult = await consumeCredit("mockup");
+      if (creditResult.creditsRemaining === 1) {
+        showNotification("1 credit left! Grab more to keep going.", "warning");
+      }
     }
 
     return data.resultUri as string;
@@ -332,15 +340,21 @@ export default function BatchMockupResultScreen() {
   };
 
   return (
-    <BatchResultScreenLayout
-      title="Mockup Results"
-      initialResults={initialResults}
-      onExportAll={handleExportAll}
-      onRetry={handleRetrySelected}
-      onIterate={handleIterateSelected}
-      onEdit={handleEditSelected}
-      onNew={handleNewSelected}
-      onDone={handleDone}
-    />
+    <>
+      <BatchResultScreenLayout
+        title="Mockup Results"
+        initialResults={initialResults}
+        onExportAll={handleExportAll}
+        onRetry={handleRetrySelected}
+        onIterate={handleIterateSelected}
+        onEdit={handleEditSelected}
+        onNew={handleNewSelected}
+        onDone={handleDone}
+      />
+      <UpgradePrompt
+        visible={showUpgradePrompt}
+        onClose={() => setShowUpgradePrompt(false)}
+      />
+    </>
   );
 }

@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
+import { UpgradePrompt } from "@/components/UpgradePrompt";
 import {
   View,
   StyleSheet,
@@ -70,6 +71,7 @@ export default function ResultScreen() {
   const { pendingEditResult, setPendingEditResult } = useBatchEdit();
   const { showNotification } = useNotification();
   const { requiresWatermark, consumeCredit, canGenerate, creditsRemaining } = useCredits();
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -174,7 +176,7 @@ export default function ResultScreen() {
     // Check if user has credits (unless unlimited)
     const isUnlimited = creditsRemaining === -1;
     if (!isUnlimited && !canGenerate) {
-      showNotification("No credits remaining. Please upgrade to continue.", "error");
+      setShowUpgradePrompt(true);
       return;
     }
     
@@ -247,9 +249,12 @@ export default function ResultScreen() {
       
       // Consume credit for successful regeneration (unless unlimited)
       if (creditsRemaining !== -1) {
-        await consumeCredit("main-image");
+        const creditResult = await consumeCredit("main-image");
+        if (creditResult.creditsRemaining === 1) {
+          showNotification("1 credit left! Grab more to keep going.", "warning");
+        }
       }
-      
+
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       showNotification("Image regenerated successfully!", "success");
     } catch (err) {
@@ -325,6 +330,7 @@ export default function ResultScreen() {
   };
 
   return (
+    <>
     <GradientBackground theme="home">
       <StatusBar style="dark" />
 
@@ -595,6 +601,11 @@ export default function ResultScreen() {
         </ScrollView>
       </View>
     </GradientBackground>
+      <UpgradePrompt
+        visible={showUpgradePrompt}
+        onClose={() => setShowUpgradePrompt(false)}
+      />
+    </>
   );
 }
 

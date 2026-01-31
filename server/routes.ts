@@ -5,6 +5,7 @@ import sharp from "sharp";
 import { GoogleGenAI, Modality } from "@google/genai";
 import { storage } from "./storage";
 import { authenticateToken, optionalAuth, AuthRequest } from "./auth";
+import { isBuilder } from "./builder-mode";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -397,10 +398,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post(
     "/api/main-image",
     upload.single("file"),
-    async (req: Request, res: Response) => {
+    authenticateToken,
+    async (req: AuthRequest, res: Response) => {
       try {
         if (!req.file) {
           return res.status(400).json({ error: "No image file provided" });
+        }
+
+        if (!req.user) {
+          return res.status(401).json({ error: "Not authenticated" });
         }
 
         const geminiApiKey = process.env.AI_INTEGRATIONS_GEMINI_API_KEY;
@@ -436,7 +442,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const platform =
           (req.query.platform as string)?.toLowerCase() || "amazon";
         // Check if watermark should be applied (for free tier users)
-        const applyWatermark = req.query.applyWatermark === "true";
+        // Skip watermark for builders in test mode
+        const shouldApplyWatermark = req.query.applyWatermark === "true" && !isBuilder(req.user.id);
+        const applyWatermark = shouldApplyWatermark;
 
         // Fix EXIF orientation by auto-rotating the image before processing
         // This ensures the image is displayed correctly regardless of camera orientation
@@ -882,10 +890,15 @@ The background MUST be completely removed and replaced with the exact solid colo
   app.post(
     "/api/lifestyle-scene",
     upload.single("file"),
-    async (req: Request, res: Response) => {
+    authenticateToken,
+    async (req: AuthRequest, res: Response) => {
       try {
         if (!req.file) {
           return res.status(400).json({ error: "No image file provided" });
+        }
+
+        if (!req.user) {
+          return res.status(401).json({ error: "Not authenticated" });
         }
 
         if (
@@ -914,7 +927,8 @@ The background MUST be completely removed and replaced with the exact solid colo
         const platform = (req.query.platform as string | undefined)?.toLowerCase();
         const aspectRatio = getAspectRatioForPlatform(platform);
         const iterationNotes = req.query.iterationNotes as string | undefined;
-        const applyWatermark = req.query.applyWatermark === "true";
+        // Skip watermark for builders in test mode
+        const applyWatermark = req.query.applyWatermark === "true" && !isBuilder(req.user.id);
 
         const imageBuffer = req.file.buffer;
         const base64Image = imageBuffer.toString("base64");
@@ -1032,11 +1046,16 @@ The background MUST be completely removed and replaced with the exact solid colo
   app.post(
     "/api/mockup",
     upload.single("file"),
-    async (req: Request, res: Response) => {
+    authenticateToken,
+    async (req: AuthRequest, res: Response) => {
       // Prompt requirements: docs/ai-prompt-requirements.md
       try {
         if (!req.file) {
           return res.status(400).json({ error: "No image file provided" });
+        }
+
+        if (!req.user) {
+          return res.status(401).json({ error: "Not authenticated" });
         }
 
         if (
@@ -1064,7 +1083,8 @@ The background MUST be completely removed and replaced with the exact solid colo
         const sceneVibe = req.body?.sceneVibe || "casual";
         const cameraOption = req.body?.cameraOption || "medium";
         const mockupColor = req.body?.mockupColor;
-        const applyWatermark = req.query.applyWatermark === "true";
+        // Skip watermark for builders in test mode
+        const applyWatermark = req.query.applyWatermark === "true" && !isBuilder(req.user.id);
 
         const imageBuffer = req.file.buffer;
         const base64Image = imageBuffer.toString("base64");

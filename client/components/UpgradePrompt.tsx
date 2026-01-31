@@ -21,8 +21,8 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 export function UpgradePrompt({
   visible,
   onClose,
-  title = "Out of Credits",
-  message = "You've used all your free credits. Upgrade to continue creating amazing product photos.",
+  title = "Keep Creating",
+  message = "You're doing great! Unlock more credits to keep creating stunning product photos.",
 }: UpgradePromptProps) {
   const navigation = useNavigation<NavigationProp>();
   const { isAuthenticated } = useAuth();
@@ -46,25 +46,41 @@ export function UpgradePrompt({
       <BlurView intensity={20} tint="dark" style={styles.overlay}>
         <View style={styles.container}>
           <View style={styles.iconContainer}>
-            <Feather name="zap" size={32} color={Colors.light.primary} />
+            <Feather name="camera" size={28} color={Colors.light.secondary} />
+            <View style={styles.sparkleAccent}>
+              <Feather name="star" size={12} color={Colors.light.primary} />
+            </View>
           </View>
-          
+
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.message}>{message}</Text>
-          
+
           <View style={styles.features}>
-            <FeatureItem icon="check-circle" text="No watermarks on images" />
-            <FeatureItem icon="check-circle" text="100+ monthly credits" />
-            <FeatureItem icon="check-circle" text="Priority AI processing" />
+            <FeatureItem icon="zap" text="Instant AI background removal" />
+            <FeatureItem icon="image" text="Lifestyle scenes & mockups" />
+            <FeatureItem icon="download-cloud" text="HD exports, no watermarks" />
           </View>
-          
-          <GradientButton
-            title={isAuthenticated ? "View Plans" : "Sign Up to Continue"}
-            onPress={handleUpgrade}
-          />
-          
+
+          <View style={styles.buttons}>
+            <GradientButton
+              title="Get 10 Credits - $2.99"
+              onPress={handleUpgrade}
+              icon="plus-circle"
+              fullWidth
+            />
+
+            <GradientButton
+              title={isAuthenticated ? "See All Plans" : "Sign Up for More"}
+              onPress={handleUpgrade}
+              variant="ghost"
+              icon="arrow-right"
+              iconPosition="right"
+              fullWidth
+            />
+          </View>
+
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Text style={styles.closeText}>Maybe Later</Text>
+            <Text style={styles.closeText}>I'll finish later</Text>
           </TouchableOpacity>
         </View>
       </BlurView>
@@ -100,10 +116,15 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: "rgba(249,115,22,0.1)",
+    backgroundColor: "rgba(14, 165, 233, 0.1)",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: Spacing.md,
+  },
+  sparkleAccent: {
+    position: "absolute",
+    top: -2,
+    right: -2,
   },
   title: {
     fontSize: 20,
@@ -131,6 +152,10 @@ const styles = StyleSheet.create({
   featureText: {
     fontSize: 14,
     color: Colors.light.text,
+  },
+  buttons: {
+    width: "100%",
+    gap: Spacing.sm,
   },
   closeButton: {
     marginTop: Spacing.md,

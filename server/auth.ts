@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { storage } from "./storage";
 import { loginSchema, registerSchema, oauthLoginSchema } from "../shared/schema";
 import { OAuth2Client } from "google-auth-library";
+import { isBuilder } from "./builder-mode";
 
 const JWT_SECRET = process.env.SESSION_SECRET || "fotobox-secret-key";
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
@@ -77,6 +78,7 @@ export function registerAuthRoutes(app: Express) {
         user: {
           id: user.id,
           username: user.username,
+          isBuilder: isBuilder(user.id),
         },
         subscription: subscription ? {
           plan: subscription.plan,
@@ -124,6 +126,7 @@ export function registerAuthRoutes(app: Express) {
         user: {
           id: user.id,
           username: user.username,
+          isBuilder: isBuilder(user.id),
         },
         subscription: subscription ? {
           plan: subscription.plan,
@@ -203,6 +206,7 @@ export function registerAuthRoutes(app: Express) {
           username: user.username,
           displayName: user.displayName,
           avatarUrl: user.avatarUrl,
+          isBuilder: isBuilder(user.id),
         },
         subscription: subscription ? {
           plan: subscription.plan,
@@ -235,6 +239,7 @@ export function registerAuthRoutes(app: Express) {
         user: {
           id: user.id,
           username: user.username,
+          isBuilder: isBuilder(user.id),
         },
         subscription: subscription ? {
           plan: subscription.plan,

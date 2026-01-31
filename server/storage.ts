@@ -2,6 +2,7 @@ import { db } from "./db";
 import { users, subscriptions, usageHistory } from "../shared/schema";
 import { eq, and } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+import { isBuilder } from "./builder-mode";
 
 export interface OAuthUserData {
   provider: string;
@@ -100,8 +101,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async useCredit(userId: string, action: string) {
+    // Builder mode: skip credit deduction entirely
+    if (isBuilder(userId)) {
+      await db.insert(usageHistory).values({
+        userId,
+        action,
+        creditsUsed: 0,
+      });
+      return { success: true, creditsRemaining: -1 };
+    }
+
     const subscription = await this.getSubscription(userId);
-    
+
     if (!subscription) {
       return { success: false, creditsRemaining: 0, message: "No subscription found" };
     }
@@ -123,7 +134,7 @@ export class DatabaseStorage implements IStorage {
     }
 
     const newCredits = subscription.creditsRemaining - 1;
-    
+
     await db
       .update(subscriptions)
       .set({ creditsRemaining: newCredits, updatedAt: new Date() })

@@ -49,6 +49,7 @@ import {
 import { batchOptimizeAndSave, optimizeForPlatform } from "@/lib/platform-optimizer";
 import { saveToFotoBoxAlbum, ensureMediaLibraryPermission } from "@/lib/save-to-album";
 import { buildMockupWizardState } from "@/lib/mockup-templates";
+import { useCredits } from "@/hooks/useCredits";
 
 type NavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -63,6 +64,7 @@ export default function BatchPlatformSelectionScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const { results, sourceService } = route.params;
+  const { requiresWatermark } = useCredits();
 
   const [selectedPlatforms, setSelectedPlatforms] = useState<Set<string>>(
     new Set(),
@@ -289,6 +291,7 @@ export default function BatchPlatformSelectionScreen() {
           for (const platform of selectedPlatformList) {
             const optimized = await optimizeForPlatform(uri, platform, {
               backgroundColor: item.backgroundColor,
+              requiresWatermark,
             });
             const base64Data = optimized.uri.split(",")[1];
             const ext = optimized.format === "PNG" ? "png" : "jpg";
@@ -399,7 +402,7 @@ export default function BatchPlatformSelectionScreen() {
             platform: platformId,
           });
         },
-        { cacheOptimized: true },
+        { cacheOptimized: true, requiresWatermark },
       );
 
       if (saveResult.totalSaved > 0) {

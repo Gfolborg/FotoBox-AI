@@ -3,7 +3,7 @@
  */
 
 import { Skia, ImageFormat, rect } from "@shopify/react-native-skia";
-import type { SkImage } from "@shopify/react-native-skia";
+import type { SkImage, SkCanvas } from "@shopify/react-native-skia";
 import * as FileSystem from "expo-file-system/legacy";
 import { Platform } from "react-native";
 import {
@@ -38,6 +38,44 @@ export interface BatchOptimizationProgress {
 
 interface OptimizationOptions {
   backgroundColor?: string;
+  requiresWatermark?: boolean;
+}
+
+/**
+ * Draw a "FotoBox" watermark on a Skia canvas (bottom-right corner).
+ * Matches the server-side watermark style: bold white text at 70% opacity
+ * with a dark shadow at 30% opacity.
+ */
+function drawWatermark(canvas: SkCanvas, width: number, height: number) {
+  const fontSize = Math.floor(Math.min(width, height) * 0.05);
+  const padding = fontSize * 0.6;
+  const text = "FotoBox";
+
+  try {
+    const fontMgr = Skia.FontMgr.System();
+    const typeface = fontMgr.matchFamilyStyle("", { weight: 700 });
+    const font = Skia.Font(typeface, fontSize);
+
+    const textRect = font.measureText(text);
+    const textWidth = textRect.width;
+
+    const x = width - textWidth - padding;
+    const y = height - padding;
+
+    // Shadow
+    const shadowPaint = Skia.Paint();
+    shadowPaint.setColor(Skia.Color("rgba(0, 0, 0, 0.3)"));
+    shadowPaint.setAntiAlias(true);
+    canvas.drawText(text, x + 2, y + 2, shadowPaint, font);
+
+    // Main text
+    const textPaint = Skia.Paint();
+    textPaint.setColor(Skia.Color("rgba(255, 255, 255, 0.7)"));
+    textPaint.setAntiAlias(true);
+    canvas.drawText(text, x, y, textPaint, font);
+  } catch (error) {
+    console.warn("[PlatformOptimizer] Could not draw watermark:", error);
+  }
 }
 
 /**
@@ -215,6 +253,11 @@ export async function optimizeForPlatform(
   const paint = Skia.Paint();
   canvas.drawImageRect(sourceImage, srcRect, dstRect, paint);
 
+  // 4b. Draw watermark if required (after crop/resize, before snapshot)
+  if (options?.requiresWatermark) {
+    drawWatermark(canvas, outputWidth, outputHeight);
+  }
+
   // 5. Get snapshot and encode
   const snapshot = surface.makeImageSnapshot();
   if (!snapshot) {
@@ -348,7 +391,7 @@ export async function batchOptimizeAndSave(
     platformId: string,
     status: "optimizing" | "saving" | "done" | "failed",
   ) => void,
-  options?: { cacheOptimized?: boolean },
+  options?: { cacheOptimized?: boolean; requiresWatermark?: boolean },
 ): Promise<{
   totalImages: number;
   totalSaved: number;
@@ -384,6 +427,7 @@ export async function batchOptimizeAndSave(
         onProgress?.(i, platform.id, "optimizing");
         const optimized = await optimizeForPlatform(imageUri, platform, {
           backgroundColor,
+          requiresWatermark: options?.requiresWatermark,
         });
         if (options?.cacheOptimized) {
           const base64Data = optimized.uri.split(",")[1];

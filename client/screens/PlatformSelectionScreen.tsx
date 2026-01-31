@@ -54,6 +54,7 @@ import {
 } from "@/lib/platform-optimizer";
 import { saveToFotoBoxAlbum } from "@/lib/save-to-album";
 import { buildMockupWizardState } from "@/lib/mockup-templates";
+import { useCredits } from "@/hooks/useCredits";
 
 type NavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -68,6 +69,7 @@ export default function PlatformSelectionScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const { imageUri, originalUri, sourceService, backgroundColor } = route.params;
+  const { requiresWatermark } = useCredits();
 
   const [selectedPlatforms, setSelectedPlatforms] = useState<Set<string>>(
     new Set(),
@@ -336,7 +338,7 @@ export default function PlatformSelectionScreen() {
         imageUri,
         platforms,
         undefined,
-        { backgroundColor },
+        { backgroundColor, requiresWatermark },
       );
 
       const cacheFiles: Array<{

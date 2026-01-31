@@ -219,7 +219,7 @@ export function BatchResultScreenLayout({
       console.error("Batch retry failed:", error);
       const message =
         error instanceof Error ? error.message : "Failed to generate image";
-      if (Platform.OS !== "web") {
+      if (Platform.OS !== "web" && message !== "No credits remaining") {
         Alert.alert("Generation Failed", message);
       }
     } finally {
@@ -256,7 +256,7 @@ export function BatchResultScreenLayout({
       console.error("Iteration failed:", error);
       const message =
         error instanceof Error ? error.message : "Failed to generate image";
-      if (Platform.OS !== "web") {
+      if (Platform.OS !== "web" && message !== "No credits remaining") {
         Alert.alert("Iteration Failed", message);
       }
     } finally {

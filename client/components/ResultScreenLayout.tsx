@@ -119,7 +119,7 @@ export function ResultScreenLayout({
       console.error("Retry generation failed:", error);
       const message =
         error instanceof Error ? error.message : "Failed to generate image";
-      if (Platform.OS !== "web") {
+      if (Platform.OS !== "web" && message !== "No credits remaining") {
         Alert.alert("Generation Failed", message);
       }
     } finally {
@@ -153,7 +153,7 @@ export function ResultScreenLayout({
       console.error("Iterate generation failed:", error);
       const message =
         error instanceof Error ? error.message : "Failed to generate image";
-      if (Platform.OS !== "web") {
+      if (Platform.OS !== "web" && message !== "No credits remaining") {
         Alert.alert("Iteration Failed", message);
       }
     } finally {

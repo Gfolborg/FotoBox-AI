@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { Alert, Platform } from "react-native";
+import { UpgradePrompt } from "@/components/UpgradePrompt";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import * as ImagePicker from "expo-image-picker";
@@ -30,6 +31,7 @@ export default function LifestyleResultScreen() {
   const route = useRoute<RouteProps>();
   const { requiresWatermark, consumeCredit, canGenerate, creditsRemaining } = useCredits();
   const { showNotification } = useNotification();
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
 
   const {
     resultUri: initialResultUri,
@@ -71,7 +73,7 @@ export default function LifestyleResultScreen() {
     // Check if user has credits (unless unlimited)
     const isUnlimited = creditsRemaining === -1;
     if (!isUnlimited && !canGenerate) {
-      showNotification("No credits remaining. Please upgrade to continue.", "error");
+      setShowUpgradePrompt(true);
       throw new Error("No credits remaining");
     }
     
@@ -135,7 +137,10 @@ export default function LifestyleResultScreen() {
 
     // Consume credit for successful regeneration (unless unlimited)
     if (creditsRemaining !== -1) {
-      await consumeCredit("lifestyle-scene");
+      const creditResult = await consumeCredit("lifestyle-scene");
+      if (creditResult.creditsRemaining === 1) {
+        showNotification("1 credit left! Grab more to keep going.", "warning");
+      }
     }
 
     return base64data;
@@ -145,7 +150,7 @@ export default function LifestyleResultScreen() {
     // Check if user has credits (unless unlimited)
     const isUnlimited = creditsRemaining === -1;
     if (!isUnlimited && !canGenerate) {
-      showNotification("No credits remaining. Please upgrade to continue.", "error");
+      setShowUpgradePrompt(true);
       throw new Error("No credits remaining");
     }
     
@@ -227,7 +232,10 @@ export default function LifestyleResultScreen() {
 
     // Consume credit for successful iteration (unless unlimited)
     if (creditsRemaining !== -1) {
-      await consumeCredit("lifestyle-scene");
+      const creditResult = await consumeCredit("lifestyle-scene");
+      if (creditResult.creditsRemaining === 1) {
+        showNotification("1 credit left! Grab more to keep going.", "warning");
+      }
     }
 
     return base64data;
@@ -305,21 +313,27 @@ export default function LifestyleResultScreen() {
   };
 
   return (
-    <ResultScreenLayout
-      title="Lifestyle Scene"
-      initialResultUri={initialResultUri}
-      originalUri={originalUri}
-      onRetry={handleRetryGeneration}
-      onIterate={handleIterateSubmit}
-      onEdit={handleEditImage}
-      onContinue={handleContinue}
-      onGenerateAnother={handleGenerateAnother}
-      workingLabels={{
-        retryTitle: "Regenerating Scene",
-        retryHint: "This may take up to 30 seconds",
-        iterateTitle: "Refining Scene",
-        iterateHint: "Applying your changes",
-      }}
-    />
+    <>
+      <ResultScreenLayout
+        title="Lifestyle Scene"
+        initialResultUri={initialResultUri}
+        originalUri={originalUri}
+        onRetry={handleRetryGeneration}
+        onIterate={handleIterateSubmit}
+        onEdit={handleEditImage}
+        onContinue={handleContinue}
+        onGenerateAnother={handleGenerateAnother}
+        workingLabels={{
+          retryTitle: "Regenerating Scene",
+          retryHint: "This may take up to 30 seconds",
+          iterateTitle: "Refining Scene",
+          iterateHint: "Applying your changes",
+        }}
+      />
+      <UpgradePrompt
+        visible={showUpgradePrompt}
+        onClose={() => setShowUpgradePrompt(false)}
+      />
+    </>
   );
 }

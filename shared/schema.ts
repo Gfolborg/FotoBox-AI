@@ -14,6 +14,7 @@ export const users = pgTable("users", {
   avatarUrl: text("avatar_url"),
   provider: text("provider").default("email"),
   providerId: text("provider_id"),
+  isBuilder: text("is_builder").default("false"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
