@@ -14,8 +14,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import * as WebBrowser from "expo-web-browser";
-import * as Google from "expo-auth-session/providers/google";
+import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import * as AppleAuthentication from "expo-apple-authentication";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 
@@ -25,8 +24,6 @@ import { GlassCard } from "@/components/GlassCard";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { useAuth } from "@/context/AuthContext";
-
-WebBrowser.maybeCompleteAuthSession();
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "Auth">;
 
@@ -39,44 +36,55 @@ export default function AuthScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
 
-  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    clientId: GOOGLE_CLIENT_ID,
-    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
-  });
-
   React.useEffect(() => {
-    if (response?.type === "success") {
-      handleGoogleResponse(response);
-    }
-  }, [response]);
-
-  const handleGoogleResponse = async (response: any) => {
-    if (response?.params?.id_token) {
-      setIsLoading(true);
-      setLoadingProvider("google");
-      try {
-        const result = await oauthLogin({
-          provider: "google",
-          idToken: response.params.id_token,
-        });
-
-        if (result.success) {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          navigation.goBack();
-        } else {
-          Alert.alert("Sign in failed", result.error || "Please try again");
-        }
-      } finally {
-        setIsLoading(false);
-        setLoadingProvider(null);
-      }
-    }
-  };
+    GoogleSignin.configure({
+      webClientId: GOOGLE_CLIENT_ID,
+      iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+      offlineAccess: false,
+    });
+  }, []);
 
   const handleGoogleSignIn = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await promptAsync();
+    setIsLoading(true);
+    setLoadingProvider("google");
+
+    try {
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+      const idToken = userInfo.data?.idToken;
+
+      if (!idToken) {
+        Alert.alert("Sign in failed", "Could not get authentication token");
+        return;
+      }
+
+      const result = await oauthLogin({
+        provider: "google",
+        idToken: idToken,
+      });
+
+      if (result.success) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        navigation.replace("Home");
+      } else {
+        Alert.alert("Sign in failed", result.error || "Please try again");
+      }
+    } catch (error: any) {
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        // User cancelled - silent failure
+      } else if (error.code === statusCodes.IN_PROGRESS) {
+        Alert.alert("Sign in in progress", "Please wait");
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        Alert.alert("Google Play Services required", "Please update Google Play Services");
+      } else {
+        console.error("Google Sign-In error:", error);
+        Alert.alert("Sign in failed", "Please try again");
+      }
+    } finally {
+      setIsLoading(false);
+      setLoadingProvider(null);
+    }
   };
 
   const handleAppleSignIn = async () => {
@@ -105,7 +113,7 @@ export default function AuthScreen() {
 
       if (result.success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        navigation.goBack();
+        navigation.replace("Home");
       } else {
         Alert.alert("Sign in failed", result.error || "Please try again");
       }
@@ -121,7 +129,7 @@ export default function AuthScreen() {
 
   const handleSkip = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    navigation.goBack();
+    navigation.replace("Home");
   };
 
   return (
@@ -146,9 +154,9 @@ export default function AuthScreen() {
           <GlassCard style={styles.card}>
             <View style={styles.buttonContainer}>
               <Pressable
-                style={[styles.googleButton, (isLoading || !request) && styles.buttonDisabled]}
+                style={[styles.googleButton, isLoading && styles.buttonDisabled]}
                 onPress={handleGoogleSignIn}
-                disabled={isLoading || !request}
+                disabled={isLoading}
               >
                 {loadingProvider === "google" ? (
                   <ActivityIndicator color={Colors.light.text} size="small" />
