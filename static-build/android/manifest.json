@@ -1,11 +1,11 @@
 {
-  "id": "fb079cc7-e656-4a65-888a-c39e57d98c7d",
-  "createdAt": "2026-02-01T00:07:42.970Z",
+  "id": "be517dd9-8081-431c-8eb5-8b0ba97e71d4",
+  "createdAt": "2026-02-01T17:51:16.179Z",
   "runtimeVersion": "exposdk:54.0.0",
   "launchAsset": {
-    "key": "bundle-1769904462970-14102",
+    "key": "bundle-1769968276179-4774",
     "contentType": "application/javascript",
-    "url": "https://3c39253f-b0a1-45ff-a5b5-3f23c6f0b9fd-00-23e0yuzcbd3qy.janeway.replit.dev/1769904462970-14102/_expo/static/js/android/bundle.js"
+    "url": "https://3c39253f-b0a1-45ff-a5b5-3f23c6f0b9fd-00-23e0yuzcbd3qy.janeway.replit.dev/1769968276179-4774/_expo/static/js/android/bundle.js"
   },
   "assets": [],
   "metadata": {},
@@ -154,6 +154,6 @@
       },
       "mainModuleName": "client/index"
     },
-    "scopeKey": "@anonymous/fotobox-ai-7a3ef43f-96c7-4b6b-b32d-b2f23562afb0"
+    "scopeKey": "@anonymous/fotobox-ai-0a60e452-cef7-41cc-bf1c-771ecc07ca2d"
   }
 }
