@@ -67,7 +67,7 @@ export default function AuthScreen() {
     const uri = AuthSession.makeRedirectUri({
       scheme: 'fotoboxai',
     });
-    console.log('=== OAUTH REDIRECT URI ===', uri);
+    // Logging removed for production cleanliness
   }, []);
 
   const handleGoogleResponse = async (accessToken: string | undefined) => {
