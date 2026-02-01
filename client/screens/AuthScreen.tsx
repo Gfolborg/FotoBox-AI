@@ -59,13 +59,12 @@ export default function AuthScreen() {
     }
   }, [response]);
 
-  // Temporary: Log the redirect URI for OAuth configuration
+  // Log the redirect URI for OAuth configuration debugging
   useEffect(() => {
-    const uri = AuthSession.makeRedirectUri({
-      scheme: 'fotoboxai',
-    });
-    // Logging removed for production cleanliness
-  }, []);
+    if (request?.redirectUri) {
+      console.log('=== GOOGLE OAUTH REDIRECT URI ===', request.redirectUri);
+    }
+  }, [request]);
 
   const handleGoogleResponse = async (accessToken: string | undefined) => {
     if (!accessToken) {
