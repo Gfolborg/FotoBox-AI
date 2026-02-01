@@ -15,6 +15,7 @@ import { StatusBar } from "expo-status-bar";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as WebBrowser from "expo-web-browser";
+import * as AuthSession from "expo-auth-session";
 import * as Google from "expo-auth-session/providers/google";
 import * as AppleAuthentication from "expo-apple-authentication";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
@@ -55,6 +56,14 @@ export default function AuthScreen() {
       setLoadingProvider(null);
     }
   }, [response]);
+
+  // Temporary: Log the redirect URI for OAuth configuration
+  useEffect(() => {
+    const uri = AuthSession.makeRedirectUri({
+      scheme: 'fotoboxai',
+    });
+    console.log('=== OAUTH REDIRECT URI ===', uri);
+  }, []);
 
   const handleGoogleResponse = async (accessToken: string | undefined) => {
     if (!accessToken) {
