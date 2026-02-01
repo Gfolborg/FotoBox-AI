@@ -42,8 +42,8 @@ export default function AuthScreen() {
     clientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
     iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
     androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
-    // Note: Removed redirectUri to allow AuthSession to handle it automatically with the proxy
-    // when running in Expo Go.
+    // For Expo Go, the standard behavior is to NOT provide redirectUri
+    // so AuthSession can automatically use the proxy.
   });
 
   useEffect(() => {
