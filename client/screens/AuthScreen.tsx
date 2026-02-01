@@ -42,10 +42,6 @@ export default function AuthScreen() {
     clientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
     iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
     androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
-    redirectUri: AuthSession.makeRedirectUri({
-      scheme: 'fotoboxai',
-      preferLocalhost: false,
-    }),
   });
 
   useEffect(() => {
