@@ -31,6 +31,16 @@ WebBrowser.maybeCompleteAuthSession();
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "Auth">;
 
+const redirectUri = AuthSession.makeRedirectUri({
+  scheme: "fotoboxai",
+  path: "redirect",
+});
+
+console.log("=== OAUTH REDIRECT URI ===");
+console.log("Redirect URI:", redirectUri);
+console.log("Platform:", Platform.OS);
+console.log("===========================");
+
 export default function AuthScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
@@ -42,8 +52,7 @@ export default function AuthScreen() {
     clientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
     iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
     androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
-    // Explicitly set to false to ensure we use our own domain logic
-    // but without an explicit redirectUri, it defaults to standard behavior
+    redirectUri,
   });
 
   useEffect(() => {
@@ -58,13 +67,6 @@ export default function AuthScreen() {
       setLoadingProvider(null);
     }
   }, [response]);
-
-  // Log the redirect URI for OAuth configuration debugging
-  useEffect(() => {
-    if (request?.redirectUri) {
-      console.log('=== GOOGLE OAUTH REDIRECT URI ===', request.redirectUri);
-    }
-  }, [request]);
 
   const handleGoogleResponse = async (accessToken: string | undefined) => {
     if (!accessToken) {
