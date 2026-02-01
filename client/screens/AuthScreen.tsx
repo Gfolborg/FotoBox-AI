@@ -42,7 +42,8 @@ export default function AuthScreen() {
     clientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
     iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
     androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
-    useProxy: true,
+    // Note: useProxy is removed as it's not directly in GoogleAuthRequestConfig.
+    // Standard Expo AuthSession handles redirection automatically for standalone apps.
   });
 
   useEffect(() => {
