@@ -69,8 +69,7 @@
           "savePhotosPermission": "Allow FotoBox AI to save edited photos to your gallery.",
           "isAccessMediaLocationEnabled": false
         }
-      ],
-      "@react-native-google-signin/google-signin"
+      ]
     ],
     "experiments": {
       "reactCompiler": true

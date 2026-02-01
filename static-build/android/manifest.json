@@ -1,0 +1,159 @@
+{
+  "id": "fb079cc7-e656-4a65-888a-c39e57d98c7d",
+  "createdAt": "2026-02-01T00:07:42.970Z",
+  "runtimeVersion": "exposdk:54.0.0",
+  "launchAsset": {
+    "key": "bundle-1769904462970-14102",
+    "contentType": "application/javascript",
+    "url": "https://3c39253f-b0a1-45ff-a5b5-3f23c6f0b9fd-00-23e0yuzcbd3qy.janeway.replit.dev/1769904462970-14102/_expo/static/js/android/bundle.js"
+  },
+  "assets": [],
+  "metadata": {},
+  "extra": {
+    "eas": {
+      "projectId": "5eb6da47-cb41-43b6-887b-b1718cbab454"
+    },
+    "expoClient": {
+      "name": "FotoBox AI",
+      "slug": "fotobox-ai",
+      "version": "1.0.0",
+      "owner": "flashingpoint87",
+      "orientation": "portrait",
+      "icon": "./assets/images/icon.png",
+      "scheme": "fotoboxai",
+      "newArchEnabled": true,
+      "ios": {
+        "supportsTablet": true,
+        "bundleIdentifier": "com.fotoboxai.app",
+        "infoPlist": {
+          "ITSAppUsesNonExemptEncryption": false
+        }
+      },
+      "android": {
+        "adaptiveIcon": {
+          "backgroundColor": "#1A1A2E",
+          "foregroundImage": "./assets/images/icon.png",
+          "foregroundImageUrl": "https://3c39253f-b0a1-45ff-a5b5-3f23c6f0b9fd-00-23e0yuzcbd3qy.janeway.replit.dev/assets/./assets/images/icon.png"
+        },
+        "edgeToEdgeEnabled": true,
+        "package": "com.fotoboxai.app",
+        "permissions": [
+          "CAMERA",
+          "READ_MEDIA_IMAGES",
+          "WRITE_EXTERNAL_STORAGE",
+          "READ_EXTERNAL_STORAGE",
+          "android.permission.CAMERA",
+          "android.permission.RECORD_AUDIO",
+          "android.permission.READ_EXTERNAL_STORAGE",
+          "android.permission.WRITE_EXTERNAL_STORAGE",
+          "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
+          "android.permission.READ_MEDIA_IMAGES",
+          "android.permission.READ_MEDIA_VIDEO",
+          "android.permission.READ_MEDIA_AUDIO"
+        ]
+      },
+      "web": {
+        "output": "single",
+        "favicon": "./assets/images/favicon.png"
+      },
+      "plugins": [
+        "expo-dev-client",
+        [
+          "expo-splash-screen",
+          {
+            "image": "./assets/images/icon.png",
+            "imageWidth": 200,
+            "resizeMode": "contain",
+            "backgroundColor": "#FFFFFF",
+            "dark": {
+              "backgroundColor": "#000000"
+            }
+          }
+        ],
+        "expo-web-browser",
+        [
+          "expo-camera",
+          {
+            "cameraPermission": "Allow FotoBox AI to access your camera to capture product photos."
+          }
+        ],
+        [
+          "expo-media-library",
+          {
+            "photosPermission": "Allow FotoBox AI to save edited photos to your gallery.",
+            "savePhotosPermission": "Allow FotoBox AI to save edited photos to your gallery.",
+            "isAccessMediaLocationEnabled": false
+          }
+        ]
+      ],
+      "experiments": {
+        "reactCompiler": true
+      },
+      "extra": {
+        "eas": {
+          "projectId": "5eb6da47-cb41-43b6-887b-b1718cbab454"
+        }
+      },
+      "_internal": {
+        "isDebug": false,
+        "projectRoot": "/home/runner/workspace",
+        "dynamicConfigPath": {},
+        "staticConfigPath": "/home/runner/workspace/app.json",
+        "packageJsonPath": "/home/runner/workspace/package.json",
+        "pluginHistory": {
+          "expo-dev-client": {
+            "name": "expo-dev-client",
+            "version": "6.0.20"
+          },
+          "expo-dev-menu": {
+            "name": "expo-dev-menu",
+            "version": "7.0.18"
+          },
+          "expo-dev-launcher": {
+            "name": "expo-dev-launcher",
+            "version": "6.0.20"
+          },
+          "expo-splash-screen": {
+            "name": "expo-splash-screen",
+            "version": "31.0.13"
+          },
+          "expo-web-browser": {
+            "name": "expo-web-browser",
+            "version": "15.0.10"
+          },
+          "expo-camera": {
+            "name": "expo-camera",
+            "version": "17.0.10"
+          },
+          "expo-media-library": {
+            "name": "expo-media-library",
+            "version": "18.2.1"
+          }
+        }
+      },
+      "sdkVersion": "54.0.0",
+      "platforms": [
+        "ios",
+        "android",
+        "web"
+      ],
+      "androidStatusBar": {
+        "backgroundColor": "#FFFFFF"
+      },
+      "iconUrl": "https://3c39253f-b0a1-45ff-a5b5-3f23c6f0b9fd-00-23e0yuzcbd3qy.janeway.replit.dev/assets/./assets/images/icon.png",
+      "hostUri": "3c39253f-b0a1-45ff-a5b5-3f23c6f0b9fd-00-23e0yuzcbd3qy.janeway.replit.dev/android"
+    },
+    "expoGo": {
+      "debuggerHost": "3c39253f-b0a1-45ff-a5b5-3f23c6f0b9fd-00-23e0yuzcbd3qy.janeway.replit.dev/android",
+      "developer": {
+        "tool": "expo-cli",
+        "projectRoot": "/home/runner/workspace"
+      },
+      "packagerOpts": {
+        "dev": false
+      },
+      "mainModuleName": "client/index"
+    },
+    "scopeKey": "@anonymous/fotobox-ai-7a3ef43f-96c7-4b6b-b32d-b2f23562afb0"
+  }
+}
