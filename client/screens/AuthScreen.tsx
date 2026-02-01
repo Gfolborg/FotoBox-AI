@@ -45,6 +45,7 @@ export default function AuthScreen() {
     redirectUri: AuthSession.makeRedirectUri({
       scheme: 'fotoboxai',
       path: 'oauth2callback',
+      preferLocalhost: false,
     }),
   });
 
