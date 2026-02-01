@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { getApiUrl } from "@/lib/query-client";
 
 interface User {
@@ -172,14 +171,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    try {
-      if (GoogleSignin.hasPreviousSignIn()) {
-        await GoogleSignin.signOut();
-      }
-    } catch (error) {
-      console.error("Google sign-out error:", error);
-    }
-
     await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
     setToken(null);
     setUser(null);
