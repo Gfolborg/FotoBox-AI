@@ -34,6 +34,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, "Auth">;
 const redirectUri = AuthSession.makeRedirectUri({
   scheme: "fotoboxai",
   path: "redirect",
+  preferNative: true,
 });
 
 console.log("=== OAUTH REDIRECT URI ===");
