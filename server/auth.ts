@@ -6,8 +6,12 @@ import { OAuth2Client } from "google-auth-library";
 import { isBuilder } from "./builder-mode";
 
 const JWT_SECRET = process.env.SESSION_SECRET || "fotobox-secret-key";
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
-const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
+const GOOGLE_CLIENT_IDS = (process.env.GOOGLE_CLIENT_IDS || process.env.GOOGLE_CLIENT_ID || "")
+  .split(",")
+  .map((value) => value.trim())
+  .filter(Boolean);
+const googleClient = new OAuth2Client();
+console.log(`Google OAuth client IDs loaded: ${GOOGLE_CLIENT_IDS.length}`);
 
 export interface AuthRequest extends Request {
   user?: {
@@ -157,9 +161,12 @@ export function registerAuthRoutes(app: Express) {
 
       if (provider === "google") {
         try {
+          if (GOOGLE_CLIENT_IDS.length === 0) {
+            return res.status(500).json({ error: "Google client IDs not configured" });
+          }
           const ticket = await googleClient.verifyIdToken({
             idToken,
-            audience: GOOGLE_CLIENT_ID,
+            audience: GOOGLE_CLIENT_IDS,
           });
           const payload = ticket.getPayload();
           if (!payload) {

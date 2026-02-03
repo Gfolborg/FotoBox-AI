@@ -44,6 +44,12 @@
     "plugins": [
       "expo-dev-client",
       [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.253310748501-284ra4e333bl4bc1nk5urt6145amen9f"
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/images/icon.png",
