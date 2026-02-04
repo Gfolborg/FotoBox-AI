@@ -64,6 +64,7 @@ export default function PaywallScreen() {
   const { subscription, isAuthenticated, applyUnlimitedCode } = useAuth();
   const [code, setCode] = useState("");
   const [isApplyingCode, setIsApplyingCode] = useState(false);
+  const [codeApplied, setCodeApplied] = useState(false);
 
   const handleSelectPlan = (planId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -160,7 +161,7 @@ export default function PaywallScreen() {
                   const result = await applyUnlimitedCode(code.trim());
                   setIsApplyingCode(false);
                   if (result.success) {
-                    Alert.alert("Code applied", "Unlimited credits enabled.");
+                    setCodeApplied(true);
                   } else {
                     Alert.alert("Invalid code", result.error || "Please try again.");
                   }
@@ -171,6 +172,14 @@ export default function PaywallScreen() {
                 </ThemedText>
               </Pressable>
             </View>
+            {codeApplied && (
+              <View style={styles.codeSuccess}>
+                <Feather name="check-circle" size={14} color={Colors.light.white} />
+                <ThemedText style={styles.codeSuccessText}>
+                  Code applied. Unlimited credits enabled.
+                </ThemedText>
+              </View>
+            )}
             <ThemedText style={styles.codeHelper}>
               For internal testing only.
             </ThemedText>
@@ -372,6 +381,22 @@ const styles = StyleSheet.create({
     marginTop: Spacing.sm,
     fontSize: 12,
     color: Colors.light.textSecondary,
+  },
+  codeSuccess: {
+    marginTop: Spacing.sm,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.light.primary,
+    alignSelf: "flex-start",
+  },
+  codeSuccessText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: Colors.light.white,
   },
   plansSection: {
     marginBottom: Spacing.xl,
