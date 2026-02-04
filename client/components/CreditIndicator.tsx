@@ -39,9 +39,7 @@ export function CreditIndicator() {
   };
 
   const handlePress = () => {
-    if (!isPremium) {
-      navigation.navigate("Paywall");
-    }
+    navigation.navigate("Paywall");
   };
 
   const content = (
@@ -67,11 +65,7 @@ export function CreditIndicator() {
   const containerProps = Platform.OS === "ios" ? { intensity: 50, tint: "light" as const } : {};
 
   return (
-    <TouchableOpacity
-      onPress={handlePress}
-      activeOpacity={isPremium ? 1 : 0.7}
-      disabled={isPremium}
-    >
+    <TouchableOpacity onPress={handlePress} activeOpacity={0.7}>
       <Container {...containerProps} style={styles.container}>
         {content}
       </Container>

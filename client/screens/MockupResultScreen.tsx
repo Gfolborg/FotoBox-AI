@@ -84,7 +84,7 @@ export default function MockupResultScreen() {
   const mockupAdStyle = adStyle || "simple";
 
   const buildIterationPrompt = (notes: string) =>
-    `\n\nITERATION REQUEST:\n- Keep the product and applied design exactly as-is (no edits, no recoloring, no repositioning or resizing of the artwork).\n- You may change the scene/background/lighting and the camera angle, crop, and distance.\n- Apply ONLY these changes: ${notes}\n- Do not add text, borders, or padding.`;
+    `\n\nITERATION REQUEST:\n- Keep the product and applied design exactly as-is (no edits, no recoloring, no repositioning or resizing of the artwork).\n- Apply ONLY these changes: ${notes}\n- If the request explicitly asks for camera/framing changes (e.g., zoom in, wider shot, top-down), obey them; otherwise keep camera angle, framing, and distance consistent.\n- Do not add text, borders, or padding.`;
 
   const handleContinue = async (resultUri: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);

@@ -55,7 +55,7 @@ export default function BatchProcessingScreen() {
   const insets = useSafeAreaInsets();
   const route = useRoute<RouteProps>();
   const navigation = useNavigation<NavigationProp>();
-  const { requiresWatermark, consumeCredit, canGenerate, creditsRemaining, isPremium } = useCredits();
+  const { requiresWatermark, consumeCredit, canGenerate, creditsRemaining, isPremium, isLoading } = useCredits();
   const { token } = useAuth();
   const {
     imageUris,
@@ -97,9 +97,15 @@ export default function BatchProcessingScreen() {
     }
   }, [isComplete, navigation, backgroundColor, existingResults]);
 
+  const hasStartedRef = React.useRef(false);
+
   React.useEffect(() => {
+    if (isLoading || hasStartedRef.current) {
+      return;
+    }
+    hasStartedRef.current = true;
     processImages();
-  }, []);
+  }, [isLoading, creditsRemaining, isPremium]);
 
   React.useEffect(() => {
     return () => {

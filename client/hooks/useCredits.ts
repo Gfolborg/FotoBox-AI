@@ -15,9 +15,9 @@ interface CreditState {
 }
 
 export function useCredits() {
-  const { isAuthenticated, subscription, useCredit } = useAuth();
+  const { isAuthenticated, subscription, useCredit, isLoading: authLoading } = useAuth();
   const [localFreeUses, setLocalFreeUses] = useState<number>(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLocalLoading, setIsLocalLoading] = useState(true);
 
   useEffect(() => {
     loadLocalFreeUses();
@@ -32,7 +32,7 @@ export function useCredits() {
     } catch (error) {
       console.error("Failed to load free uses:", error);
     } finally {
-      setIsLoading(false);
+      setIsLocalLoading(false);
     }
   };
 
@@ -44,7 +44,7 @@ export function useCredits() {
   };
 
   const getCreditState = useCallback((): CreditState => {
-    if (isLoading) {
+    if (authLoading || isLocalLoading) {
       return {
         isLoading: true,
         canGenerate: false,
@@ -79,7 +79,7 @@ export function useCredits() {
       isPremium: false,
       requiresWatermark: true,
     };
-  }, [isAuthenticated, subscription, localFreeUses, isLoading]);
+  }, [isAuthenticated, subscription, localFreeUses, authLoading, isLocalLoading]);
 
   const consumeCredit = async (action: string = "generate"): Promise<{
     success: boolean;

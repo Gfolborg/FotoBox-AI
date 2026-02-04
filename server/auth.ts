@@ -49,7 +49,9 @@ const applyUnlimitedOverride = (
   };
 };
 
-const DEV_UNLIMITED_CODE = process.env.DEV_UNLIMITED_CODE?.trim();
+const DEV_UNLIMITED_CODE =
+  process.env.DEV_UNLIMITED_CODE?.trim() ||
+  (process.env.NODE_ENV !== "production" ? "BTEST123" : undefined);
 
 export interface AuthRequest extends Request {
   user?: {
