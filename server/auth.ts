@@ -13,6 +13,42 @@ const GOOGLE_CLIENT_IDS = (process.env.GOOGLE_CLIENT_IDS || process.env.GOOGLE_C
 const googleClient = new OAuth2Client();
 console.log(`Google OAuth client IDs loaded: ${GOOGLE_CLIENT_IDS.length}`);
 
+const TEST_UNLIMITED_EMAILS = (process.env.TEST_UNLIMITED_EMAILS || "")
+  .split(",")
+  .map((value) => value.trim().toLowerCase())
+  .filter(Boolean);
+
+const isTestUnlimitedUser = (user?: { email?: string | null; username?: string | null }) => {
+  if (!user) return false;
+  const email = user.email?.trim().toLowerCase();
+  const username = user.username?.trim().toLowerCase();
+  return Boolean(
+    (email && TEST_UNLIMITED_EMAILS.includes(email)) ||
+      (username && TEST_UNLIMITED_EMAILS.includes(username)),
+  );
+};
+
+const applyUnlimitedOverride = (
+  subscription: {
+    plan: string;
+    status: string;
+    creditsRemaining: number;
+    creditsTotal: number;
+    expiresAt: Date | null;
+  } | null,
+  user?: { email?: string | null; username?: string | null },
+) => {
+  if (!subscription) return null;
+  if (!isTestUnlimitedUser(user)) return subscription;
+  return {
+    plan: "unlimited",
+    status: "active",
+    creditsRemaining: -1,
+    creditsTotal: -1,
+    expiresAt: null,
+  };
+};
+
 export interface AuthRequest extends Request {
   user?: {
     id: string;
@@ -69,7 +105,10 @@ export function registerAuthRoutes(app: Express) {
       }
 
       const user = await storage.createUser(username, password);
-      const subscription = await storage.getSubscription(user.id);
+      const subscription = applyUnlimitedOverride(
+        await storage.getSubscription(user.id),
+        user,
+      );
 
       const token = jwt.sign(
         { id: user.id, username: user.username },
@@ -84,13 +123,15 @@ export function registerAuthRoutes(app: Express) {
           username: user.username,
           isBuilder: isBuilder(user.id),
         },
-        subscription: subscription ? {
-          plan: subscription.plan,
-          status: subscription.status,
-          creditsRemaining: subscription.creditsRemaining,
-          creditsTotal: subscription.creditsTotal,
-          expiresAt: subscription.expiresAt,
-        } : null,
+        subscription: subscription
+          ? {
+              plan: subscription.plan,
+              status: subscription.status,
+              creditsRemaining: subscription.creditsRemaining,
+              creditsTotal: subscription.creditsTotal,
+              expiresAt: subscription.expiresAt,
+            }
+          : null,
       });
     } catch (error) {
       console.error("Registration error:", error);
@@ -117,7 +158,10 @@ export function registerAuthRoutes(app: Express) {
         return res.status(401).json({ error: "Invalid username or password" });
       }
 
-      const subscription = await storage.getSubscription(user.id);
+      const subscription = applyUnlimitedOverride(
+        await storage.getSubscription(user.id),
+        user,
+      );
 
       const token = jwt.sign(
         { id: user.id, username: user.username },
@@ -132,13 +176,15 @@ export function registerAuthRoutes(app: Express) {
           username: user.username,
           isBuilder: isBuilder(user.id),
         },
-        subscription: subscription ? {
-          plan: subscription.plan,
-          status: subscription.status,
-          creditsRemaining: subscription.creditsRemaining,
-          creditsTotal: subscription.creditsTotal,
-          expiresAt: subscription.expiresAt,
-        } : null,
+        subscription: subscription
+          ? {
+              plan: subscription.plan,
+              status: subscription.status,
+              creditsRemaining: subscription.creditsRemaining,
+              creditsTotal: subscription.creditsTotal,
+              expiresAt: subscription.expiresAt,
+            }
+          : null,
       });
     } catch (error) {
       console.error("Login error:", error);
@@ -198,7 +244,10 @@ export function registerAuthRoutes(app: Express) {
         });
       }
 
-      const subscription = await storage.getSubscription(user.id);
+      const subscription = applyUnlimitedOverride(
+        await storage.getSubscription(user.id),
+        user,
+      );
 
       const token = jwt.sign(
         { id: user.id, username: user.username },
@@ -215,13 +264,15 @@ export function registerAuthRoutes(app: Express) {
           avatarUrl: user.avatarUrl,
           isBuilder: isBuilder(user.id),
         },
-        subscription: subscription ? {
-          plan: subscription.plan,
-          status: subscription.status,
-          creditsRemaining: subscription.creditsRemaining,
-          creditsTotal: subscription.creditsTotal,
-          expiresAt: subscription.expiresAt,
-        } : null,
+        subscription: subscription
+          ? {
+              plan: subscription.plan,
+              status: subscription.status,
+              creditsRemaining: subscription.creditsRemaining,
+              creditsTotal: subscription.creditsTotal,
+              expiresAt: subscription.expiresAt,
+            }
+          : null,
       });
     } catch (error) {
       console.error("OAuth error:", error);
@@ -240,7 +291,10 @@ export function registerAuthRoutes(app: Express) {
         return res.status(404).json({ error: "User not found" });
       }
 
-      const subscription = await storage.getSubscription(user.id);
+      const subscription = applyUnlimitedOverride(
+        await storage.getSubscription(user.id),
+        user,
+      );
 
       res.json({
         user: {
@@ -248,13 +302,15 @@ export function registerAuthRoutes(app: Express) {
           username: user.username,
           isBuilder: isBuilder(user.id),
         },
-        subscription: subscription ? {
-          plan: subscription.plan,
-          status: subscription.status,
-          creditsRemaining: subscription.creditsRemaining,
-          creditsTotal: subscription.creditsTotal,
-          expiresAt: subscription.expiresAt,
-        } : null,
+        subscription: subscription
+          ? {
+              plan: subscription.plan,
+              status: subscription.status,
+              creditsRemaining: subscription.creditsRemaining,
+              creditsTotal: subscription.creditsTotal,
+              expiresAt: subscription.expiresAt,
+            }
+          : null,
       });
     } catch (error) {
       console.error("Get user error:", error);
@@ -295,7 +351,11 @@ export function registerAuthRoutes(app: Express) {
         return res.status(401).json({ error: "Not authenticated" });
       }
 
-      const subscription = await storage.getSubscription(req.user.id);
+      const user = await storage.getUserById(req.user.id);
+      const subscription = applyUnlimitedOverride(
+        await storage.getSubscription(req.user.id),
+        user,
+      );
 
       if (!subscription) {
         return res.status(404).json({ error: "No subscription found" });
