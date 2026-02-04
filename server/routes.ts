@@ -299,35 +299,6 @@ const SUPPORTED_ASPECT_RATIOS = new Set([
   "21:9",
 ]);
 
-function getCameraDirectives(text?: string): string[] {
-  if (!text) return [];
-  const normalized = text.toLowerCase();
-  const directives: string[] = [];
-
-  const closePattern =
-    /\b(close up|close-up|closer|zoom in|zoom-in|tight|macro|fill the frame)\b/;
-  const widePattern =
-    /\b(zoom out|zoom-out|farther|wide|wider|establishing|full scene|show more background)\b/;
-
-  if (closePattern.test(normalized)) {
-    directives.push("Tight close-up; the product should fill ~70-85% of the frame.");
-  } else if (widePattern.test(normalized)) {
-    directives.push("Wide/establishing shot; the product should fill ~25-40% of the frame with more environment visible.");
-  }
-
-  if (/\b(top down|top-down|overhead|bird'?s eye|flat lay|flat-lay)\b/.test(normalized)) {
-    directives.push("Camera angle: top-down (overhead) view.");
-  } else if (/\b(low angle|from below|hero shot)\b/.test(normalized)) {
-    directives.push("Camera angle: low-angle, looking slightly up at the product.");
-  } else if (/\b(three quarter|3\/4|45 degree)\b/.test(normalized)) {
-    directives.push("Camera angle: three-quarter (about 45°) view.");
-  } else if (/\b(eye level|eye-level|straight on|front view)\b/.test(normalized)) {
-    directives.push("Camera angle: straight-on eye-level view.");
-  }
-
-  return directives;
-}
-
 function getAspectRatioForPlatform(
   platform?: string,
 ): string | undefined {
@@ -345,16 +316,6 @@ function getLifestyleScenePrompt(
   iterationNotes?: string,
 ): string {
   let basePrompt: string;
-  const cameraHintsSource = [
-    iterationNotes,
-    isCustom ? environment : undefined,
-  ]
-    .filter(Boolean)
-    .join(" ");
-  const cameraDirectives = getCameraDirectives(cameraHintsSource);
-  const cameraBlock = cameraDirectives.length
-    ? `\n - Camera/framing: ${cameraDirectives.join(" ")}`
-    : "";
 
   if (isCustom) {
     // The 'environment' is a custom user-written prompt
@@ -370,12 +331,12 @@ function getLifestyleScenePrompt(
     if (productDescription) {
       basePrompt = `A product described as "${productDescription}" is in a scene. ${sceneDescription}`;
     } else {
-      basePrompt = sceneDescription;
+      basePrompt = `Place the product into the following scene: ${sceneDescription}`;
     }
   }
 
   const iterationBlock = iterationNotes?.trim()
-    ? `\n\nITERATION REQUEST:\n - Keep the product identity and key design features from the input image.\n - Apply ONLY these changes: ${iterationNotes.trim()}\n - If the request explicitly asks for camera/framing changes (e.g., zoom in, wider shot, top-down), obey them; otherwise keep camera angle, framing, and distance consistent.\n - Do not add text, borders, or padding.`
+    ? `\n\nITERATION REQUEST:\n - Keep the product identity and key design features from the input image. You may change the camera angle, crop, and distance.\n - Apply ONLY these changes: ${iterationNotes.trim()}\n - Do not add text, borders, or padding.`
     : "";
 
   return `${basePrompt}
@@ -389,7 +350,7 @@ CRITICAL INSTRUCTIONS:
  - The scene must fill the entire frame edge-to-edge. Do NOT add padding, borders, or solid-color bars.
  - The scene should look like a professional product photography shoot.
  - Output a high-quality, photorealistic image with no text, no watermark, no borders.
- - The composition should be balanced and aesthetically pleasing.${cameraBlock}${iterationBlock}`;
+ - The composition should be balanced and aesthetically pleasing.${iterationBlock}`;
 }
 
 // Generate prompt with explicit background color specification
