@@ -12,6 +12,8 @@ import { getApiUrl } from "@/lib/query-client";
 import { ResultScreenLayout } from "@/components/ResultScreenLayout";
 import { useCredits } from "@/hooks/useCredits";
 import { useNotification } from "@/context/NotificationContext";
+import { useAuth } from "@/context/AuthContext";
+import { setAuthRedirect } from "@/lib/auth-redirect";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, "LifestyleResult">;
@@ -31,6 +33,7 @@ export default function LifestyleResultScreen() {
   const route = useRoute<RouteProps>();
   const { requiresWatermark, consumeCredit, canGenerate, creditsRemaining } = useCredits();
   const { showNotification } = useNotification();
+  const { token } = useAuth();
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
 
   const {
@@ -107,6 +110,24 @@ export default function LifestyleResultScreen() {
 
     endpoint += `?${params.toString()}`;
 
+    if (!token) {
+      Alert.alert(
+        "Sign in required",
+        "Please sign in to generate lifestyle scenes.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Sign in",
+            onPress: () => {
+              setAuthRedirect({ name: "LifestyleResult", params: route.params });
+              navigation.navigate("Auth");
+            },
+          },
+        ],
+      );
+      throw new Error("Authentication required");
+    }
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 300000);
 
@@ -115,6 +136,9 @@ export default function LifestyleResultScreen() {
       response = await fetch(endpoint, {
         method: "POST",
         body: formData,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         signal: controller.signal,
       });
     } finally {
@@ -203,6 +227,24 @@ export default function LifestyleResultScreen() {
 
     endpoint += `?${params.toString()}`;
 
+    if (!token) {
+      Alert.alert(
+        "Sign in required",
+        "Please sign in to generate lifestyle scenes.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Sign in",
+            onPress: () => {
+              setAuthRedirect({ name: "LifestyleResult", params: route.params });
+              navigation.navigate("Auth");
+            },
+          },
+        ],
+      );
+      throw new Error("Authentication required");
+    }
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 300000);
 
@@ -211,6 +253,9 @@ export default function LifestyleResultScreen() {
       response = await fetch(endpoint, {
         method: "POST",
         body: formData,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         signal: controller.signal,
       });
     } finally {

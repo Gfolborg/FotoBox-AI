@@ -1,5 +1,5 @@
-import React from "react";
-import { StyleSheet, View, ScrollView, Pressable } from "react-native";
+import React, { useState } from "react";
+import { StyleSheet, View, ScrollView, Pressable, TextInput, Alert } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -61,7 +61,9 @@ export default function PaywallScreen() {
   const navigation = useNavigation<PaywallScreenNavigationProp>();
   const route = useRoute<PaywallScreenRouteProp>();
   const insets = useSafeAreaInsets();
-  const { subscription, isAuthenticated } = useAuth();
+  const { subscription, isAuthenticated, applyUnlimitedCode } = useAuth();
+  const [code, setCode] = useState("");
+  const [isApplyingCode, setIsApplyingCode] = useState(false);
 
   const handleSelectPlan = (planId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -122,9 +124,57 @@ export default function PaywallScreen() {
                 <ThemedText style={styles.currentPlanText}>
                   Current: {subscription.plan === "free" ? "Free" : subscription.plan} ({subscription.creditsRemaining === -1 ? "Unlimited" : subscription.creditsRemaining} credits)
                 </ThemedText>
+                {subscription.plan === "unlimited" && (
+                  <View style={styles.unlimitedBadge}>
+                    <Feather name="zap" size={12} color={Colors.light.white} />
+                    <ThemedText style={styles.unlimitedBadgeText}>Unlimited</ThemedText>
+                  </View>
+                )}
               </View>
             )}
           </Animated.View>
+
+          <View style={styles.codeCard}>
+            <ThemedText style={styles.codeTitle}>Have a dev code?</ThemedText>
+            <View style={styles.codeInputRow}>
+              <TextInput
+                style={styles.codeInput}
+                placeholder="Enter code"
+                placeholderTextColor={Colors.light.textTertiary}
+                value={code}
+                onChangeText={setCode}
+                autoCapitalize="none"
+              />
+              <Pressable
+                style={[
+                  styles.codeButton,
+                  (!code.trim() || isApplyingCode) && styles.codeButtonDisabled,
+                ]}
+                onPress={async () => {
+                  if (!code.trim() || isApplyingCode) return;
+                  if (!isAuthenticated) {
+                    Alert.alert("Sign in required", "Please sign in to apply a code.");
+                    return;
+                  }
+                  setIsApplyingCode(true);
+                  const result = await applyUnlimitedCode(code.trim());
+                  setIsApplyingCode(false);
+                  if (result.success) {
+                    Alert.alert("Code applied", "Unlimited credits enabled.");
+                  } else {
+                    Alert.alert("Invalid code", result.error || "Please try again.");
+                  }
+                }}
+              >
+                <ThemedText style={styles.codeButtonText}>
+                  {isApplyingCode ? "Applying..." : "Apply"}
+                </ThemedText>
+              </Pressable>
+            </View>
+            <ThemedText style={styles.codeHelper}>
+              For internal testing only.
+            </ThemedText>
+          </View>
 
           <View style={styles.plansSection}>
             <ThemedText style={styles.sectionTitle}>Monthly Plans</ThemedText>
@@ -260,6 +310,68 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.light.primary,
     fontWeight: "500",
+  },
+  unlimitedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.light.primary,
+  },
+  unlimitedBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: Colors.light.white,
+  },
+  codeCard: {
+    marginBottom: Spacing.lg,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+  },
+  codeTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: Colors.light.text,
+    marginBottom: Spacing.sm,
+  },
+  codeInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  codeInput: {
+    flex: 1,
+    height: 44,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    backgroundColor: Colors.light.backgroundDefault,
+    paddingHorizontal: Spacing.md,
+    color: Colors.light.text,
+  },
+  codeButton: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.light.primary,
+  },
+  codeButtonDisabled: {
+    opacity: 0.6,
+  },
+  codeButtonText: {
+    color: Colors.light.white,
+    fontWeight: "700",
+    fontSize: 13,
+  },
+  codeHelper: {
+    marginTop: Spacing.sm,
+    fontSize: 12,
+    color: Colors.light.textSecondary,
   },
   plansSection: {
     marginBottom: Spacing.xl,

@@ -20,7 +20,7 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import pLimit from "p-limit";
-import { StyleSheet, View, ScrollView, Image } from "react-native";
+import { StyleSheet, View, ScrollView, Image, Alert } from "react-native";
 import * as ImageManipulator from "expo-image-manipulator";
 
 import { ThemedText } from "@/components/ThemedText";
@@ -33,6 +33,8 @@ import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getApiUrl } from "@/lib/query-client";
 import { useCredits } from "@/hooks/useCredits";
+import { useAuth } from "@/context/AuthContext";
+import { setAuthRedirect } from "@/lib/auth-redirect";
 
 type NavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -54,6 +56,7 @@ export default function BatchProcessingScreen() {
   const route = useRoute<RouteProps>();
   const navigation = useNavigation<NavigationProp>();
   const { requiresWatermark, consumeCredit, canGenerate, creditsRemaining, isPremium } = useCredits();
+  const { token } = useAuth();
   const {
     imageUris,
     backgroundColor = "#FFFFFF",
@@ -174,6 +177,24 @@ export default function BatchProcessingScreen() {
       const watermarkParam = requiresWatermark ? "&applyWatermark=true" : "";
       const endpoint = `${apiUrl}api/main-image?backgroundColor=${bgColorParam}${watermarkParam}`;
 
+      if (!token) {
+        Alert.alert(
+          "Sign in required",
+          "Please sign in to generate images.",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Sign in",
+              onPress: () => {
+                setAuthRedirect({ name: "BatchProcessing", params: route.params });
+                navigation.navigate("Auth");
+              },
+            },
+          ],
+        );
+        throw new Error("Authentication required");
+      }
+
       const controller = new AbortController();
       abortControllersRef.current.push(controller);
       const timeoutId = setTimeout(() => controller.abort(), 300000);
@@ -181,6 +202,9 @@ export default function BatchProcessingScreen() {
       const response = await fetch(endpoint, {
         method: "POST",
         body: formData,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         signal: controller.signal,
       });
 

@@ -49,6 +49,8 @@ const applyUnlimitedOverride = (
   };
 };
 
+const DEV_UNLIMITED_CODE = process.env.DEV_UNLIMITED_CODE?.trim();
+
 export interface AuthRequest extends Request {
   user?: {
     id: string;
@@ -424,6 +426,48 @@ export function registerAuthRoutes(app: Express) {
     } catch (error) {
       console.error("Verify purchase error:", error);
       res.status(500).json({ error: "Failed to verify purchase" });
+    }
+  });
+
+  app.post("/api/subscription/apply-code", authenticateToken, async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const code = (req.body?.code || "").trim();
+      if (!code) {
+        return res.status(400).json({ error: "Code is required" });
+      }
+
+      if (!DEV_UNLIMITED_CODE || code !== DEV_UNLIMITED_CODE) {
+        return res.status(400).json({ error: "Invalid code" });
+      }
+
+      const updated = await storage.updateSubscription(req.user.id, {
+        plan: "unlimited",
+        status: "active",
+        creditsRemaining: -1,
+        creditsTotal: -1,
+        expiresAt: null,
+        promoCode: code,
+      });
+
+      res.json({
+        success: true,
+        subscription: updated
+          ? {
+              plan: updated.plan,
+              status: updated.status,
+              creditsRemaining: updated.creditsRemaining,
+              creditsTotal: updated.creditsTotal,
+              expiresAt: updated.expiresAt,
+            }
+          : null,
+      });
+    } catch (error) {
+      console.error("Apply code error:", error);
+      res.status(500).json({ error: "Failed to apply code" });
     }
   });
 }

@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Modal, Pressable, StyleSheet, View, Platform } from "react-native";
+import { Modal, Pressable, StyleSheet, View, Platform, BackHandler } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as ScreenOrientation from "expo-screen-orientation";
@@ -35,8 +35,22 @@ export function ZoomableImageModal({
     ).catch(() => {});
   }, [visible]);
 
+  useEffect(() => {
+    if (!visible) return;
+    const handler = BackHandler.addEventListener("hardwareBackPress", () => {
+      onClose();
+      return true;
+    });
+    return () => handler.remove();
+  }, [visible, onClose]);
+
   return (
-    <Modal visible={visible} animationType="fade" transparent>
+    <Modal
+      visible={visible}
+      animationType="fade"
+      transparent
+      onRequestClose={onClose}
+    >
       <GestureHandlerRootView style={styles.backdrop}>
         <View style={styles.header}>
           <ThemedText style={styles.title}>{title}</ThemedText>

@@ -37,6 +37,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   refreshSubscription: () => Promise<void>;
   useCredit: (action: string) => Promise<{ success: boolean; creditsRemaining: number; requiresUpgrade?: boolean; error?: string }>;
+  applyUnlimitedCode: (code: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -195,6 +196,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const applyUnlimitedCode = async (code: string) => {
+    if (!token) {
+      return { success: false, error: "Not authenticated" };
+    }
+
+    try {
+      const baseUrl = getApiUrl();
+      const res = await fetch(new URL("/api/subscription/apply-code", baseUrl).toString(), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ code }),
+      });
+
+      const contentType = res.headers.get("content-type") || "";
+      const rawText = await res.text();
+      const data = contentType.includes("application/json")
+        ? JSON.parse(rawText || "{}")
+        : { error: rawText };
+
+      if (!res.ok) {
+        return { success: false, error: data.error || "Failed to apply code" };
+      }
+
+      if (data.subscription) {
+        setSubscription(data.subscription);
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error("Apply code error:", error);
+      return { success: false, error: "Network error. Please try again." };
+    }
+  };
+
   const useCredit = async (action: string) => {
     if (!token) {
       return { success: false, creditsRemaining: 0, requiresUpgrade: true, error: "Not authenticated" };
@@ -244,6 +282,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         refreshSubscription,
         useCredit,
+        applyUnlimitedCode,
       }}
     >
       {children}

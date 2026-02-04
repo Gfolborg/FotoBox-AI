@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, StyleSheet, Image, Dimensions } from "react-native";
+import { View, StyleSheet, Image, Dimensions, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -16,6 +16,8 @@ import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getApiUrl } from "@/lib/query-client";
 import { useCredits } from "@/hooks/useCredits";
+import { useAuth } from "@/context/AuthContext";
+import { setAuthRedirect } from "@/lib/auth-redirect";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const PREVIEW_SIZE = Math.min(SCREEN_WIDTH * 0.5, 300);
@@ -35,6 +37,7 @@ export default function BatchLifestyleProcessingScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const { requiresWatermark, consumeCredit } = useCredits();
+  const { token } = useAuth();
   const {
     imageUris,
     environment,
@@ -166,6 +169,24 @@ export default function BatchLifestyleProcessingScreen() {
 
     endpoint += `?${params.toString()}`;
 
+    if (!token) {
+      Alert.alert(
+        "Sign in required",
+        "Please sign in to generate lifestyle scenes.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Sign in",
+            onPress: () => {
+              setAuthRedirect({ name: "BatchLifestyleProcessing", params: route.params });
+              navigation.navigate("Auth");
+            },
+          },
+        ],
+      );
+      throw new Error("Authentication required");
+    }
+
     const controller = new AbortController();
     abortControllersRef.current.push(controller);
     const timeoutId = setTimeout(() => controller.abort(), 300000);
@@ -174,6 +195,9 @@ export default function BatchLifestyleProcessingScreen() {
       const response = await fetch(endpoint, {
         method: "POST",
         body: formData,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         signal: controller.signal,
       });
 

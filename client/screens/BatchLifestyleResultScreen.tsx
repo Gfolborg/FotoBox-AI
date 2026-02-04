@@ -11,6 +11,8 @@ import { getApiUrl } from "@/lib/query-client";
 import { BatchResultScreenLayout, BatchResultItem } from "@/components/BatchResultScreenLayout";
 import { useCredits } from "@/hooks/useCredits";
 import { useNotification } from "@/context/NotificationContext";
+import { useAuth } from "@/context/AuthContext";
+import { setAuthRedirect } from "@/lib/auth-redirect";
 
 const getExtensionFromDataUri = (dataUri: string): string => {
   const match = dataUri.match(/^data:image\/([a-zA-Z0-9+]+);base64,/);
@@ -31,6 +33,7 @@ export default function BatchLifestyleResultScreen() {
   const route = useRoute<RouteProps>();
   const { requiresWatermark, consumeCredit, canGenerate, creditsRemaining } = useCredits();
   const { showNotification } = useNotification();
+  const { token } = useAuth();
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const {
     results: initialResults,
@@ -88,6 +91,24 @@ export default function BatchLifestyleResultScreen() {
     }
     endpoint += `?${params.toString()}`;
 
+    if (!token) {
+      Alert.alert(
+        "Sign in required",
+        "Please sign in to generate lifestyle scenes.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Sign in",
+            onPress: () => {
+              setAuthRedirect({ name: "BatchLifestyleResult", params: route.params });
+              navigation.navigate("Auth");
+            },
+          },
+        ],
+      );
+      throw new Error("Authentication required");
+    }
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 300000);
 
@@ -96,6 +117,9 @@ export default function BatchLifestyleResultScreen() {
       response = await fetch(endpoint, {
         method: "POST",
         body: formData,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         signal: controller.signal,
       });
     } finally {
@@ -186,6 +210,24 @@ export default function BatchLifestyleResultScreen() {
 
     endpoint += `?${params.toString()}`;
 
+    if (!token) {
+      Alert.alert(
+        "Sign in required",
+        "Please sign in to generate lifestyle scenes.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Sign in",
+            onPress: () => {
+              setAuthRedirect({ name: "BatchLifestyleResult", params: route.params });
+              navigation.navigate("Auth");
+            },
+          },
+        ],
+      );
+      throw new Error("Authentication required");
+    }
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 300000);
 
@@ -194,6 +236,9 @@ export default function BatchLifestyleResultScreen() {
       response = await fetch(endpoint, {
         method: "POST",
         body: formData,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         signal: controller.signal,
       });
     } finally {

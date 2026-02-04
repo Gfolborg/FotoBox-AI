@@ -44,6 +44,8 @@ import { getApiUrl } from "@/lib/query-client";
 import { SCENES, Scene } from "@/lib/lifestyle-scenes";
 import { getPlatformsForService } from "@/lib/platform-requirements";
 import { usePromptHistory } from "@/hooks/usePromptHistory";
+import { useAuth } from "@/context/AuthContext";
+import { setAuthRedirect } from "@/lib/auth-redirect";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const IMAGE_SIZE = Math.min(SCREEN_WIDTH - Spacing.lg * 2, 320);
@@ -130,6 +132,7 @@ export default function EnvironmentSelectionScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const flatListRef = React.useRef<FlatList>(null);
+  const { token } = useAuth();
 
   const initialImages =
     route.params?.imageUris ||
@@ -217,6 +220,23 @@ export default function EnvironmentSelectionScreen() {
     }
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (!token) {
+      Alert.alert(
+        "Sign in required",
+        "Please sign in to generate lifestyle scenes.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Sign in",
+            onPress: () => {
+              setAuthRedirect({ name: "EnvironmentSelection", params: route.params });
+              navigation.navigate("Auth");
+            },
+          },
+        ],
+      );
+      return;
+    }
 
     if (isBatchMode) {
       navigation.replace("BatchLifestyleProcessing", {
@@ -275,6 +295,9 @@ export default function EnvironmentSelectionScreen() {
         response = await fetch(endpoint, {
           method: "POST",
           body: formData,
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
           signal: controller.signal,
         });
       } finally {

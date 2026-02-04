@@ -40,6 +40,8 @@ import { useBatchEdit } from "@/context/BatchEditContext";
 import { useNotification } from "@/context/NotificationContext";
 import { buildMockupWizardState } from "@/lib/mockup-templates";
 import { useCredits } from "@/hooks/useCredits";
+import { useAuth } from "@/context/AuthContext";
+import { setAuthRedirect } from "@/lib/auth-redirect";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "Result">;
 type ResultRouteProp = RouteProp<RootStackParamList, "Result">;
@@ -51,6 +53,7 @@ export default function ResultScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<ResultRouteProp>();
+  const { token } = useAuth();
   const {
     resultUri: initialResultUri,
     originalUri,
@@ -212,6 +215,24 @@ export default function ResultScreen() {
       const watermarkParam = requiresWatermark ? "&applyWatermark=true" : "";
       const endpoint = `${apiUrl}api/main-image?backgroundColor=${bgColorParam}${watermarkParam}`;
 
+      if (!token) {
+        Alert.alert(
+          "Sign in required",
+          "Please sign in to generate images.",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Sign in",
+              onPress: () => {
+                setAuthRedirect({ name: "Result", params: route.params });
+                navigation.navigate("Auth");
+              },
+            },
+          ],
+        );
+        throw new Error("Authentication required");
+      }
+
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 300000);
 
@@ -220,6 +241,9 @@ export default function ResultScreen() {
         response = await fetch(endpoint, {
           method: "POST",
           body: formData,
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
           signal: controller.signal,
         });
       } finally {

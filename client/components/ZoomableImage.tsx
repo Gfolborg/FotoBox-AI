@@ -10,8 +10,10 @@ import { Gesture, GestureDetector } from "react-native-gesture-handler";
 const MIN_SCALE = 1;
 const MAX_SCALE = 4;
 
-const clamp = (value: number, min: number, max: number) =>
-  Math.min(Math.max(value, min), max);
+const clamp = (value: number, min: number, max: number) => {
+  "worklet";
+  return Math.min(Math.max(value, min), max);
+};
 
 type ZoomableImageProps = {
   uri: string;

@@ -29,6 +29,7 @@ export const subscriptions = pgTable("subscriptions", {
   status: text("status").notNull().default("active"),
   creditsRemaining: integer("credits_remaining").notNull().default(3),
   creditsTotal: integer("credits_total").notNull().default(3),
+  promoCode: text("promo_code"),
   googlePlayOrderId: text("google_play_order_id"),
   googlePlayProductId: text("google_play_product_id"),
   expiresAt: timestamp("expires_at"),
