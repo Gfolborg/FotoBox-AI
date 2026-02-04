@@ -1,6 +1,7 @@
 import React from "react";
 import { Modal, Pressable, StyleSheet, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ThemedText } from "@/components/ThemedText";
 import { Colors, Spacing } from "@/constants/theme";
 import { ZoomableImage } from "@/components/ZoomableImage";
@@ -20,7 +21,7 @@ export function ZoomableImageModal({
 }: ZoomableImageModalProps) {
   return (
     <Modal visible={visible} animationType="fade" transparent>
-      <View style={styles.backdrop}>
+      <GestureHandlerRootView style={styles.backdrop}>
         <View style={styles.header}>
           <ThemedText style={styles.title}>{title}</ThemedText>
           <Pressable onPress={onClose} style={styles.closeButton}>
@@ -36,7 +37,7 @@ export function ZoomableImageModal({
           <Feather name="zoom-in" size={14} color={Colors.light.textSecondary} />
           <ThemedText style={styles.hintText}>Pinch to zoom</ThemedText>
         </View>
-      </View>
+      </GestureHandlerRootView>
     </Modal>
   );
 }
