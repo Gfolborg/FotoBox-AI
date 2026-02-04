@@ -15,6 +15,7 @@ import {
   DEFAULT_PROCESSING_TIPS,
 } from "@/components/ProcessingTips";
 import { GradientBackground } from "@/components/GradientBackground";
+import { GradientButton } from "@/components/GradientButton";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { getApiUrl, apiRequest } from "@/lib/query-client";
@@ -64,6 +65,8 @@ export default function MockupProcessingScreen() {
 
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState("Preparing your mockup...");
+  const [showRetry, setShowRetry] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const hasStartedRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const isCancelledRef = useRef(false);
@@ -101,8 +104,11 @@ export default function MockupProcessingScreen() {
   }, []);
 
   const processMockup = async () => {
+    if (isProcessing) return;
     try {
       if (isCancelledRef.current) return;
+      setIsProcessing(true);
+      setShowRetry(false);
       setProgress(10);
       setStatus("Uploading image...");
 
@@ -165,25 +171,75 @@ export default function MockupProcessingScreen() {
       if (!token) {
         throw new Error("Authentication required");
       }
-      const response = await fetch(
-        mockupUrl.toString(),
-        {
-          method: "POST",
-          body: formData,
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          signal: controller.signal,
-        },
-      );
+      const MAX_RETRIES = 3;
+      const BASE_DELAY_MS = 2000;
+      const MAX_DELAY_MS = 15000;
+      const sleep = (ms: number) =>
+        new Promise((resolve) => setTimeout(resolve, ms));
+
+      const isRateLimitError = (statusCode: number | null, data: unknown) => {
+        if (statusCode === 429) return true;
+        if (!data || typeof data !== "object") return false;
+        const maybeError = (data as { error?: { code?: number; status?: string } }).error;
+        return maybeError?.code === 429 || maybeError?.status === "RESOURCE_EXHAUSTED";
+      };
+
+      const fetchWithRetry = async () => {
+        for (let attempt = 1; attempt <= MAX_RETRIES + 1; attempt += 1) {
+          if (isCancelledRef.current) return null;
+          const response = await fetch(mockupUrl.toString(), {
+            method: "POST",
+            body: formData,
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            signal: controller.signal,
+          });
+
+          if (response.ok) {
+            return response;
+          }
+
+          let errorPayload: unknown = null;
+          const rawText = await response.text();
+          try {
+            errorPayload = rawText ? JSON.parse(rawText) : null;
+          } catch {
+            errorPayload = rawText ? { error: { message: rawText } } : null;
+          }
+
+          if (isRateLimitError(response.status, errorPayload)) {
+            if (attempt <= MAX_RETRIES) {
+              const delay = Math.min(
+                BASE_DELAY_MS * Math.pow(2, attempt - 1),
+                MAX_DELAY_MS,
+              );
+              setStatus(
+                `Rate limit reached. Retrying in ${Math.ceil(delay / 1000)}s (attempt ${attempt}/${MAX_RETRIES})...`,
+              );
+              await sleep(delay);
+              continue;
+            }
+            throw new Error("Rate limit reached. Please try again in a minute.");
+          }
+
+          const message =
+            (errorPayload as { error?: string | { message?: string } })?.error;
+          const errorMessage =
+            typeof message === "string" ? message : message?.message;
+          throw new Error(errorMessage || "Failed to create mockup");
+        }
+        return null;
+      };
+
+      const response = await fetchWithRetry();
+      if (!response) {
+        setIsProcessing(false);
+        return;
+      }
 
       setProgress(70);
       setStatus("Finalizing result...");
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to create mockup");
-      }
 
       const data = await response.json();
 
@@ -194,6 +250,7 @@ export default function MockupProcessingScreen() {
       
       setProgress(100);
       setStatus("Complete!");
+      setIsProcessing(false);
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
@@ -225,17 +282,21 @@ export default function MockupProcessingScreen() {
       }, 500);
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {
+        setIsProcessing(false);
         return;
       }
       if (isCancelledRef.current) return;
       if (error instanceof Error && error.message === "Authentication required") {
         showAuthPrompt();
         setStatus("Sign in required");
+        setIsProcessing(false);
         return;
       }
       console.error("Mockup processing error:", error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setStatus(error instanceof Error ? error.message : "Processing failed");
+      setIsProcessing(false);
+      setShowRetry(true);
     }
   };
 
@@ -266,6 +327,22 @@ export default function MockupProcessingScreen() {
               </ThemedText>
             </GlassCard>
           </Animated.View>
+
+          {showRetry && (
+            <Animated.View entering={FadeInDown.delay(400).duration(400)}>
+              <GradientButton
+                title="Try Again"
+                icon="refresh-cw"
+                onPress={() => {
+                  setProgress(0);
+                  setStatus("Preparing your mockup...");
+                  processMockup();
+                }}
+                fullWidth
+                style={styles.retryButton}
+              />
+            </Animated.View>
+          )}
 
           <Animated.View entering={FadeInDown.delay(500).duration(400)}>
             <View style={styles.detailsRow}>
@@ -350,6 +427,10 @@ const styles = StyleSheet.create({
   detailsRow: {
     flexDirection: "row",
     gap: Spacing.lg,
+  },
+  retryButton: {
+    marginTop: Spacing.md,
+    marginBottom: Spacing.md,
   },
   detailItem: {
     alignItems: "center",

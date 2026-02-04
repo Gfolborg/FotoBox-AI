@@ -16,6 +16,7 @@ import {
   DEFAULT_PROCESSING_TIPS,
 } from "@/components/ProcessingTips";
 import { GradientBackground } from "@/components/GradientBackground";
+import { GradientButton } from "@/components/GradientButton";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { getApiUrl } from "@/lib/query-client";
@@ -78,9 +79,20 @@ export default function BatchMockupProcessingScreen() {
     })),
   );
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [statusText, setStatusText] = useState("Creating mockups...");
+  const [detailText, setDetailText] = useState(
+    `${mockupItem.label} • ${sceneVibe.label}`,
+  );
+  const [showRetry, setShowRetry] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const hasStartedRef = useRef(false);
   const abortControllersRef = useRef<AbortController[]>([]);
   const isCancelledRef = useRef(false);
+  const resultsRef = useRef<ProcessingResult[]>(results);
+
+  useEffect(() => {
+    resultsRef.current = results;
+  }, [results]);
 
   const showAuthPrompt = () => {
     Alert.alert(
@@ -119,7 +131,26 @@ export default function BatchMockupProcessingScreen() {
     };
   }, []);
 
-  const processAllImages = async () => {
+  const processAllImages = async (resume: boolean = false) => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    setShowRetry(false);
+    setStatusText(resume ? "Resuming mockups..." : "Creating mockups...");
+
+    const MAX_RETRIES = 3;
+    const BASE_DELAY_MS = 2000;
+    const MAX_DELAY_MS = 15000;
+    const BETWEEN_REQUEST_DELAY_MS = 600;
+    const sleep = (ms: number) =>
+      new Promise((resolve) => setTimeout(resolve, ms));
+
+    const isRateLimitError = (statusCode: number | null, data: unknown) => {
+      if (statusCode === 429) return true;
+      if (!data || typeof data !== "object") return false;
+      const maybeError = (data as { error?: { code?: number; status?: string } }).error;
+      return maybeError?.code === 429 || maybeError?.status === "RESOURCE_EXHAUSTED";
+    };
+
     const prompt = getMockupPrompt(
       mockupItem,
       sceneVibe,
@@ -142,15 +173,24 @@ export default function BatchMockupProcessingScreen() {
       sceneSetting,
     );
 
-    let workingResults: ProcessingResult[] = imageUris.map((uri) => ({
-      originalUri: uri,
-      resultUri: null,
-      status: "pending",
-    }));
-    setResults(workingResults);
+    let workingResults: ProcessingResult[] =
+      resume && resultsRef.current.length === imageUris.length
+        ? [...resultsRef.current]
+        : imageUris.map((uri) => ({
+            originalUri: uri,
+            resultUri: null,
+            status: "pending",
+          }));
+
+    if (!resume) {
+      setResults(workingResults);
+    }
 
     for (let i = 0; i < imageUris.length; i++) {
       if (isCancelledRef.current) return;
+      if (workingResults[i]?.status === "completed") {
+        continue;
+      }
       setCurrentIndex(i);
       workingResults = workingResults.map((r, idx) =>
         idx === i ? { ...r, status: "processing" } : r,
@@ -192,23 +232,61 @@ export default function BatchMockupProcessingScreen() {
         if (!token) {
           throw new Error("Authentication required");
         }
-        const response = await fetch(
-          mockupUrl.toString(),
-          {
-            method: "POST",
-            body: formData,
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-            signal: controller.signal,
-          },
-        );
+        const fetchWithRetry = async () => {
+          for (let attempt = 1; attempt <= MAX_RETRIES + 1; attempt += 1) {
+            if (isCancelledRef.current) return null;
+            const response = await fetch(mockupUrl.toString(), {
+              method: "POST",
+              body: formData,
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+              signal: controller.signal,
+            });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || "Failed to create mockup");
+            if (response.ok) {
+              return response;
+            }
+
+            let errorPayload: unknown = null;
+            const rawText = await response.text();
+            try {
+              errorPayload = rawText ? JSON.parse(rawText) : null;
+            } catch {
+              errorPayload = rawText ? { error: { message: rawText } } : null;
+            }
+
+            if (isRateLimitError(response.status, errorPayload)) {
+              if (attempt <= MAX_RETRIES) {
+                const delay = Math.min(
+                  BASE_DELAY_MS * Math.pow(2, attempt - 1),
+                  MAX_DELAY_MS,
+                );
+                setStatusText(
+                  `Rate limit hit. Retrying image ${i + 1} of ${imageUris.length} in ${Math.ceil(delay / 1000)}s (attempt ${attempt}/${MAX_RETRIES})...`,
+                );
+                await sleep(delay);
+                continue;
+              }
+              throw new Error("Rate limit reached. Please try again in a minute.");
+            }
+
+            const message =
+              (errorPayload as { error?: string | { message?: string } })?.error;
+            const errorMessage =
+              typeof message === "string" ? message : message?.message;
+            throw new Error(errorMessage || "Failed to create mockup");
+          }
+          return null;
+        };
+
+        const response = await fetchWithRetry();
+        if (!response) {
+          setIsProcessing(false);
+          return;
         }
 
+        setStatusText("Creating mockups...");
         const data = await response.json();
         
         // Consume a credit for successful generation
@@ -235,10 +313,15 @@ export default function BatchMockupProcessingScreen() {
               : r,
           );
           setResults(workingResults);
-          isCancelledRef.current = true;
+          setIsProcessing(false);
           return;
         }
         console.error(`Mockup processing error for image ${i}:`, error);
+        if (error instanceof Error && error.message.includes("Rate limit")) {
+          setStatusText(error.message);
+          setShowRetry(true);
+          setIsProcessing(false);
+        }
         workingResults = workingResults.map((r, idx) =>
           idx === i
             ? {
@@ -249,10 +332,19 @@ export default function BatchMockupProcessingScreen() {
             : r,
         );
         setResults(workingResults);
+
+        if (error instanceof Error && error.message.includes("Rate limit")) {
+          return;
+        }
+      }
+
+      if (!isCancelledRef.current && i < imageUris.length - 1) {
+        await sleep(BETWEEN_REQUEST_DELAY_MS);
       }
     }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setIsProcessing(false);
 
     setTimeout(() => {
       if (isCancelledRef.current) return;
@@ -332,17 +424,25 @@ export default function BatchMockupProcessingScreen() {
 
           <Animated.View entering={FadeInDown.delay(200).duration(400)}>
             <GlassCard style={styles.statusCard}>
-              <ThemedText style={styles.statusText}>
-                Creating mockups...
-              </ThemedText>
+              <ThemedText style={styles.statusText}>{statusText}</ThemedText>
               <ThemedText style={styles.progressText}>
                 {completedCount + failedCount} / {totalCount}
               </ThemedText>
-              <ThemedText style={styles.detailText}>
-                {mockupItem.label} • {sceneVibe.label}
-              </ThemedText>
+              <ThemedText style={styles.detailText}>{detailText}</ThemedText>
             </GlassCard>
           </Animated.View>
+
+          {showRetry && (
+            <Animated.View entering={FadeInDown.delay(300).duration(400)}>
+              <GradientButton
+                title="Try Again"
+                icon="refresh-cw"
+                onPress={() => processAllImages(true)}
+                fullWidth
+                style={styles.retryButton}
+              />
+            </Animated.View>
+          )}
 
           <Animated.View entering={FadeInDown.delay(400).duration(400)}>
             <FlatList
@@ -382,6 +482,9 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xl,
     marginBottom: Spacing.lg,
     minWidth: 250,
+  },
+  retryButton: {
+    marginBottom: Spacing.lg,
   },
   statusText: {
     fontSize: 16,
