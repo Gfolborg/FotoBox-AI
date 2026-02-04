@@ -1,11 +1,11 @@
 {
-  "id": "f36bb109-32e1-43ce-bd4c-133b3d78e81b",
-  "createdAt": "2026-02-01T23:59:24.906Z",
+  "id": "ca7aa9b9-093a-41d4-9511-c8b5cc5e5202",
+  "createdAt": "2026-02-04T00:32:04.509Z",
   "runtimeVersion": "exposdk:54.0.0",
   "launchAsset": {
-    "key": "bundle-1769990364906-19311",
+    "key": "bundle-1770165124509-5077",
     "contentType": "application/javascript",
-    "url": "https://3c39253f-b0a1-45ff-a5b5-3f23c6f0b9fd-00-23e0yuzcbd3qy.janeway.replit.dev/1769990364906-19311/_expo/static/js/ios/bundle.js"
+    "url": "https://3c39253f-b0a1-45ff-a5b5-3f23c6f0b9fd-00-23e0yuzcbd3qy.janeway.replit.dev/1770165124509-5077/_expo/static/js/ios/bundle.js"
   },
   "assets": [],
   "metadata": {},
@@ -18,7 +18,7 @@
       "slug": "fotobox-ai",
       "version": "1.0.0",
       "owner": "flashingpoint87",
-      "orientation": "portrait",
+      "orientation": "default",
       "icon": "./assets/images/icon.png",
       "scheme": "fotoboxai",
       "newArchEnabled": true,
@@ -58,6 +58,12 @@
       },
       "plugins": [
         "expo-dev-client",
+        [
+          "@react-native-google-signin/google-signin",
+          {
+            "iosUrlScheme": "com.googleusercontent.apps.253310748501-284ra4e333bl4bc1nk5urt6145amen9f"
+          }
+        ],
         [
           "expo-splash-screen",
           {
@@ -113,6 +119,10 @@
             "name": "expo-dev-launcher",
             "version": "6.0.20"
           },
+          "@react-native-google-signin/google-signin": {
+            "name": "@react-native-google-signin/google-signin",
+            "version": "16.1.1"
+          },
           "expo-splash-screen": {
             "name": "expo-splash-screen",
             "version": "31.0.13"
@@ -154,6 +164,6 @@
       },
       "mainModuleName": "client/index"
     },
-    "scopeKey": "@anonymous/fotobox-ai-0a60e452-cef7-41cc-bf1c-771ecc07ca2d"
+    "scopeKey": "@anonymous/fotobox-ai-0b4797ea-39f2-4af2-bf1e-ad7d672ec808"
   }
 }
