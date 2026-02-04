@@ -32,6 +32,7 @@ import {
   MOCKUP_TEMPLATES,
   getTemplateById,
   resolveTemplateSelections,
+  MockupTemplate,
 } from "@/lib/mockup-templates";
 
 type NavigationProp = NativeStackNavigationProp<
@@ -91,6 +92,568 @@ const SUGGESTED_MOCKUPS = [
   "Handheld close-up with natural shadows",
   "Minimal shelf display with neutral props",
 ];
+
+const CUSTOM_TEMPLATES: Record<
+  MockupUseCase,
+  MockupTemplate[] | Record<MockupAdStyle, MockupTemplate[]>
+> = {
+  neutral: [
+    {
+      id: "custom_balanced_studio",
+      title: "Clean Studio",
+      subtitle: "Neutral backdrop, soft light",
+      icon: "aperture",
+      useCase: "neutral",
+      prompt:
+        "Clean studio tabletop scene with a neutral seamless backdrop, soft diffused key light, and gentle shadow falloff. Keep props minimal and color palette muted. Focus on accurate product shape and realistic materials.",
+      vibeId: "premium",
+      cameraId: "medium",
+      modelId: "none",
+      productCategoryId: CUSTOM_CATEGORY_ID,
+    },
+    {
+      id: "custom_balanced_flatlay",
+      title: "Minimal Flatlay",
+      subtitle: "Top-down, tidy spacing",
+      icon: "grid",
+      useCase: "neutral",
+      prompt:
+        "Minimal top-down flatlay on a light, natural surface with tidy spacing. Include 1-2 subtle props that hint at use without overpowering the product. Soft daylight, natural textures, no harsh contrast.",
+      vibeId: "professional",
+      cameraId: "flatlay",
+      modelId: "none",
+      productCategoryId: CUSTOM_CATEGORY_ID,
+    },
+    {
+      id: "custom_balanced_lifestyle",
+      title: "Soft Lifestyle",
+      subtitle: "Warm, everyday context",
+      icon: "home",
+      useCase: "neutral",
+      prompt:
+        "Everyday lifestyle setting with soft window light and warm, natural tones. The product should feel casually placed and believable. Use a shallow depth of field with gentle background blur.",
+      vibeId: "casual",
+      cameraId: "medium",
+      modelId: "none",
+      productCategoryId: CUSTOM_CATEGORY_ID,
+    },
+    {
+      id: "custom_balanced_window",
+      title: "Window Light",
+      subtitle: "Gentle natural glow",
+      icon: "sun",
+      useCase: "neutral",
+      prompt:
+        "Place the product near a large window with soft, natural light. Use subtle shadows and a calm, airy background. Keep props minimal and realistic.",
+      vibeId: "casual",
+      cameraId: "medium",
+      modelId: "none",
+      productCategoryId: CUSTOM_CATEGORY_ID,
+    },
+    {
+      id: "custom_balanced_desk",
+      title: "Modern Desk",
+      subtitle: "Clean work surface",
+      icon: "briefcase",
+      useCase: "neutral",
+      prompt:
+        "Clean desk or tabletop with minimal everyday objects for context. Neutral tones, tidy layout, and realistic lighting. Product remains central and accurate.",
+      vibeId: "professional",
+      cameraId: "medium",
+      modelId: "none",
+      productCategoryId: CUSTOM_CATEGORY_ID,
+    },
+    {
+      id: "custom_balanced_detail",
+      title: "Material Detail",
+      subtitle: "Texture close-up",
+      icon: "zoom-in",
+      useCase: "neutral",
+      prompt:
+        "Close-up detail shot emphasizing texture, finish, and craftsmanship. Soft, even lighting with a clean background so details stay true-to-life.",
+      vibeId: "premium",
+      cameraId: "closeup",
+      modelId: "none",
+      productCategoryId: CUSTOM_CATEGORY_ID,
+    },
+    {
+      id: "custom_balanced_shelf",
+      title: "Shelf Display",
+      subtitle: "Organized, calm",
+      icon: "layers",
+      useCase: "neutral",
+      prompt:
+        "Simple shelf or counter display with balanced spacing. Neutral props and soft lighting that feels realistic and unobtrusive.",
+      vibeId: "professional",
+      cameraId: "wide",
+      modelId: "none",
+      productCategoryId: CUSTOM_CATEGORY_ID,
+    },
+    {
+      id: "custom_balanced_outdoor",
+      title: "Outdoor Shade",
+      subtitle: "Natural, soft light",
+      icon: "compass",
+      useCase: "neutral",
+      prompt:
+        "Outdoor shaded setting with soft, diffused daylight. Keep the background simple and natural. Avoid harsh highlights or busy scenery.",
+      vibeId: "casual",
+      cameraId: "wide",
+      modelId: "none",
+      productCategoryId: CUSTOM_CATEGORY_ID,
+    },
+  ],
+  listing: [
+    {
+      id: "custom_listing_catalog",
+      title: "Catalog Clean",
+      subtitle: "Accurate, retail-ready",
+      icon: "layout",
+      useCase: "listing",
+      prompt:
+        "Retail-ready catalog shot with even lighting, neutral background, and crisp edges. Center the product, keep props minimal or none, and maximize clarity of materials and form.",
+      vibeId: "professional",
+      cameraId: "medium",
+      modelId: "none",
+      productCategoryId: CUSTOM_CATEGORY_ID,
+    },
+    {
+      id: "custom_listing_flatlay",
+      title: "Listing Flatlay",
+      subtitle: "Top-down, clear details",
+      icon: "grid",
+      useCase: "listing",
+      prompt:
+        "Top-down listing flatlay with clean, organized composition. Use a light neutral surface, soft shadowing, and maintain accurate scale. No distracting elements.",
+      vibeId: "professional",
+      cameraId: "flatlay",
+      modelId: "none",
+      productCategoryId: CUSTOM_CATEGORY_ID,
+    },
+    {
+      id: "custom_listing_closeup",
+      title: "Detail Close-Up",
+      subtitle: "Material and finish",
+      icon: "zoom-in",
+      useCase: "listing",
+      prompt:
+        "Close-up detail shot that highlights material texture, finish, and craftsmanship. Keep background clean and lighting even so details remain sharp and true-to-life.",
+      vibeId: "premium",
+      cameraId: "closeup",
+      modelId: "none",
+      productCategoryId: CUSTOM_CATEGORY_ID,
+    },
+    {
+      id: "custom_listing_white",
+      title: "Pure White",
+      subtitle: "High clarity studio",
+      icon: "aperture",
+      useCase: "listing",
+      prompt:
+        "High clarity studio shot on a pure white background with even, shadow-controlled lighting. Keep the product centered and accurately scaled.",
+      vibeId: "professional",
+      cameraId: "medium",
+      modelId: "none",
+      productCategoryId: CUSTOM_CATEGORY_ID,
+    },
+    {
+      id: "custom_listing_angle",
+      title: "Angle View",
+      subtitle: "Three-quarter shot",
+      icon: "camera",
+      useCase: "listing",
+      prompt:
+        "Three-quarter angle view that clearly shows depth and form. Neutral background, even lighting, and no distracting props.",
+      vibeId: "professional",
+      cameraId: "medium",
+      modelId: "none",
+      productCategoryId: CUSTOM_CATEGORY_ID,
+    },
+    {
+      id: "custom_listing_scale",
+      title: "Scale Context",
+      subtitle: "Size clarity",
+      icon: "maximize-2",
+      useCase: "listing",
+      prompt:
+        "Include minimal size reference elements to clarify scale without distracting from the product. Clean, evenly lit scene.",
+      vibeId: "professional",
+      cameraId: "wide",
+      modelId: "none",
+      productCategoryId: CUSTOM_CATEGORY_ID,
+    },
+    {
+      id: "custom_listing_packaging",
+      title: "Packaging Detail",
+      subtitle: "Retail-ready",
+      icon: "package",
+      useCase: "listing",
+      prompt:
+        "Retail-ready product shot with tidy packaging or label detail. Keep the background neutral and lighting even.",
+      vibeId: "professional",
+      cameraId: "medium",
+      modelId: "none",
+      productCategoryId: CUSTOM_CATEGORY_ID,
+    },
+    {
+      id: "custom_listing_variant",
+      title: "Variant Focus",
+      subtitle: "Color or style option",
+      icon: "sliders",
+      useCase: "listing",
+      prompt:
+        "Clean listing shot that highlights the selected variant clearly. Maintain accurate color, texture, and scale on a neutral background.",
+      vibeId: "professional",
+      cameraId: "closeup",
+      modelId: "none",
+      productCategoryId: CUSTOM_CATEGORY_ID,
+    },
+  ],
+  ad: {
+    simple: [
+      {
+        id: "custom_ad_simple_hero",
+        title: "Soft Hero",
+        subtitle: "Refined, minimal props",
+        icon: "star",
+        useCase: "ad",
+        adStyle: "simple",
+        prompt:
+          "Soft hero advertising scene with refined composition, minimal props, and gentle contrast. Keep the product as the clear focal point with subtle mood lighting.",
+        vibeId: "premium",
+        cameraId: "closeup",
+        modelId: "none",
+        productCategoryId: CUSTOM_CATEGORY_ID,
+      },
+      {
+        id: "custom_ad_simple_story",
+        title: "Quiet Story",
+        subtitle: "Subtle narrative",
+        icon: "book-open",
+        useCase: "ad",
+        adStyle: "simple",
+        prompt:
+          "Subtle narrative scene that hints at product use with 1-2 supporting props. Natural light, tidy environment, and restrained styling.",
+        vibeId: "casual",
+        cameraId: "medium",
+        modelId: "none",
+        productCategoryId: CUSTOM_CATEGORY_ID,
+      },
+      {
+        id: "custom_ad_simple_inuse",
+        title: "Calm In-Use",
+        subtitle: "Natural, authentic",
+        icon: "activity",
+        useCase: "ad",
+        adStyle: "simple",
+        prompt:
+          "Calm in-use moment with soft lighting and authentic styling. Show believable interaction without clutter. Keep color palette muted and cohesive.",
+        vibeId: "casual",
+        cameraId: "handheld",
+        modelId: "hands",
+        productCategoryId: CUSTOM_CATEGORY_ID,
+      },
+      {
+        id: "custom_ad_simple_gradient",
+        title: "Soft Gradient",
+        subtitle: "Gentle color fade",
+        icon: "droplet",
+        useCase: "ad",
+        adStyle: "simple",
+        prompt:
+          "Soft gradient background with restrained color palette. Keep props minimal and the product clearly featured. Subtle mood lighting only.",
+        vibeId: "premium",
+        cameraId: "medium",
+        modelId: "none",
+        productCategoryId: CUSTOM_CATEGORY_ID,
+      },
+      {
+        id: "custom_ad_simple_daylight",
+        title: "Bright Daylight",
+        subtitle: "Fresh, airy",
+        icon: "sun",
+        useCase: "ad",
+        adStyle: "simple",
+        prompt:
+          "Bright daylight scene with soft shadows and airy styling. Keep the environment tidy and the product as the hero.",
+        vibeId: "casual",
+        cameraId: "wide",
+        modelId: "none",
+        productCategoryId: CUSTOM_CATEGORY_ID,
+      },
+      {
+        id: "custom_ad_simple_stack",
+        title: "Minimal Stack",
+        subtitle: "Clean composition",
+        icon: "layers",
+        useCase: "ad",
+        adStyle: "simple",
+        prompt:
+          "Minimal stacked composition with clean lines and subtle props. Calm lighting and a tidy background.",
+        vibeId: "professional",
+        cameraId: "medium",
+        modelId: "none",
+        productCategoryId: CUSTOM_CATEGORY_ID,
+      },
+      {
+        id: "custom_ad_simple_desk",
+        title: "Desk Story",
+        subtitle: "Quiet workspace",
+        icon: "briefcase",
+        useCase: "ad",
+        adStyle: "simple",
+        prompt:
+          "Quiet workspace scene with a few understated props. Balanced lighting and a natural, believable setting.",
+        vibeId: "professional",
+        cameraId: "medium",
+        modelId: "none",
+        productCategoryId: CUSTOM_CATEGORY_ID,
+      },
+      {
+        id: "custom_ad_simple_motion",
+        title: "Gentle Motion",
+        subtitle: "Subtle energy",
+        icon: "wind",
+        useCase: "ad",
+        adStyle: "simple",
+        prompt:
+          "Subtle motion cues with a refined, minimalist scene. Keep energy low and elegant with the product clearly visible.",
+        vibeId: "casual",
+        cameraId: "action",
+        modelId: "none",
+        productCategoryId: CUSTOM_CATEGORY_ID,
+      },
+    ],
+    exaggerated: [
+      {
+        id: "custom_ad_exaggerated_blast",
+        title: "Hero Blast",
+        subtitle: "Bold, dramatic",
+        icon: "zap",
+        useCase: "ad",
+        adStyle: "exaggerated",
+        prompt:
+          "High-impact hero shot with dramatic lighting, strong shadows, and bold composition. Use dynamic props to add energy while keeping the product accurate.",
+        vibeId: "dynamic",
+        cameraId: "closeup",
+        modelId: "none",
+        productCategoryId: CUSTOM_CATEGORY_ID,
+      },
+      {
+        id: "custom_ad_exaggerated_neon",
+        title: "Neon Pop",
+        subtitle: "Vibrant color punch",
+        icon: "droplet",
+        useCase: "ad",
+        adStyle: "exaggerated",
+        prompt:
+          "Vibrant neon-inspired scene with saturated accent colors and high contrast. Make the product feel bold and attention-grabbing, with energetic styling.",
+        vibeId: "fun",
+        cameraId: "medium",
+        modelId: "none",
+        productCategoryId: CUSTOM_CATEGORY_ID,
+      },
+      {
+        id: "custom_ad_exaggerated_motion",
+        title: "Kinetic Motion",
+        subtitle: "Dynamic angles",
+        icon: "activity",
+        useCase: "ad",
+        adStyle: "exaggerated",
+        prompt:
+          "Dynamic action scene with diagonal composition, motion cues, and dramatic lighting. Keep the product clearly visible and sharply defined.",
+        vibeId: "dynamic",
+        cameraId: "action",
+        modelId: "none",
+        productCategoryId: CUSTOM_CATEGORY_ID,
+      },
+      {
+        id: "custom_ad_exaggerated_spotlight",
+        title: "Spotlight Surge",
+        subtitle: "Intense hero light",
+        icon: "sun",
+        useCase: "ad",
+        adStyle: "exaggerated",
+        prompt:
+          "Intense spotlight hero scene with strong contrast and dramatic shadows. Make the product feel powerful and attention-grabbing.",
+        vibeId: "dynamic",
+        cameraId: "closeup",
+        modelId: "none",
+        productCategoryId: CUSTOM_CATEGORY_ID,
+      },
+      {
+        id: "custom_ad_exaggerated_contrast",
+        title: "High Contrast",
+        subtitle: "Bold lighting",
+        icon: "aperture",
+        useCase: "ad",
+        adStyle: "exaggerated",
+        prompt:
+          "High-contrast lighting with bold highlights and deep shadows. Keep composition dynamic and the product sharply defined.",
+        vibeId: "premium",
+        cameraId: "medium",
+        modelId: "none",
+        productCategoryId: CUSTOM_CATEGORY_ID,
+      },
+      {
+        id: "custom_ad_exaggerated_color",
+        title: "Explosive Color",
+        subtitle: "Saturated accents",
+        icon: "droplet",
+        useCase: "ad",
+        adStyle: "exaggerated",
+        prompt:
+          "Explosive color accents with vivid props and a bold palette. The product should still be the clear focal point.",
+        vibeId: "fun",
+        cameraId: "medium",
+        modelId: "none",
+        productCategoryId: CUSTOM_CATEGORY_ID,
+      },
+      {
+        id: "custom_ad_exaggerated_scale",
+        title: "Epic Scale",
+        subtitle: "Large, dramatic",
+        icon: "maximize-2",
+        useCase: "ad",
+        adStyle: "exaggerated",
+        prompt:
+          "Dramatic scene emphasizing scale and impact. Use strong perspective and bold composition while keeping the product accurate.",
+        vibeId: "dynamic",
+        cameraId: "wide",
+        modelId: "none",
+        productCategoryId: CUSTOM_CATEGORY_ID,
+      },
+      {
+        id: "custom_ad_exaggerated_angle",
+        title: "Action Angle",
+        subtitle: "Dynamic framing",
+        icon: "camera",
+        useCase: "ad",
+        adStyle: "exaggerated",
+        prompt:
+          "Dynamic camera angle with energetic framing and high-impact styling. Keep the product clearly visible and sharp.",
+        vibeId: "dynamic",
+        cameraId: "action",
+        modelId: "none",
+        productCategoryId: CUSTOM_CATEGORY_ID,
+      },
+    ],
+    trending: [
+      {
+        id: "custom_ad_trending_social",
+        title: "Social Pop",
+        subtitle: "Modern, shareable",
+        icon: "trending-up",
+        useCase: "ad",
+        adStyle: "trending",
+        prompt:
+          "Modern, social-ready scene with trendy props and a punchy color palette. Slightly higher saturation and contrast. Clean but energetic styling.",
+        vibeId: "fun",
+        cameraId: "medium",
+        modelId: "none",
+        productCategoryId: CUSTOM_CATEGORY_ID,
+      },
+      {
+        id: "custom_ad_trending_flatlay",
+        title: "Trend Flatlay",
+        subtitle: "Crisp, styled layout",
+        icon: "grid",
+        useCase: "ad",
+        adStyle: "trending",
+        prompt:
+          "Styled top-down flatlay with trendy props, crisp spacing, and a social-forward aesthetic. Keep composition clean and product-centered.",
+        vibeId: "professional",
+        cameraId: "flatlay",
+        modelId: "none",
+        productCategoryId: CUSTOM_CATEGORY_ID,
+      },
+      {
+        id: "custom_ad_trending_inuse",
+        title: "Creator Moment",
+        subtitle: "Natural, candid",
+        icon: "camera",
+        useCase: "ad",
+        adStyle: "trending",
+        prompt:
+          "Candid creator-style in-use moment with modern styling and natural light. The scene should feel like a high-quality social post.",
+        vibeId: "casual",
+        cameraId: "handheld",
+        modelId: "hands",
+        productCategoryId: CUSTOM_CATEGORY_ID,
+      },
+      {
+        id: "custom_ad_trending_gradient",
+        title: "Bold Gradient",
+        subtitle: "Punchy backdrop",
+        icon: "droplet",
+        useCase: "ad",
+        adStyle: "trending",
+        prompt:
+          "Bold gradient backdrop with modern styling and crisp composition. Slightly higher saturation and contrast for social appeal.",
+        vibeId: "fun",
+        cameraId: "medium",
+        modelId: "none",
+        productCategoryId: CUSTOM_CATEGORY_ID,
+      },
+      {
+        id: "custom_ad_trending_pastel",
+        title: "Pastel Pop",
+        subtitle: "Soft trend color",
+        icon: "sun",
+        useCase: "ad",
+        adStyle: "trending",
+        prompt:
+          "Soft pastel palette with trendy props and clean styling. The scene should feel modern and shareable.",
+        vibeId: "fun",
+        cameraId: "medium",
+        modelId: "none",
+        productCategoryId: CUSTOM_CATEGORY_ID,
+      },
+      {
+        id: "custom_ad_trending_tech",
+        title: "Tech Flatlay",
+        subtitle: "Modern desk vibe",
+        icon: "cpu",
+        useCase: "ad",
+        adStyle: "trending",
+        prompt:
+          "Modern desk flatlay with trendy tech props and tidy spacing. Social-ready composition with clean lines.",
+        vibeId: "professional",
+        cameraId: "flatlay",
+        modelId: "none",
+        productCategoryId: CUSTOM_CATEGORY_ID,
+      },
+      {
+        id: "custom_ad_trending_street",
+        title: "Street Vibes",
+        subtitle: "Urban lifestyle",
+        icon: "compass",
+        useCase: "ad",
+        adStyle: "trending",
+        prompt:
+          "Urban lifestyle scene with contemporary styling and candid feel. Use modern props and clean framing.",
+        vibeId: "casual",
+        cameraId: "wide",
+        modelId: "none",
+        productCategoryId: CUSTOM_CATEGORY_ID,
+      },
+      {
+        id: "custom_ad_trending_stack",
+        title: "Story Stack",
+        subtitle: "Layered props",
+        icon: "layers",
+        useCase: "ad",
+        adStyle: "trending",
+        prompt:
+          "Layered props with a tidy, social-ready composition. Keep the product centered and the overall styling modern.",
+        vibeId: "professional",
+        cameraId: "medium",
+        modelId: "none",
+        productCategoryId: CUSTOM_CATEGORY_ID,
+      },
+    ],
+  },
+};
 
 const TEMPLATE_COLORS: Record<string, string[]> = {
   hero: ["#0EA5E9", "#38BDF8"],
@@ -247,6 +810,15 @@ export default function MockupWizardTemplatesScreen() {
   const templates = useMemo(() => MOCKUP_TEMPLATES, []);
 
   const isCustomCategory = selectedCategoryId === CUSTOM_CATEGORY_ID;
+  const customTemplates = useMemo<MockupTemplate[]>(() => {
+    if (!isCustomCategory || !intent) return [];
+    const intentTemplates = CUSTOM_TEMPLATES[intent];
+    if (intent === "ad") {
+      if (!adStyle || Array.isArray(intentTemplates)) return [];
+      return intentTemplates[adStyle] || [];
+    }
+    return Array.isArray(intentTemplates) ? intentTemplates : [];
+  }, [adStyle, intent, isCustomCategory]);
   const updateCategoryScrollHints = (
     scrollX: number,
     contentWidth: number,
@@ -266,7 +838,8 @@ export default function MockupWizardTemplatesScreen() {
   };
 
   const filteredTemplates = useMemo(() => {
-    if (!intent || !selectedCategoryId || isCustomCategory) return [];
+    if (!intent || !selectedCategoryId) return [];
+    if (isCustomCategory) return customTemplates;
     if (intent === "ad") {
       if (!adStyle) return [];
       return templates.filter(
@@ -281,7 +854,7 @@ export default function MockupWizardTemplatesScreen() {
         template.productCategoryId === selectedCategoryId &&
         template.useCase === intent,
     );
-  }, [intent, templates, selectedCategoryId, isCustomCategory, adStyle]);
+  }, [intent, templates, selectedCategoryId, isCustomCategory, adStyle, customTemplates]);
 
   useEffect(() => {
     if (previousIntentRef.current !== intent) {
@@ -382,18 +955,35 @@ export default function MockupWizardTemplatesScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     if (isCustomCategory) {
-    navigation.navigate("MockupWizardFinalize", {
-      wizardState: {
-        ...wizardState,
-        mode: "custom",
-        templateId: undefined,
-        templatePrompt: undefined,
+      const selectedCustomTemplate = selectedTemplateId
+        ? customTemplates.find((template) => template.id === selectedTemplateId)
+        : undefined;
+      const defaults = resolveTemplateSelections(selectedCustomTemplate);
+
+      navigation.navigate("MockupWizardFinalize", {
+        wizardState: {
+          ...wizardState,
+          mode: "custom",
+          templateId: selectedCustomTemplate?.id,
+          templatePrompt: selectedCustomTemplate?.prompt,
           productCategoryId: CUSTOM_CATEGORY_ID,
           productId: undefined,
           customProductName: customProductName.trim(),
           desiredMockup: desiredMockup.trim() || undefined,
           useCase: intent,
           adStyle,
+          vibeId:
+            selectedCustomTemplate?.vibeId ??
+            wizardState.vibeId ??
+            defaults.vibe.id,
+          cameraId:
+            selectedCustomTemplate?.cameraId ??
+            wizardState.cameraId ??
+            defaults.camera.id,
+          modelId:
+            selectedCustomTemplate?.modelId ??
+            wizardState.modelId ??
+            defaults.model.id,
         },
       });
       return;
@@ -737,27 +1327,34 @@ export default function MockupWizardTemplatesScreen() {
           </View>
         )}
 
-        {selectedCategoryId &&
-          intent &&
-          !isCustomCategory &&
-          (intent !== "ad" || adStyle) && (
+        {selectedCategoryId && intent && (intent !== "ad" || adStyle) && (
           <View style={styles.gridSection}>
             <ThemedText style={styles.sectionLabel}>Browse</ThemedText>
             <ThemedText style={styles.sectionHelper}>
-              Pick a template to start — you can edit later.
+              {isCustomCategory
+                ? "Choose a starting point or continue with your description."
+                : "Pick a template to start — you can edit later."}
             </ThemedText>
             <View style={styles.gridRow}>
-              {filteredTemplates.map((template) => (
-                <TemplateCard
-                  key={template.id}
-                  title={template.title}
-                  subtitle={template.subtitle}
-                  icon={template.icon as keyof typeof Feather.glyphMap}
-                  colors={getTemplateColors(template.id)}
-                  selected={selectedTemplateId === template.id}
-                  onPress={() => handleSelectTemplate(template.id)}
-                />
-              ))}
+              {filteredTemplates.length > 0 ? (
+                filteredTemplates.map((template) => (
+                  <TemplateCard
+                    key={template.id}
+                    title={template.title}
+                    subtitle={template.subtitle}
+                    icon={template.icon as keyof typeof Feather.glyphMap}
+                    colors={getTemplateColors(template.id)}
+                    selected={selectedTemplateId === template.id}
+                    onPress={() => handleSelectTemplate(template.id)}
+                  />
+                ))
+              ) : (
+                <ThemedText style={styles.emptyStateText}>
+                  {isCustomCategory
+                    ? "Describe your product above and tap Continue."
+                    : "No templates match this selection yet."}
+                </ThemedText>
+              )}
             </View>
           </View>
         )}
@@ -1041,6 +1638,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: GRID_GAP,
+  },
+  emptyStateText: {
+    fontSize: 12,
+    color: Colors.light.textSecondary,
+    paddingVertical: Spacing.sm,
+    width: "100%",
   },
   gridCard: {
     width: GRID_CARD_WIDTH,

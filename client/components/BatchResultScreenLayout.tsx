@@ -36,6 +36,7 @@ import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { useBatchEdit } from "@/context/BatchEditContext";
 import { ProgressRing } from "@/components/ProgressRing";
 import { IterateSheet } from "@/components/IterateSheet";
+import { ZoomableImageModal } from "@/components/ZoomableImageModal";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const GRID_PADDING = Spacing.lg;
@@ -88,6 +89,7 @@ export function BatchResultScreenLayout({
   const [isIterateOpen, setIsIterateOpen] = useState(false);
   const [iterateNotes, setIterateNotes] = useState("");
   const [isIterating, setIsIterating] = useState(false);
+  const [zoomImageUri, setZoomImageUri] = useState<string | null>(null);
   const { pendingEditResult, setPendingEditResult } = useBatchEdit();
 
   useFocusEffect(
@@ -454,12 +456,29 @@ export function BatchResultScreenLayout({
                         { height: viewerHeight },
                       ]}
                     >
-                      <Image
-                        source={{
-                          uri: item.resultUri || item.originalUri,
-                        }}
-                        style={styles.viewerImage}
-                      />
+                      <Pressable
+                        style={styles.viewerImagePressable}
+                        onPress={() =>
+                          setZoomImageUri(item.resultUri || item.originalUri)
+                        }
+                      >
+                        <Image
+                          source={{
+                            uri: item.resultUri || item.originalUri,
+                          }}
+                          style={styles.viewerImage}
+                        />
+                        <View style={styles.zoomHint}>
+                          <Feather
+                            name="zoom-in"
+                            size={14}
+                            color={Colors.editing.text}
+                          />
+                          <ThemedText style={styles.zoomHintText}>
+                            Tap to view
+                          </ThemedText>
+                        </View>
+                      </Pressable>
                     </View>
                   </View>
                 ))}
@@ -577,6 +596,13 @@ export function BatchResultScreenLayout({
         onClose={() => setIsIterateOpen(false)}
         onSubmit={handleIterateSelected}
         isSubmitting={isIterating}
+      />
+
+      <ZoomableImageModal
+        visible={Boolean(zoomImageUri)}
+        imageUri={zoomImageUri}
+        onClose={() => setZoomImageUri(null)}
+        title="Result preview"
       />
     </GradientBackground>
   );
@@ -770,10 +796,30 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     backgroundColor: Colors.editing.backgroundSecondary,
   },
+  viewerImagePressable: {
+    width: "100%",
+    height: "100%",
+  },
   viewerImage: {
     width: "100%",
     height: "100%",
     resizeMode: "cover",
+  },
+  zoomHint: {
+    position: "absolute",
+    right: Spacing.sm,
+    bottom: Spacing.sm,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.full,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+  },
+  zoomHintText: {
+    fontSize: 11,
+    color: Colors.editing.text,
   },
   viewerActionsRow: {
     gap: Spacing.sm,

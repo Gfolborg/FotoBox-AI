@@ -31,6 +31,7 @@ import { BeforeAfterSlider } from "@/components/BeforeAfterSlider";
 import { GradientBackground } from "@/components/GradientBackground";
 import { ProgressRing } from "@/components/ProgressRing";
 import { IterateSheet } from "@/components/IterateSheet";
+import { ZoomableImageModal } from "@/components/ZoomableImageModal";
 import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 import { useBatchEdit } from "@/context/BatchEditContext";
 
@@ -89,6 +90,7 @@ export function ResultScreenLayout({
     width: number;
     height: number;
   } | null>(null);
+  const [isZoomOpen, setIsZoomOpen] = useState(false);
 
   const { pendingEditResult, setPendingEditResult } = useBatchEdit();
 
@@ -250,13 +252,24 @@ export function ResultScreenLayout({
               />
             </Animated.View>
           ) : (
-            <Animated.View
-              entering={FadeInDown.delay(100).duration(400)}
-              exiting={FadeOut.duration(200)}
+            <Pressable
+              onPress={() => setIsZoomOpen(true)}
               style={[styles.imageContainer, { height: displayHeight }]}
             >
-              <Image source={{ uri: resultUri }} style={styles.resultImage} />
-            </Animated.View>
+              <Animated.View
+                entering={FadeInDown.delay(100).duration(400)}
+                exiting={FadeOut.duration(200)}
+                style={styles.imageInner}
+              >
+                <Image source={{ uri: resultUri }} style={styles.resultImage} />
+              </Animated.View>
+              <View style={styles.zoomHint}>
+                <Feather name="zoom-in" size={14} color={Colors.editing.text} />
+                <ThemedText style={styles.zoomHintText}>
+                  Tap to view
+                </ThemedText>
+              </View>
+            </Pressable>
           )}
 
           <Animated.View
@@ -416,6 +429,13 @@ export function ResultScreenLayout({
         onSubmit={handleIterateSubmit}
         isSubmitting={isIterating}
       />
+
+      <ZoomableImageModal
+        visible={isZoomOpen}
+        imageUri={resultUri}
+        onClose={() => setIsZoomOpen(false)}
+        title="Result preview"
+      />
     </GradientBackground>
   );
 }
@@ -441,10 +461,29 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.editing.backgroundSecondary,
     ...Shadows.lg,
   },
+  imageInner: {
+    flex: 1,
+  },
   resultImage: {
     width: "100%",
     height: "100%",
     resizeMode: "cover",
+  },
+  zoomHint: {
+    position: "absolute",
+    right: Spacing.sm,
+    bottom: Spacing.sm,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.full,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+  },
+  zoomHintText: {
+    fontSize: 11,
+    color: Colors.editing.text,
   },
   carouselContainer: {
     marginTop: Spacing.lg,

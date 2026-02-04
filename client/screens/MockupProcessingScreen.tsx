@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { StyleSheet, View, Image } from "react-native";
+import { StyleSheet, View, Image, Alert } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -20,6 +20,8 @@ import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { getApiUrl, apiRequest } from "@/lib/query-client";
 import { getMockupPrompt } from "@/lib/mockup-presets";
 import { useCredits } from "@/hooks/useCredits";
+import { useAuth } from "@/context/AuthContext";
+import { setAuthRedirect } from "@/lib/auth-redirect";
 
 type MockupProcessingScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -36,6 +38,7 @@ export default function MockupProcessingScreen() {
   const route = useRoute<MockupProcessingScreenRouteProp>();
   const insets = useSafeAreaInsets();
   const { requiresWatermark, consumeCredit } = useCredits();
+  const { token } = useAuth();
 
   const {
     imageUri,
@@ -64,6 +67,23 @@ export default function MockupProcessingScreen() {
   const hasStartedRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const isCancelledRef = useRef(false);
+
+  const showAuthPrompt = () => {
+    Alert.alert(
+      "Sign in required",
+      "Please sign in to generate mockups.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Sign in",
+          onPress: () => {
+            setAuthRedirect({ name: "MockupProcessing", params: route.params });
+            navigation.navigate("Auth");
+          },
+        },
+      ],
+    );
+  };
 
   useEffect(() => {
     if (hasStartedRef.current) return;
@@ -142,11 +162,17 @@ export default function MockupProcessingScreen() {
       if (requiresWatermark) {
         mockupUrl.searchParams.set("applyWatermark", "true");
       }
+      if (!token) {
+        throw new Error("Authentication required");
+      }
       const response = await fetch(
         mockupUrl.toString(),
         {
           method: "POST",
           body: formData,
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
           signal: controller.signal,
         },
       );
@@ -202,6 +228,11 @@ export default function MockupProcessingScreen() {
         return;
       }
       if (isCancelledRef.current) return;
+      if (error instanceof Error && error.message === "Authentication required") {
+        showAuthPrompt();
+        setStatus("Sign in required");
+        return;
+      }
       console.error("Mockup processing error:", error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setStatus(error instanceof Error ? error.message : "Processing failed");

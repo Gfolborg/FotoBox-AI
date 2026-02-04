@@ -15,6 +15,8 @@ import { buildMockupWizardState } from "@/lib/mockup-templates";
 import { ResultScreenLayout } from "@/components/ResultScreenLayout";
 import { useCredits } from "@/hooks/useCredits";
 import { useNotification } from "@/context/NotificationContext";
+import { useAuth } from "@/context/AuthContext";
+import { setAuthRedirect } from "@/lib/auth-redirect";
 
 const getExtensionFromDataUri = (dataUri: string): string => {
   const match = dataUri.match(/^data:image\/([a-zA-Z0-9+]+);base64,/);
@@ -35,7 +37,25 @@ export default function MockupResultScreen() {
   const route = useRoute<RouteProps>();
   const { requiresWatermark, consumeCredit, canGenerate, creditsRemaining } = useCredits();
   const { showNotification } = useNotification();
+  const { token } = useAuth();
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+
+  const showAuthPrompt = () => {
+    Alert.alert(
+      "Sign in required",
+      "Please sign in to generate mockups.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Sign in",
+          onPress: () => {
+            setAuthRedirect({ name: "MockupResult", params: route.params });
+            navigation.navigate("Auth");
+          },
+        },
+      ],
+    );
+  };
 
   const {
     resultUri: initialResultUri,
@@ -149,11 +169,18 @@ export default function MockupResultScreen() {
     }
 
     const watermarkParam = requiresWatermark ? "?applyWatermark=true" : "";
+    if (!token) {
+      showAuthPrompt();
+      throw new Error("Authentication required");
+    }
     const response = await fetch(
       new URL(`/api/mockup${watermarkParam}`, getApiUrl()).toString(),
       {
         method: "POST",
         body: formData,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       },
     );
 
@@ -254,11 +281,18 @@ export default function MockupResultScreen() {
     }
 
     const watermarkParam = requiresWatermark ? "?applyWatermark=true" : "";
+    if (!token) {
+      showAuthPrompt();
+      throw new Error("Authentication required");
+    }
     const response = await fetch(
       new URL(`/api/mockup${watermarkParam}`, getApiUrl()).toString(),
       {
         method: "POST",
         body: formData,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       },
     );
 

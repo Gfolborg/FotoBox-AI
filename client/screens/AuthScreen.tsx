@@ -24,6 +24,7 @@ import { GlassCard } from "@/components/GlassCard";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { useAuth } from "@/context/AuthContext";
+import { consumeAuthRedirect } from "@/lib/auth-redirect";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "Auth">;
 
@@ -74,7 +75,12 @@ export default function AuthScreen() {
 
       if (result.success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        navigation.replace("Home");
+        const redirect = consumeAuthRedirect();
+        if (redirect) {
+          navigation.replace(redirect.name as keyof RootStackParamList, redirect.params as any);
+        } else {
+          navigation.replace("Home");
+        }
       } else {
         Alert.alert("Sign in failed", result.error || "Please try again");
       }
@@ -124,7 +130,12 @@ export default function AuthScreen() {
 
       if (result.success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        navigation.replace("Home");
+        const redirect = consumeAuthRedirect();
+        if (redirect) {
+          navigation.replace(redirect.name as keyof RootStackParamList, redirect.params as any);
+        } else {
+          navigation.replace("Home");
+        }
       } else {
         Alert.alert("Sign in failed", result.error || "Please try again");
       }

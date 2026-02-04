@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { StyleSheet, View, Image, FlatList } from "react-native";
+import { StyleSheet, View, Image, FlatList, Alert } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -21,6 +21,8 @@ import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { getApiUrl } from "@/lib/query-client";
 import { getMockupPrompt } from "@/lib/mockup-presets";
 import { useCredits } from "@/hooks/useCredits";
+import { useAuth } from "@/context/AuthContext";
+import { setAuthRedirect } from "@/lib/auth-redirect";
 
 type BatchMockupProcessingScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -44,6 +46,7 @@ export default function BatchMockupProcessingScreen() {
   const route = useRoute<BatchMockupProcessingScreenRouteProp>();
   const insets = useSafeAreaInsets();
   const { requiresWatermark, consumeCredit } = useCredits();
+  const { token } = useAuth();
 
   const {
     imageUris,
@@ -78,6 +81,23 @@ export default function BatchMockupProcessingScreen() {
   const hasStartedRef = useRef(false);
   const abortControllersRef = useRef<AbortController[]>([]);
   const isCancelledRef = useRef(false);
+
+  const showAuthPrompt = () => {
+    Alert.alert(
+      "Sign in required",
+      "Please sign in to generate mockups.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Sign in",
+          onPress: () => {
+            setAuthRedirect({ name: "BatchMockupProcessing", params: route.params });
+            navigation.navigate("Auth");
+          },
+        },
+      ],
+    );
+  };
 
   const completedCount = results.filter((r) => r.status === "completed").length;
   const failedCount = results.filter((r) => r.status === "failed").length;
@@ -169,11 +189,17 @@ export default function BatchMockupProcessingScreen() {
         if (requiresWatermark) {
           mockupUrl.searchParams.set("applyWatermark", "true");
         }
+        if (!token) {
+          throw new Error("Authentication required");
+        }
         const response = await fetch(
           mockupUrl.toString(),
           {
             method: "POST",
             body: formData,
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
             signal: controller.signal,
           },
         );
@@ -201,6 +227,17 @@ export default function BatchMockupProcessingScreen() {
           return;
         }
         if (isCancelledRef.current) return;
+        if (error instanceof Error && error.message === "Authentication required") {
+          showAuthPrompt();
+          workingResults = workingResults.map((r, idx) =>
+            idx === i
+              ? { ...r, error: "Authentication required", status: "failed" }
+              : r,
+          );
+          setResults(workingResults);
+          isCancelledRef.current = true;
+          return;
+        }
         console.error(`Mockup processing error for image ${i}:`, error);
         workingResults = workingResults.map((r, idx) =>
           idx === i
