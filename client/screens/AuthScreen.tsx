@@ -53,8 +53,8 @@ export default function AuthScreen() {
 
     try {
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-      const userInfo = await GoogleSignin.signIn();
-      const idToken = userInfo.idToken || (await GoogleSignin.getTokens()).idToken;
+      const { data: userInfo } = await GoogleSignin.signIn();
+      const idToken = userInfo?.idToken || (await GoogleSignin.getTokens()).idToken;
 
       if (!idToken) {
         Alert.alert("Sign in failed", "Could not get authentication token");
@@ -77,7 +77,7 @@ export default function AuthScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         const redirect = consumeAuthRedirect();
         if (redirect) {
-          navigation.replace(redirect.name as keyof RootStackParamList, redirect.params as any);
+          navigation.replace(redirect.name as any, redirect.params as any);
         } else {
           navigation.replace("Home");
         }
@@ -132,7 +132,7 @@ export default function AuthScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         const redirect = consumeAuthRedirect();
         if (redirect) {
-          navigation.replace(redirect.name as keyof RootStackParamList, redirect.params as any);
+          navigation.replace(redirect.name as any, redirect.params as any);
         } else {
           navigation.replace("Home");
         }
