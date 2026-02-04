@@ -1,11 +1,11 @@
 {
-  "id": "2cfcded2-d10c-4183-87f7-6e96deb95e5a",
-  "createdAt": "2026-02-04T00:34:04.140Z",
+  "id": "3092651a-85ff-4412-b6ce-0275916a34ac",
+  "createdAt": "2026-02-04T00:37:24.870Z",
   "runtimeVersion": "exposdk:54.0.0",
   "launchAsset": {
-    "key": "bundle-1770165244140-5629",
+    "key": "bundle-1770165444870-6158",
     "contentType": "application/javascript",
-    "url": "https://3c39253f-b0a1-45ff-a5b5-3f23c6f0b9fd-00-23e0yuzcbd3qy.janeway.replit.dev/1770165244140-5629/_expo/static/js/ios/bundle.js"
+    "url": "https://3c39253f-b0a1-45ff-a5b5-3f23c6f0b9fd-00-23e0yuzcbd3qy.janeway.replit.dev/1770165444870-6158/_expo/static/js/ios/bundle.js"
   },
   "assets": [],
   "metadata": {},
