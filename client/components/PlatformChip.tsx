@@ -65,7 +65,7 @@ export function PlatformChip({
           <Image
             source={platform.image}
             style={[styles.platformImage, { borderColor: `${platform.color}40` }]}
-            resizeMode="cover"
+            resizeMode="contain"
           />
         ) : (
           <View
@@ -135,10 +135,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   platformImage: {
-    width: 50,
-    height: 50,
-    borderRadius: BorderRadius.md,
-    borderWidth: 2,
+    width: 44,
+    height: 44,
+    borderRadius: BorderRadius.sm,
+    borderWidth: 1,
   },
   name: {
     fontSize: 11,
