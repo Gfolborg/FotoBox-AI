@@ -4,6 +4,16 @@ import { eq, and } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { isBuilder } from "./builder-mode";
 
+const TEST_UNLIMITED_EMAILS = (process.env.TEST_UNLIMITED_EMAILS || "")
+  .split(",")
+  .map((value) => value.trim().toLowerCase())
+  .filter(Boolean);
+
+const isTestUnlimitedEmail = (value?: string | null) => {
+  if (!value) return false;
+  return TEST_UNLIMITED_EMAILS.includes(value.trim().toLowerCase());
+};
+
 export interface OAuthUserData {
   provider: string;
   providerId: string;
@@ -101,6 +111,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async useCredit(userId: string, action: string) {
+    const user = await this.getUserById(userId);
+    if (user && (isTestUnlimitedEmail(user.email) || isTestUnlimitedEmail(user.username))) {
+      await db.insert(usageHistory).values({
+        userId,
+        action,
+        creditsUsed: 0,
+      });
+      return { success: true, creditsRemaining: -1 };
+    }
+
     // Builder mode: skip credit deduction entirely
     if (isBuilder(userId)) {
       await db.insert(usageHistory).values({
