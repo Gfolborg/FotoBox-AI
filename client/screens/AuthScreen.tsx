@@ -43,6 +43,8 @@ export default function AuthScreen() {
     GoogleSignin.configure({
       webClientId,
       iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+      offlineAccess: true,
+      forceCodeForRefreshToken: true,
     });
   }, []);
 

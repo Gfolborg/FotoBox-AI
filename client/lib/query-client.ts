@@ -21,10 +21,11 @@ export function getApiUrl(): string {
     urlString = `https://${urlString}`;
   }
 
-  const url = new URL(urlString);
+  // Use hostname from EXPO_PUBLIC_DOMAIN, ensure no port is attached
+    const url = new URL(urlString);
+    const hostname = url.hostname;
 
-  // Use only hostname (strip port) - API must be on standard HTTPS port
-  return `https://${url.hostname}/`;
+    return `https://${hostname}/`;
 }
 
 async function throwIfResNotOk(res: Response) {
