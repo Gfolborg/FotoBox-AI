@@ -6,7 +6,7 @@ import { isBuilder } from "./builder-mode";
 
 const TEST_UNLIMITED_EMAILS = (process.env.TEST_UNLIMITED_EMAILS || "")
   .split(",")
-  .map((value) => value.trim().toLowerCase())
+  .map((value: string) => value.trim().toLowerCase())
   .filter(Boolean);
 
 const isTestUnlimitedEmail = (value?: string | null) => {

@@ -8,14 +8,14 @@ import { isBuilder } from "./builder-mode";
 const JWT_SECRET = process.env.SESSION_SECRET || "fotobox-secret-key";
 const GOOGLE_CLIENT_IDS = (process.env.GOOGLE_CLIENT_IDS || process.env.GOOGLE_CLIENT_ID || "")
   .split(",")
-  .map((value) => value.trim())
+  .map((value: string) => value.trim())
   .filter(Boolean);
 const googleClient = new OAuth2Client();
 console.log(`Google OAuth client IDs loaded: ${GOOGLE_CLIENT_IDS.length}`);
 
 const TEST_UNLIMITED_EMAILS = (process.env.TEST_UNLIMITED_EMAILS || "")
   .split(",")
-  .map((value) => value.trim().toLowerCase())
+  .map((value: string) => value.trim().toLowerCase())
   .filter(Boolean);
 
 const isTestUnlimitedUser = (user?: { email?: string | null; username?: string | null }) => {
@@ -155,6 +155,9 @@ export function registerAuthRoutes(app: Express) {
         return res.status(401).json({ error: "Invalid username or password" });
       }
 
+      if (!user.password) {
+        return res.status(401).json({ error: "Please use social login for this account" });
+      }
       const isValid = await storage.validatePassword(password, user.password);
       if (!isValid) {
         return res.status(401).json({ error: "Invalid username or password" });
