@@ -4,7 +4,7 @@
     "slug": "fotobox-ai",
     "version": "1.0.0",
     "owner": "flashingpoint87",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "fotoboxai",
     "newArchEnabled": true,

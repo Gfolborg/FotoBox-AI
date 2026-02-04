@@ -1,7 +1,8 @@
-import React from "react";
-import { Modal, Pressable, StyleSheet, View } from "react-native";
+import React, { useEffect } from "react";
+import { Modal, Pressable, StyleSheet, View, Platform } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import * as ScreenOrientation from "expo-screen-orientation";
 import { ThemedText } from "@/components/ThemedText";
 import { Colors, Spacing } from "@/constants/theme";
 import { ZoomableImage } from "@/components/ZoomableImage";
@@ -19,6 +20,21 @@ export function ZoomableImageModal({
   onClose,
   title = "Preview",
 }: ZoomableImageModalProps) {
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+
+    if (visible) {
+      ScreenOrientation.lockAsync(
+        ScreenOrientation.OrientationLock.ALL,
+      ).catch(() => {});
+      return;
+    }
+
+    ScreenOrientation.lockAsync(
+      ScreenOrientation.OrientationLock.PORTRAIT_UP,
+    ).catch(() => {});
+  }, [visible]);
+
   return (
     <Modal visible={visible} animationType="fade" transparent>
       <GestureHandlerRootView style={styles.backdrop}>
