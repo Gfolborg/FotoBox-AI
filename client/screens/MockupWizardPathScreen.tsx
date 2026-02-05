@@ -33,7 +33,9 @@ type RouteProps = RouteProp<RootStackParamList, "MockupWizardPath">;
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_GAP = Spacing.md;
 const CARD_MAX_WIDTH = 260;
-const CARD_MIN_WIDTH = 180;
+const IS_COMPACT = SCREEN_WIDTH < 360;
+const CARD_MIN_WIDTH = IS_COMPACT ? 0 : 180;
+const CARD_PADDING = IS_COMPACT ? Spacing.md : Spacing.lg;
 const CARD_WIDTH = Math.min(
   (SCREEN_WIDTH - Spacing.lg * 2 - CARD_GAP) / 2,
   CARD_MAX_WIDTH,
@@ -183,24 +185,25 @@ const styles = StyleSheet.create({
   },
   cardRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
+    flexWrap: IS_COMPACT ? "nowrap" : "wrap",
     gap: Spacing.md,
-    justifyContent: "center",
+    justifyContent: IS_COMPACT ? "space-between" : "center",
+    width: "100%",
   },
   choiceCard: {
     width: CARD_WIDTH,
     minWidth: CARD_MIN_WIDTH,
     maxWidth: CARD_MAX_WIDTH,
     minHeight: 160,
-    paddingVertical: Spacing.lg,
-    paddingHorizontal: Spacing.lg,
+    paddingVertical: CARD_PADDING,
+    paddingHorizontal: CARD_PADDING,
     borderRadius: BorderRadius.xl,
     borderWidth: 1,
     borderColor: Colors.light.border,
     backgroundColor: "rgba(255, 255, 255, 0.95)",
-    flexDirection: "row",
-    gap: Spacing.md,
-    alignItems: "center",
+    flexDirection: "column",
+    gap: Spacing.sm,
+    alignItems: "flex-start",
   },
   cardIcon: {
     width: 44,
@@ -209,18 +212,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "rgba(14, 165, 233, 0.12)",
+    marginTop: 2,
   },
   cardCopy: {
     flex: 1,
+    gap: 6,
+    alignItems: "flex-start",
+    width: "100%",
   },
   cardTitle: {
     fontSize: 16,
     fontWeight: "700",
     color: Colors.light.text,
-    marginBottom: 4,
+    marginBottom: 2,
+    lineHeight: 20,
   },
   cardSubtitle: {
     fontSize: 12,
     color: Colors.light.textSecondary,
+    lineHeight: 16,
   },
 });
