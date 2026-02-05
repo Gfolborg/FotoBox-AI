@@ -12,6 +12,7 @@ import { GlassCard } from "@/components/GlassCard";
 import { ProgressRing } from "@/components/ProgressRing";
 import { ProcessingTips, DEFAULT_PROCESSING_TIPS } from "@/components/ProcessingTips";
 import { GradientBackground } from "@/components/GradientBackground";
+import { GradientButton } from "@/components/GradientButton";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getApiUrl } from "@/lib/query-client";
@@ -55,6 +56,9 @@ export default function BatchLifestyleProcessingScreen() {
     })),
   );
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [statusText, setStatusText] = useState("Creating lifestyle scenes...");
+  const [showRetry, setShowRetry] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const processingRef = useRef(false);
   const resultsRef = useRef<ProcessingResult[]>([]);
   const abortControllersRef = useRef<AbortController[]>([]);
@@ -68,6 +72,10 @@ export default function BatchLifestyleProcessingScreen() {
   }, []);
 
   useEffect(() => {
+    resultsRef.current = results;
+  }, [results]);
+
+  useEffect(() => {
     return () => {
       isCancelledRef.current = true;
       abortControllersRef.current.forEach((controller) => controller.abort());
@@ -75,15 +83,30 @@ export default function BatchLifestyleProcessingScreen() {
     };
   }, []);
 
-  const processImages = async () => {
-    resultsRef.current = imageUris.map((uri) => ({
-      originalUri: uri,
-      resultUri: null,
-      status: "pending" as const,
-    }));
+  const processImages = async (resume: boolean = false) => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    setShowRetry(false);
+    setStatusText(resume ? "Resuming lifestyle scenes..." : "Creating lifestyle scenes...");
+
+    resultsRef.current =
+      resume && resultsRef.current.length === imageUris.length
+        ? [...resultsRef.current]
+        : imageUris.map((uri) => ({
+            originalUri: uri,
+            resultUri: null,
+            status: "pending" as const,
+          }));
+
+    if (!resume) {
+      setResults([...resultsRef.current]);
+    }
 
     for (let i = 0; i < imageUris.length; i++) {
       if (isCancelledRef.current) return;
+      if (resultsRef.current[i]?.status === "completed") {
+        continue;
+      }
       setCurrentIndex(i);
       resultsRef.current[i] = {
         ...resultsRef.current[i],
@@ -115,10 +138,18 @@ export default function BatchLifestyleProcessingScreen() {
           error: error instanceof Error ? error.message : "Unknown error",
         };
         setResults([...resultsRef.current]);
+
+        if (error instanceof Error && error.message.toLowerCase().includes("rate limit")) {
+          setShowRetry(true);
+          setStatusText(error.message);
+          setIsProcessing(false);
+          return;
+        }
       }
     }
 
     if (isCancelledRef.current) return;
+    setIsProcessing(false);
     setTimeout(() => {
       if (isCancelledRef.current) return;
       navigation.replace("BatchLifestyleResult", {
@@ -192,22 +223,67 @@ export default function BatchLifestyleProcessingScreen() {
     const timeoutId = setTimeout(() => controller.abort(), 300000);
 
     try {
-      const response = await fetch(endpoint, {
-        method: "POST",
-        body: formData,
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        signal: controller.signal,
-      });
+      const MAX_RETRIES = 3;
+      const BASE_DELAY_MS = 2000;
+      const MAX_DELAY_MS = 15000;
+      const sleep = (ms: number) =>
+        new Promise((resolve) => setTimeout(resolve, ms));
 
+      const isRateLimitError = (statusCode: number | null, bodyText?: string) => {
+        if (statusCode === 429) return true;
+        if (!bodyText) return false;
+        const lower = bodyText.toLowerCase();
+        return (
+          lower.includes("resource_exhausted") ||
+          lower.includes("rate limit") ||
+          lower.includes("429")
+        );
+      };
+
+      const fetchWithRetry = async () => {
+        for (let attempt = 1; attempt <= MAX_RETRIES + 1; attempt += 1) {
+          if (isCancelledRef.current) return null;
+          const response = await fetch(endpoint, {
+            method: "POST",
+            body: formData,
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            signal: controller.signal,
+          });
+
+          if (response.ok) {
+            return response;
+          }
+
+          const errorText = await response.text();
+          if (isRateLimitError(response.status, errorText)) {
+            if (attempt <= MAX_RETRIES) {
+              const delay = Math.min(
+                BASE_DELAY_MS * Math.pow(2, attempt - 1),
+                MAX_DELAY_MS,
+              );
+              setStatusText(
+                `Rate limit reached. Retrying in ${Math.ceil(delay / 1000)}s (attempt ${attempt}/${MAX_RETRIES})...`,
+              );
+              await sleep(delay);
+              continue;
+            }
+            throw new Error("Rate limit reached. Please try again in a minute.");
+          }
+
+          throw new Error(errorText || "Failed to generate lifestyle scene");
+        }
+        return null;
+      };
+
+      const response = await fetchWithRetry();
       clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "Failed to generate lifestyle scene");
+      if (!response) {
+        throw new Error("Request cancelled");
       }
 
+      setStatusText("Creating lifestyle scenes...");
       const blob = await response.blob();
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -239,6 +315,7 @@ export default function BatchLifestyleProcessingScreen() {
           <ThemedText style={styles.subtitle}>
             {completedCount + failedCount} of {imageUris.length} completed
           </ThemedText>
+          <ThemedText style={styles.statusText}>{statusText}</ThemedText>
         </Animated.View>
 
         <Animated.View
@@ -307,6 +384,18 @@ export default function BatchLifestyleProcessingScreen() {
           </ThemedText>
         </Animated.View>
 
+        {showRetry && (
+          <Animated.View entering={FadeInUp.delay(700).duration(400)}>
+            <GradientButton
+              title="Try Again"
+              icon="refresh-cw"
+              onPress={() => processImages(true)}
+              fullWidth
+              style={styles.retryButton}
+            />
+          </Animated.View>
+        )}
+
         <ProcessingTips
           tips={DEFAULT_PROCESSING_TIPS}
           style={styles.tipsContainer}
@@ -339,6 +428,12 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 15,
     color: Colors.editing.textSecondary,
+  },
+  statusText: {
+    fontSize: 13,
+    color: Colors.editing.textSecondary,
+    marginTop: Spacing.xs,
+    textAlign: "center",
   },
   progressContainer: {
     marginBottom: Spacing.xl,
@@ -396,6 +491,10 @@ const styles = StyleSheet.create({
   estimateText: {
     fontSize: 14,
     color: Colors.editing.textSecondary,
+  },
+  retryButton: {
+    marginTop: Spacing.lg,
+    width: "100%",
   },
   tipsContainer: {
     marginTop: Spacing.lg,

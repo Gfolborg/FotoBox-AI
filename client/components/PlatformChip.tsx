@@ -62,11 +62,13 @@ export function PlatformChip({
       >
         {/* Platform Image or Icon */}
         {platform.image ? (
-          <Image
-            source={platform.image}
-            style={[styles.platformImage, { borderColor: `${platform.color}40` }]}
-            resizeMode="contain"
-          />
+          <View style={styles.imageContainer}>
+            <Image
+              source={platform.image}
+              style={[styles.platformImage, { borderColor: `${platform.color}40` }]}
+              resizeMode="contain"
+            />
+          </View>
         ) : (
           <View
             style={[
@@ -134,11 +136,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  platformImage: {
+  imageContainer: {
     width: 44,
     height: 44,
     borderRadius: BorderRadius.sm,
     borderWidth: 1,
+    borderColor: Colors.editing.border,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  platformImage: {
+    width: "120%",
+    height: "120%",
   },
   name: {
     fontSize: 11,

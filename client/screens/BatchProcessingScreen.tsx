@@ -29,6 +29,7 @@ import { GlassCard } from "@/components/GlassCard";
 import { ProgressRing } from "@/components/ProgressRing";
 import { ProcessingTips, DEFAULT_PROCESSING_TIPS } from "@/components/ProcessingTips";
 import { GradientBackground } from "@/components/GradientBackground";
+import { GradientButton } from "@/components/GradientButton";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getApiUrl } from "@/lib/query-client";
@@ -72,7 +73,11 @@ export default function BatchProcessingScreen() {
     })),
   );
   const [isComplete, setIsComplete] = React.useState(false);
+  const [statusText, setStatusText] = React.useState("AI is removing backgrounds...");
+  const [showRetry, setShowRetry] = React.useState(false);
+  const [isProcessing, setIsProcessing] = React.useState(false);
   const resultsRef = React.useRef<ProcessingResult[]>(results);
+  const rateLimitedRef = React.useRef(false);
   const abortControllersRef = React.useRef<AbortController[]>([]);
   const isCancelledRef = React.useRef(false);
 
@@ -116,6 +121,11 @@ export default function BatchProcessingScreen() {
   }, []);
 
   const processImages = async () => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    setShowRetry(false);
+    setStatusText("AI is removing backgrounds...");
+    rateLimitedRef.current = false;
     const limit = pLimit(5);
     
     // Determine how many images can be processed based on credits
@@ -145,7 +155,10 @@ export default function BatchProcessingScreen() {
 
     // Signal completion - navigation happens in useEffect
     if (!isCancelledRef.current) {
-      setIsComplete(true);
+      setIsProcessing(false);
+      if (!rateLimitedRef.current) {
+        setIsComplete(true);
+      }
     }
   };
 
@@ -205,20 +218,65 @@ export default function BatchProcessingScreen() {
       abortControllersRef.current.push(controller);
       const timeoutId = setTimeout(() => controller.abort(), 300000);
 
-      const response = await fetch(endpoint, {
-        method: "POST",
-        body: formData,
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        signal: controller.signal,
-      });
+      const MAX_RETRIES = 3;
+      const BASE_DELAY_MS = 2000;
+      const MAX_DELAY_MS = 15000;
+      const sleep = (ms: number) =>
+        new Promise((resolve) => setTimeout(resolve, ms));
 
+      const isRateLimitError = (statusCode: number | null, bodyText?: string) => {
+        if (statusCode === 429) return true;
+        if (!bodyText) return false;
+        const lower = bodyText.toLowerCase();
+        return (
+          lower.includes("resource_exhausted") ||
+          lower.includes("rate limit") ||
+          lower.includes("429")
+        );
+      };
+
+      const fetchWithRetry = async () => {
+        for (let attempt = 1; attempt <= MAX_RETRIES + 1; attempt += 1) {
+          if (isCancelledRef.current) return null;
+          const response = await fetch(endpoint, {
+            method: "POST",
+            body: formData,
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            signal: controller.signal,
+          });
+
+          if (response.ok) {
+            return response;
+          }
+
+          const errorText = await response.text();
+          if (isRateLimitError(response.status, errorText)) {
+            if (attempt <= MAX_RETRIES) {
+              const delay = Math.min(
+                BASE_DELAY_MS * Math.pow(2, attempt - 1),
+                MAX_DELAY_MS,
+              );
+              setStatusText(
+                `Rate limit reached. Retrying in ${Math.ceil(delay / 1000)}s (attempt ${attempt}/${MAX_RETRIES})...`,
+              );
+              await sleep(delay);
+              continue;
+            }
+            throw new Error("Rate limit reached. Please try again in a minute.");
+          }
+
+          throw new Error(errorText || `Processing failed: ${response.status}`);
+        }
+        return null;
+      };
+
+      const response = await fetchWithRetry();
       clearTimeout(timeoutId);
+      if (!response) return;
 
-      if (!response.ok) {
-        throw new Error(`Processing failed: ${response.status}`);
-      }
+      setStatusText("AI is removing backgrounds...");
 
       // Check if background was verified
       const backgroundVerified = response.headers.get("X-Background-Verified") === "true";
@@ -257,6 +315,11 @@ export default function BatchProcessingScreen() {
       if (isCancelledRef.current) return;
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error occurred";
+      if (errorMessage.toLowerCase().includes("rate limit")) {
+        rateLimitedRef.current = true;
+        setShowRetry(true);
+        setStatusText(errorMessage);
+      }
 
       setResults((prev) =>
         prev.map((r, idx) =>
@@ -265,6 +328,40 @@ export default function BatchProcessingScreen() {
             : r,
         ),
       );
+    }
+  };
+
+  const retryFailed = async () => {
+    if (isProcessing) return;
+    const failedIndices = resultsRef.current
+      .map((r, idx) => ({ r, idx }))
+      .filter(
+        ({ r }) =>
+          r.status === "failed" &&
+          (r.error || "").toLowerCase().includes("rate limit"),
+      )
+      .map(({ idx }) => idx);
+
+    if (failedIndices.length === 0) {
+      setShowRetry(false);
+      setStatusText("AI is removing backgrounds...");
+      return;
+    }
+
+    setIsProcessing(true);
+    setShowRetry(false);
+    setStatusText("Retrying failed images...");
+    rateLimitedRef.current = false;
+
+    const limit = pLimit(3);
+    const retryPromises = failedIndices.map((idx) =>
+      limit(() => processImage(imageUris[idx], idx)),
+    );
+    await Promise.all(retryPromises);
+
+    setIsProcessing(false);
+    if (!rateLimitedRef.current) {
+      setIsComplete(true);
     }
   };
 
@@ -329,9 +426,21 @@ export default function BatchProcessingScreen() {
         <Animated.View style={[styles.processingHint, pulseStyle]}>
           <Feather name="zap" size={14} color={Colors.editing.primary} />
           <ThemedText style={styles.hintText}>
-            AI is removing backgrounds...
+            {statusText}
           </ThemedText>
         </Animated.View>
+
+        {showRetry && (
+          <Animated.View entering={FadeInDown.delay(200).duration(400)}>
+            <GradientButton
+              title="Try Again"
+              icon="refresh-cw"
+              onPress={retryFailed}
+              fullWidth
+              style={styles.retryButton}
+            />
+          </Animated.View>
+        )}
 
         <ProcessingTips
           tips={DEFAULT_PROCESSING_TIPS}
@@ -476,6 +585,10 @@ const styles = StyleSheet.create({
   tipsContainer: {
     marginTop: Spacing.sm,
     paddingHorizontal: Spacing.lg,
+  },
+  retryButton: {
+    marginTop: Spacing.md,
+    marginBottom: Spacing.md,
   },
   scrollView: {
     flex: 1,

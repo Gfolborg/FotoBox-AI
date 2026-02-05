@@ -132,6 +132,13 @@ export default function EnvironmentSelectionScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const flatListRef = React.useRef<FlatList>(null);
+  const lastRequestRef = React.useRef<{
+    environmentText: string;
+    isCustom: boolean;
+    productDescription?: string;
+    shadowControl?: string;
+    platform?: string;
+  } | null>(null);
   const { token } = useAuth();
 
   const initialImages =
@@ -145,6 +152,8 @@ export default function EnvironmentSelectionScreen() {
     useState<string>("natural");
   const [selectedPlatformId, setSelectedPlatformId] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState("Creating your scene...");
+  const [showRetry, setShowRetry] = useState(false);
   const [showSceneError, setShowSceneError] = useState(false);
   const { history: promptHistory, addToHistory } = usePromptHistory();
 
@@ -206,6 +215,161 @@ export default function EnvironmentSelectionScreen() {
     }
   };
 
+  const runSingleGeneration = async (request: {
+    environmentText: string;
+    isCustom: boolean;
+    productDescription?: string;
+    shadowControl?: string;
+    platform?: string;
+  }) => {
+    let keepProcessingVisible = false;
+    setShowRetry(false);
+    setProcessingStatus("Creating your scene...");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", {
+        uri: imageUri,
+        name: "product_photo.jpg",
+        type: "image/jpeg",
+      } as unknown as Blob);
+
+      const apiUrl = getApiUrl();
+      let endpoint = `${apiUrl}api/lifestyle-scene`;
+      const params = new URLSearchParams();
+
+      params.append("environment", request.environmentText);
+      if (request.isCustom) {
+        params.append("isCustom", "true");
+      }
+      if (request.productDescription) {
+        params.append("productDescription", request.productDescription);
+      }
+      if (request.shadowControl) {
+        params.append("shadowControl", request.shadowControl);
+      }
+      if (request.platform) {
+        params.append("platform", request.platform);
+      }
+
+      endpoint += `?${params.toString()}`;
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 300000);
+
+      const MAX_RETRIES = 3;
+      const BASE_DELAY_MS = 2000;
+      const MAX_DELAY_MS = 15000;
+      const sleep = (ms: number) =>
+        new Promise((resolve) => setTimeout(resolve, ms));
+
+      const isRateLimitError = (statusCode: number | null, bodyText?: string) => {
+        if (statusCode === 429) return true;
+        if (!bodyText) return false;
+        const lower = bodyText.toLowerCase();
+        return (
+          lower.includes("resource_exhausted") ||
+          lower.includes("rate limit") ||
+          lower.includes("429")
+        );
+      };
+
+      const fetchWithRetry = async () => {
+        for (let attempt = 1; attempt <= MAX_RETRIES + 1; attempt += 1) {
+          const response = await fetch(endpoint, {
+            method: "POST",
+            body: formData,
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            signal: controller.signal,
+          });
+
+          if (response.ok) {
+            return response;
+          }
+
+          const errorText = await response.text();
+          if (isRateLimitError(response.status, errorText)) {
+            if (attempt <= MAX_RETRIES) {
+              const delay = Math.min(
+                BASE_DELAY_MS * Math.pow(2, attempt - 1),
+                MAX_DELAY_MS,
+              );
+              setProcessingStatus(
+                `Rate limit reached. Retrying in ${Math.ceil(delay / 1000)}s (attempt ${attempt}/${MAX_RETRIES})...`,
+              );
+              await sleep(delay);
+              continue;
+            }
+            throw new Error("Rate limit reached. Please try again in a minute.");
+          }
+
+          throw new Error(errorText || "Failed to generate lifestyle scene");
+        }
+        return null;
+      };
+
+      let response: Response | null = null;
+      try {
+        response = await fetchWithRetry();
+      } finally {
+        clearTimeout(timeoutId);
+      }
+
+      if (!response) {
+        return;
+      }
+
+      const blob = await response.blob();
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        const base64data = reader.result as string;
+        navigation.replace("LifestyleResult", {
+          resultUri: base64data,
+          originalUri: imageUri!,
+          environment: request.environmentText,
+          isCustom: request.isCustom,
+          productDescription: request.productDescription,
+          shadowControl: request.shadowControl,
+          platform: request.platform,
+        });
+      };
+
+      reader.onerror = () => {
+        throw new Error("Failed to read generated image");
+      };
+
+      reader.readAsDataURL(blob);
+    } catch (err) {
+      let errorMessage = "An unexpected error occurred";
+
+      if (err instanceof Error) {
+        if (err.name === "AbortError") {
+          errorMessage = "Request timed out. Please try again.";
+        } else {
+          errorMessage = err.message;
+        }
+      }
+
+      if (errorMessage.toLowerCase().includes("rate limit")) {
+        setProcessingStatus(errorMessage);
+        setShowRetry(true);
+        keepProcessingVisible = true;
+        return;
+      }
+
+      if (Platform.OS !== "web") {
+        Alert.alert("Generation Failed", errorMessage);
+      }
+    } finally {
+      if (!keepProcessingVisible) {
+        setIsProcessing(false);
+      }
+    }
+  };
+
   const handleGenerate = async () => {
     if (selectedImages.length === 0) return;
     if (!customScene.trim() && !selectedScene) {
@@ -255,101 +419,27 @@ export default function EnvironmentSelectionScreen() {
 
     setIsProcessing(true);
 
-    try {
-      const formData = new FormData();
-      formData.append("file", {
-        uri: imageUri,
-        name: "product_photo.jpg",
-        type: "image/jpeg",
-      } as unknown as Blob);
+    const request = {
+      environmentText,
+      isCustom: Boolean(customScene.trim()),
+      productDescription: productKeywords.trim() || undefined,
+      shadowControl:
+        selectedShadowControl !== "natural" ? selectedShadowControl : undefined,
+      platform: selectedPlatformId || undefined,
+    };
+    lastRequestRef.current = request;
+    await runSingleGeneration(request);
+  };
 
-      const apiUrl = getApiUrl();
-      let endpoint = `${apiUrl}api/lifestyle-scene`;
-      const params = new URLSearchParams();
-
-      if (customScene.trim()) {
-        params.append("environment", customScene.trim());
-        params.append("isCustom", "true");
-      } else if (selectedScene) {
-        params.append("environment", selectedScene);
-      }
-
-      if (productKeywords.trim()) {
-        params.append("productDescription", productKeywords.trim());
-      }
-
-      if (selectedShadowControl !== "natural") {
-        params.append("shadowControl", selectedShadowControl);
-      }
-      if (selectedPlatformId) {
-        params.append("platform", selectedPlatformId);
-      }
-
-      endpoint += `?${params.toString()}`;
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 300000);
-
-      let response: Response;
-      try {
-        response = await fetch(endpoint, {
-          method: "POST",
-          body: formData,
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          signal: controller.signal,
-        });
-      } finally {
-        clearTimeout(timeoutId);
-      }
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "Failed to generate lifestyle scene");
-      }
-
-      const blob = await response.blob();
-      const reader = new FileReader();
-
-      reader.onload = () => {
-        const base64data = reader.result as string;
-        navigation.replace("LifestyleResult", {
-          resultUri: base64data,
-          originalUri: imageUri!,
-          environment: customScene.trim() || selectedScene,
-          isCustom: Boolean(customScene.trim()),
-          productDescription: productKeywords.trim() || undefined,
-          shadowControl:
-            selectedShadowControl !== "natural"
-              ? selectedShadowControl
-              : undefined,
-          platform: selectedPlatformId || undefined,
-        });
-      };
-
-      reader.onerror = () => {
-        throw new Error("Failed to read generated image");
-      };
-
-      reader.readAsDataURL(blob);
-    } catch (err) {
-      let errorMessage = "An unexpected error occurred";
-
-      if (err instanceof Error) {
-        if (err.name === "AbortError") {
-          errorMessage = "Request timed out. Please try again.";
-        } else {
-          errorMessage = err.message;
-        }
-      }
-
-      if (Platform.OS !== "web") {
-        Alert.alert("Generation Failed", errorMessage);
-      }
-    } finally {
+  const handleRetry = async () => {
+    const request = lastRequestRef.current;
+    if (!request) {
+      setShowRetry(false);
       setIsProcessing(false);
+      return;
     }
+    setIsProcessing(true);
+    await runSingleGeneration(request);
   };
 
   const shadowOptions = [
@@ -746,8 +836,24 @@ export default function EnvironmentSelectionScreen() {
                   Creating Your Scene
                 </ThemedText>
                 <ThemedText style={styles.processingHint}>
+                  {processingStatus}
+                </ThemedText>
+                <ThemedText style={styles.processingSubHint}>
                   This may take up to 30 seconds
                 </ThemedText>
+                {showRetry && (
+                  <Animated.View
+                    entering={FadeInDown.delay(200).duration(300)}
+                    style={styles.retryButtonWrapper}
+                  >
+                    <GradientButton
+                      title="Try Again"
+                      icon="refresh-cw"
+                      onPress={handleRetry}
+                      fullWidth
+                    />
+                  </Animated.View>
+                )}
                 <ProcessingTips
                   tips={DEFAULT_PROCESSING_TIPS}
                   style={styles.processingTips}
@@ -1107,6 +1213,16 @@ const styles = StyleSheet.create({
     color: Colors.dark.textSecondary,
     fontSize: 14,
     textAlign: "center",
+  },
+  processingSubHint: {
+    color: Colors.dark.textSecondary,
+    fontSize: 12,
+    textAlign: "center",
+    marginTop: Spacing.xs,
+  },
+  retryButtonWrapper: {
+    width: "100%",
+    marginTop: Spacing.md,
   },
   processingTips: {
     width: "100%",

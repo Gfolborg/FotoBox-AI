@@ -37,6 +37,33 @@ export async function saveToFotoBoxAlbum(
   options?: { skipPermissionCheck?: boolean },
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    if (!base64Uri) {
+      return { success: false, error: "No image data provided" };
+    }
+
+    const isDataUri = base64Uri.startsWith("data:image/");
+    const isFileUri =
+      base64Uri.startsWith("file://") || base64Uri.startsWith("content://");
+    const isRemoteUri =
+      base64Uri.startsWith("http://") || base64Uri.startsWith("https://");
+
+    if (!isDataUri) {
+      if (isFileUri) {
+        return await saveFileToFotoBoxAlbum(base64Uri);
+      }
+      if (isRemoteUri && Platform.OS !== "web") {
+        const extension = "jpg";
+        const filename = `${filenamePrefix}_${Date.now()}.${extension}`;
+        const tempUri = FileSystem.documentDirectory + filename;
+        const download = await FileSystem.downloadAsync(base64Uri, tempUri);
+        return await saveFileToFotoBoxAlbum(download.uri);
+      }
+      return {
+        success: false,
+        error: "Unsupported image format for saving.",
+      };
+    }
+
     // Request permissions
     if (!options?.skipPermissionCheck) {
       const hasPermission = await ensureMediaLibraryPermission();
@@ -53,6 +80,9 @@ export async function saveToFotoBoxAlbum(
     const filename = `${filenamePrefix}_${Date.now()}.${extension}`;
     const fileUri = FileSystem.documentDirectory + filename;
     const base64Data = base64Uri.split(",")[1];
+    if (!base64Data) {
+      return { success: false, error: "Invalid image data" };
+    }
 
     await FileSystem.writeAsStringAsync(fileUri, base64Data, {
       encoding: FileSystem.EncodingType.Base64,
