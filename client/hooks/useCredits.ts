@@ -59,6 +59,8 @@ export function useCredits() {
       const isPremium = subscription.plan === "pro" || subscription.plan === "unlimited";
       const hasUnlimited = subscription.plan === "unlimited" || subscription.creditsRemaining === -1;
       const hasCredits = hasUnlimited || subscription.creditsRemaining > 0;
+      const hasPaidCredits = subscription.creditsTotal > MAX_FREE_USES;
+      const hasPaidAccess = isPremium || hasPaidCredits;
 
       return {
         isLoading: false,
@@ -66,7 +68,7 @@ export function useCredits() {
         creditsRemaining: hasUnlimited ? -1 : subscription.creditsRemaining,
         isFreeTier: subscription.plan === "free",
         isPremium,
-        requiresWatermark: subscription.plan === "free",
+        requiresWatermark: !hasPaidAccess,
       };
     }
 

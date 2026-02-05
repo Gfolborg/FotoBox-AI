@@ -53,6 +53,28 @@ async function addWatermark(imageBuffer: Buffer): Promise<Buffer> {
     .toBuffer();
 }
 
+const FREE_CREDIT_LIMIT = 3;
+
+async function shouldApplyWatermark(req: AuthRequest): Promise<boolean> {
+  if (!req.user) {
+    return true;
+  }
+
+  if (isBuilder(req.user.id)) {
+    return false;
+  }
+
+  const subscription = await storage.getSubscription(req.user.id);
+  if (!subscription) {
+    return true;
+  }
+
+  const hasPaidPlan = subscription.plan !== "free";
+  const hasPaidCredits = subscription.creditsTotal > FREE_CREDIT_LIMIT;
+
+  return !(hasPaidPlan || hasPaidCredits);
+}
+
 // Helper function to convert hex color to RGB values
 function hexToRGB(hex: string): { r: number; g: number; b: number } {
   const cleanHex = hex.replace(/^#/, "");
@@ -441,10 +463,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Extract platform parameter, default to 'amazon'
         const platform =
           (req.query.platform as string)?.toLowerCase() || "amazon";
-        // Check if watermark should be applied (for free tier users)
-        // Skip watermark for builders in test mode
-        const shouldApplyWatermark = req.query.applyWatermark === "true" && !isBuilder(req.user.id);
-        const applyWatermark = shouldApplyWatermark;
+        // Check if watermark should be applied (free tier only)
+        const applyWatermark = await shouldApplyWatermark(req);
 
         // Fix EXIF orientation by auto-rotating the image before processing
         // This ensures the image is displayed correctly regardless of camera orientation
@@ -699,7 +719,8 @@ The background MUST be completely removed and replaced with the exact solid colo
   app.post(
     "/api/edit-image",
     upload.single("file"),
-    async (req: Request, res: Response) => {
+    optionalAuth,
+    async (req: AuthRequest, res: Response) => {
       try {
         if (!req.file) {
           return res.status(400).json({ error: "No image file provided" });
@@ -857,8 +878,8 @@ The background MUST be completely removed and replaced with the exact solid colo
           pipeline = pipeline.tint(tintColor);
         }
 
-        // Check if watermark should be applied (for free tier users)
-        const applyWatermark = req.query.applyWatermark === "true";
+        // Check if watermark should be applied (free tier only)
+        const applyWatermark = await shouldApplyWatermark(req);
 
         // Convert to JPEG with high quality
         let editedBuffer = await pipeline.jpeg({ quality: 100 }).toBuffer();
@@ -927,8 +948,7 @@ The background MUST be completely removed and replaced with the exact solid colo
         const platform = (req.query.platform as string | undefined)?.toLowerCase();
         const aspectRatio = getAspectRatioForPlatform(platform);
         const iterationNotes = req.query.iterationNotes as string | undefined;
-        // Skip watermark for builders in test mode
-        const applyWatermark = req.query.applyWatermark === "true" && !isBuilder(req.user.id);
+        const applyWatermark = await shouldApplyWatermark(req);
 
         const imageBuffer = req.file.buffer;
         const base64Image = imageBuffer.toString("base64");
@@ -1083,8 +1103,7 @@ The background MUST be completely removed and replaced with the exact solid colo
         const sceneVibe = req.body?.sceneVibe || "casual";
         const cameraOption = req.body?.cameraOption || "medium";
         const mockupColor = req.body?.mockupColor;
-        // Skip watermark for builders in test mode
-        const applyWatermark = req.query.applyWatermark === "true" && !isBuilder(req.user.id);
+        const applyWatermark = await shouldApplyWatermark(req);
 
         const imageBuffer = req.file.buffer;
         const base64Image = imageBuffer.toString("base64");

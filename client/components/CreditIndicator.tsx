@@ -44,20 +44,23 @@ export function CreditIndicator() {
 
   const content = (
     <>
-      <View style={styles.iconContainer}>
+      <View style={styles.labelRow}>
+        <Text style={styles.labelText}>CREDITS</Text>
+        {getPlanBadge()}
+      </View>
+      <View style={styles.countRow}>
         <Feather
           name={isPremium ? "zap" : "image"}
           size={16}
           color={isPremium ? Colors.light.primary : Colors.light.textSecondary}
         />
+        <Text style={[styles.creditsText, !canGenerate && styles.noCreditsText]}>
+          {getCreditsText()}
+        </Text>
+        {!isPremium && (
+          <Feather name="chevron-right" size={14} color={Colors.light.textSecondary} />
+        )}
       </View>
-      <Text style={[styles.creditsText, !canGenerate && styles.noCreditsText]}>
-        {getCreditsText()}
-      </Text>
-      {getPlanBadge()}
-      {!isPremium && (
-        <Feather name="chevron-right" size={14} color={Colors.light.textSecondary} />
-      )}
     </>
   );
 
@@ -75,8 +78,7 @@ export function CreditIndicator() {
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     backgroundColor: Platform.OS === "ios" ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.95)",
     borderRadius: 20,
     paddingHorizontal: Spacing.md,
@@ -85,17 +87,25 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(0,0,0,0.05)",
   },
-  iconContainer: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: "rgba(249,115,22,0.1)",
+  labelRow: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    gap: 6,
+  },
+  labelText: {
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 1,
+    color: Colors.light.textSecondary,
+  },
+  countRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
   },
   creditsText: {
-    fontSize: 13,
-    fontWeight: "600",
+    fontSize: 15,
+    fontWeight: "700",
     color: Colors.light.text,
   },
   noCreditsText: {
