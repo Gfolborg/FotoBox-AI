@@ -78,8 +78,8 @@ const AD_STYLES: { id: MockupAdStyle; label: string; description: string }[] = [
     description: "Bold and dramatic",
   },
   {
-    id: "trending",
-    label: "Trending",
+    id: "trendy",
+    label: "Trendy",
     description: "Social-ready, punchy",
   },
 ];
@@ -538,14 +538,14 @@ const CUSTOM_TEMPLATES: Record<
         productCategoryId: CUSTOM_CATEGORY_ID,
       },
     ],
-    trending: [
+    trendy: [
       {
-        id: "custom_ad_trending_social",
+        id: "custom_ad_trendy_social",
         title: "Social Pop",
         subtitle: "Modern, shareable",
         icon: "trending-up",
         useCase: "ad",
-        adStyle: "trending",
+        adStyle: "trendy",
         prompt:
           "Modern, social-ready scene with trendy props and a punchy color palette. Slightly higher saturation and contrast. Clean but energetic styling.",
         vibeId: "fun",
@@ -554,12 +554,12 @@ const CUSTOM_TEMPLATES: Record<
         productCategoryId: CUSTOM_CATEGORY_ID,
       },
       {
-        id: "custom_ad_trending_flatlay",
+        id: "custom_ad_trendy_flatlay",
         title: "Trend Flatlay",
         subtitle: "Crisp, styled layout",
         icon: "grid",
         useCase: "ad",
-        adStyle: "trending",
+        adStyle: "trendy",
         prompt:
           "Styled top-down flatlay with trendy props, crisp spacing, and a social-forward aesthetic. Keep composition clean and product-centered.",
         vibeId: "professional",
@@ -568,12 +568,12 @@ const CUSTOM_TEMPLATES: Record<
         productCategoryId: CUSTOM_CATEGORY_ID,
       },
       {
-        id: "custom_ad_trending_inuse",
+        id: "custom_ad_trendy_inuse",
         title: "Creator Moment",
         subtitle: "Natural, candid",
         icon: "camera",
         useCase: "ad",
-        adStyle: "trending",
+        adStyle: "trendy",
         prompt:
           "Candid creator-style in-use moment with modern styling and natural light. The scene should feel like a high-quality social post.",
         vibeId: "casual",
@@ -582,12 +582,12 @@ const CUSTOM_TEMPLATES: Record<
         productCategoryId: CUSTOM_CATEGORY_ID,
       },
       {
-        id: "custom_ad_trending_gradient",
+        id: "custom_ad_trendy_gradient",
         title: "Bold Gradient",
         subtitle: "Punchy backdrop",
         icon: "droplet",
         useCase: "ad",
-        adStyle: "trending",
+        adStyle: "trendy",
         prompt:
           "Bold gradient backdrop with modern styling and crisp composition. Slightly higher saturation and contrast for social appeal.",
         vibeId: "fun",
@@ -596,12 +596,12 @@ const CUSTOM_TEMPLATES: Record<
         productCategoryId: CUSTOM_CATEGORY_ID,
       },
       {
-        id: "custom_ad_trending_pastel",
+        id: "custom_ad_trendy_pastel",
         title: "Pastel Pop",
         subtitle: "Soft trend color",
         icon: "sun",
         useCase: "ad",
-        adStyle: "trending",
+        adStyle: "trendy",
         prompt:
           "Soft pastel palette with trendy props and clean styling. The scene should feel modern and shareable.",
         vibeId: "fun",
@@ -610,12 +610,12 @@ const CUSTOM_TEMPLATES: Record<
         productCategoryId: CUSTOM_CATEGORY_ID,
       },
       {
-        id: "custom_ad_trending_tech",
+        id: "custom_ad_trendy_tech",
         title: "Tech Flatlay",
         subtitle: "Modern desk vibe",
         icon: "cpu",
         useCase: "ad",
-        adStyle: "trending",
+        adStyle: "trendy",
         prompt:
           "Modern desk flatlay with trendy tech props and tidy spacing. Social-ready composition with clean lines.",
         vibeId: "professional",
@@ -624,12 +624,12 @@ const CUSTOM_TEMPLATES: Record<
         productCategoryId: CUSTOM_CATEGORY_ID,
       },
       {
-        id: "custom_ad_trending_street",
+        id: "custom_ad_trendy_street",
         title: "Street Vibes",
         subtitle: "Urban lifestyle",
         icon: "compass",
         useCase: "ad",
-        adStyle: "trending",
+        adStyle: "trendy",
         prompt:
           "Urban lifestyle scene with contemporary styling and candid feel. Use modern props and clean framing.",
         vibeId: "casual",
@@ -638,12 +638,12 @@ const CUSTOM_TEMPLATES: Record<
         productCategoryId: CUSTOM_CATEGORY_ID,
       },
       {
-        id: "custom_ad_trending_stack",
+        id: "custom_ad_trendy_stack",
         title: "Story Stack",
         subtitle: "Layered props",
         icon: "layers",
         useCase: "ad",
-        adStyle: "trending",
+        adStyle: "trendy",
         prompt:
           "Layered props with a tidy, social-ready composition. Keep the product centered and the overall styling modern.",
         vibeId: "professional",

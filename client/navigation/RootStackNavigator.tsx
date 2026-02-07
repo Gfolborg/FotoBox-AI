@@ -155,7 +155,7 @@ export type RootStackParamList = {
     negativePrompt?: string;
     modelOption?: ModelOption;
     useCase?: "neutral" | "listing" | "ad";
-    adStyle?: "simple" | "exaggerated" | "trending";
+    adStyle?: "simple" | "exaggerated" | "trendy";
     productCategoryId?: string;
     desiredMockup?: string;
     templatePrompt?: string;
@@ -164,6 +164,7 @@ export type RootStackParamList = {
     hasDesign?: boolean;
     sceneType?: string;
     sceneSetting?: string;
+    platform?: string;
   };
   MockupResult: {
     resultUri: string;
@@ -178,7 +179,7 @@ export type RootStackParamList = {
     negativePrompt?: string;
     modelOption?: ModelOption;
     useCase?: "neutral" | "listing" | "ad";
-    adStyle?: "simple" | "exaggerated" | "trending";
+    adStyle?: "simple" | "exaggerated" | "trendy";
     productCategoryId?: string;
     desiredMockup?: string;
     templatePrompt?: string;
@@ -187,6 +188,7 @@ export type RootStackParamList = {
     hasDesign?: boolean;
     sceneType?: string;
     sceneSetting?: string;
+    platform?: string;
   };
   BatchMockupProcessing: {
     imageUris: string[];
@@ -199,7 +201,7 @@ export type RootStackParamList = {
     negativePrompt?: string;
     modelOption?: ModelOption;
     useCase?: "neutral" | "listing" | "ad";
-    adStyle?: "simple" | "exaggerated" | "trending";
+    adStyle?: "simple" | "exaggerated" | "trendy";
     productCategoryId?: string;
     desiredMockup?: string;
     templatePrompt?: string;
@@ -208,6 +210,7 @@ export type RootStackParamList = {
     hasDesign?: boolean;
     sceneType?: string;
     sceneSetting?: string;
+    platform?: string;
   };
   BatchMockupResult: {
     results: {
@@ -226,7 +229,7 @@ export type RootStackParamList = {
     mockupItem: MockupItem;
     mockupColor?: string;
     useCase?: "neutral" | "listing" | "ad";
-    adStyle?: "simple" | "exaggerated" | "trending";
+    adStyle?: "simple" | "exaggerated" | "trendy";
     productCategoryId?: string;
     desiredMockup?: string;
     templatePrompt?: string;
@@ -235,6 +238,7 @@ export type RootStackParamList = {
     hasDesign?: boolean;
     sceneType?: string;
     sceneSetting?: string;
+    platform?: string;
   };
 };
 

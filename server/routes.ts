@@ -298,6 +298,7 @@ const LIFESTYLE_ENVIRONMENTS: Record<string, string> = {
 };
 
 const PLATFORM_ASPECT_RATIOS: Record<string, string> = {
+  original_16x9: "16:9",
   amazon: "1:1",
   shopify: "1:1",
   etsy: "1:1",
@@ -1103,6 +1104,19 @@ The background MUST be completely removed and replaced with the exact solid colo
         const sceneVibe = req.body?.sceneVibe || "casual";
         const cameraOption = req.body?.cameraOption || "medium";
         const mockupColor = req.body?.mockupColor;
+        const rawPlatform =
+          (req.body?.platform as string | undefined) ||
+          (req.query.platform as string | undefined);
+        const platform =
+          typeof rawPlatform === "string" ? rawPlatform.toLowerCase() : undefined;
+        const aspectRatio = getAspectRatioForPlatform(platform);
+        if (!platform || !aspectRatio) {
+          return res.status(400).json({
+            error:
+              "Missing or invalid platform for mockup generation. Please select a valid platform AR.",
+          });
+        }
+        console.log("[/api/mockup] Platform:", platform, "Aspect Ratio:", aspectRatio);
         const applyWatermark = await shouldApplyWatermark(req);
 
         const imageBuffer = req.file.buffer;
@@ -1143,7 +1157,7 @@ CRITICAL INSTRUCTIONS:
           ],
           config: {
             responseModalities: [Modality.TEXT, Modality.IMAGE],
-            imageConfig: { aspectRatio: "16:9" },
+            imageConfig: { aspectRatio },
           },
         });
 

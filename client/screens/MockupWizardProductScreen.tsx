@@ -60,18 +60,18 @@ export default function MockupWizardProductScreen() {
   const [hasDesign, setHasDesign] = useState(wizardState.hasDesign !== false);
 
   const canContinue =
-    productName.trim().length > 0 &&
-    selectedMaterial !== undefined &&
-    selectedSize !== undefined;
+    productName.trim().length > 0;
 
   const handleContinue = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     navigation.navigate("MockupWizardScene", {
       wizardState: {
         ...wizardState,
+        productCategoryId: "custom",
+        productId: undefined,
         customProductName: productName.trim(),
-        productMaterial: selectedMaterial,
-        productSize: selectedSize,
+        productMaterial: selectedMaterial || "other",
+        productSize: selectedSize || "tabletop",
         productColor: selectedColor,
         hasDesign,
       },

@@ -104,6 +104,17 @@ export default function MockupWizardPathScreen() {
         mode: "custom",
         templateId: undefined,
         templatePrompt: undefined,
+        productCategoryId: "custom",
+        productId: undefined,
+        useCase: undefined,
+        adStyle: undefined,
+        sceneType: undefined,
+        sceneSetting: undefined,
+        customScenePrompt: undefined,
+        platform: undefined,
+        vibeId: "casual",
+        cameraId: "medium",
+        modelId: "none",
       },
     });
   };

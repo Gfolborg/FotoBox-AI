@@ -66,13 +66,19 @@ const buildCustomItem = (name: string): MockupItem => ({
 });
 
 const getDefaultVibe = (vibeId?: string): SceneVibe =>
-  SCENE_VIBES.find((item) => item.id === vibeId) || SCENE_VIBES[0];
+  SCENE_VIBES.find((item) => item.id === vibeId) ||
+  SCENE_VIBES.find((item) => item.id === "casual") ||
+  SCENE_VIBES[0];
 
 const getDefaultCamera = (cameraId?: string): CameraOption =>
-  CAMERA_OPTIONS.find((item) => item.id === cameraId) || CAMERA_OPTIONS[0];
+  CAMERA_OPTIONS.find((item) => item.id === cameraId) ||
+  CAMERA_OPTIONS.find((item) => item.id === "medium") ||
+  CAMERA_OPTIONS[0];
 
 const getDefaultModel = (modelId?: string): ModelOption =>
-  MODEL_OPTIONS.find((item) => item.id === modelId) || MODEL_OPTIONS[0];
+  MODEL_OPTIONS.find((item) => item.id === modelId) ||
+  MODEL_OPTIONS.find((item) => item.id === "none") ||
+  MODEL_OPTIONS[0];
 
 export default function MockupWizardFinalizeScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -185,6 +191,7 @@ export default function MockupWizardFinalizeScreen() {
       hasDesign: wizardState.hasDesign,
       sceneType: wizardState.sceneType,
       sceneSetting: wizardState.sceneSetting,
+      platform: wizardState.platform,
     };
 
     if (wizardState.images.length === 1) {

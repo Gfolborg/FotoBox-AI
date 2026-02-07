@@ -61,6 +61,7 @@ export default function MockupProcessingScreen() {
     hasDesign,
     sceneType,
     sceneSetting,
+    platform,
   } = route.params;
 
   const [progress, setProgress] = useState(0);
@@ -144,6 +145,7 @@ export default function MockupProcessingScreen() {
         hasDesign,
         sceneType,
         sceneSetting,
+        platform,
       );
       formData.append("prompt", prompt);
       if (customScenePrompt) {
@@ -158,6 +160,9 @@ export default function MockupProcessingScreen() {
       if (mockupColor) {
         formData.append("mockupColor", mockupColor);
       }
+      if (platform) {
+        formData.append("platform", platform);
+      }
 
       setProgress(30);
       setStatus("Creating your mockup with AI...");
@@ -165,6 +170,9 @@ export default function MockupProcessingScreen() {
       const controller = new AbortController();
       abortControllerRef.current = controller;
       const mockupUrl = new URL("/api/mockup", getApiUrl());
+      if (platform) {
+        mockupUrl.searchParams.set("platform", platform);
+      }
       if (requiresWatermark) {
         mockupUrl.searchParams.set("applyWatermark", "true");
       }
@@ -278,6 +286,7 @@ export default function MockupProcessingScreen() {
           hasDesign,
           sceneType,
           sceneSetting,
+          platform,
         });
       }, 500);
     } catch (error) {

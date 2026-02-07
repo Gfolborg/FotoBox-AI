@@ -11,7 +11,7 @@ export type MockupTemplate = {
   subtitle: string;
   icon: string;
   useCase?: "neutral" | "listing" | "ad";
-  adStyle?: "simple" | "exaggerated" | "trending";
+  adStyle?: "simple" | "exaggerated" | "trendy";
   vibeId?: string;
   cameraId?: string;
   modelId?: string;
@@ -39,7 +39,7 @@ export type MockupWizardState = {
   cameraId?: string;
   modelId?: string;
   useCase?: "neutral" | "listing" | "ad";
-  adStyle?: "simple" | "exaggerated" | "trending";
+  adStyle?: "simple" | "exaggerated" | "trendy";
   customScenePrompt?: string;
   negativePrompt?: string;
   additionalNotes?: string;
@@ -50,6 +50,7 @@ export type MockupWizardState = {
   hasDesign?: boolean;
   sceneType?: string;
   sceneSetting?: string;
+  platform?: string;
 };
 
 export function buildMockupWizardState(
@@ -61,6 +62,9 @@ export function buildMockupWizardState(
     images,
     applyToAll: true,
     outputCount: 1,
+    vibeId: "casual",
+    cameraId: "medium",
+    modelId: "none",
     ...overrides,
   };
 }
@@ -79,7 +83,7 @@ type CategoryTemplateSet = {
 type AdStyleTemplateSet = {
   simple: CuratedTemplate[];
   exaggerated: CuratedTemplate[];
-  trending: CuratedTemplate[];
+  trendy: CuratedTemplate[];
 };
 
 const AD_STYLE_PROMPTS: Record<NonNullable<MockupTemplate["adStyle"]>, string> = {
@@ -87,8 +91,8 @@ const AD_STYLE_PROMPTS: Record<NonNullable<MockupTemplate["adStyle"]>, string> =
     "Advertising style: simple and refined. Use restrained props, soft contrast, and elegant composition. Keep the product the hero.",
   exaggerated:
     "Advertising style: exaggerated and bold. Use dramatic lighting, dynamic props, energetic composition, and heightened contrast. Make the scene feel high-impact.",
-  trending:
-    "Advertising style: trending and social-ready. Use modern props, vibrant color accents, and a punchy composition. Slightly higher saturation and contrast.",
+  trendy:
+    "Advertising style: trendy and social-ready. Use modern props, vibrant color accents, and a punchy composition. Slightly higher saturation and contrast.",
 };
 
 const AD_CATEGORY_CONTEXT: Record<string, string> = {
@@ -278,7 +282,7 @@ const AD_STYLE_TEMPLATES: AdStyleTemplateSet = {
         "Graphic top-down flatlay with bold props, strong shapes, and high-contrast styling.",
     },
   ],
-  trending: [
+  trendy: [
     {
       title: "Social Spotlight",
       subtitle: "Creator-ready hero",
@@ -367,7 +371,7 @@ const AD_BASE_TEMPLATES: CuratedTemplate[] = AD_STYLE_TEMPLATES.simple;
 
 const getAdTemplatesForStyle = (
   templates: CategoryTemplateSet,
-  style: "simple" | "exaggerated" | "trending",
+  style: "simple" | "exaggerated" | "trendy",
 ) => {
   const adTemplates = templates.ad;
   if (Array.isArray(adTemplates)) return adTemplates;
@@ -2069,7 +2073,7 @@ export const MOCKUP_TEMPLATES: MockupTemplate[] = MOCKUP_CATEGORIES.flatMap(
       productId: baseProductId,
     }));
 
-    const adTemplates = (["simple", "exaggerated", "trending"] as const).flatMap(
+    const adTemplates = (["simple", "exaggerated", "trendy"] as const).flatMap(
       (style) =>
         getAdTemplatesForStyle(templates, style).map((template, index) => ({
           ...template,
@@ -2093,9 +2097,13 @@ export function getTemplateById(templateId?: string) {
 
 export function resolveTemplateSelections(template?: MockupTemplate) {
   if (!template) {
+    const fallbackVibe =
+      SCENE_VIBES.find((item) => item.id === "casual") || SCENE_VIBES[0];
+    const fallbackCamera =
+      CAMERA_OPTIONS.find((item) => item.id === "medium") || CAMERA_OPTIONS[0];
     return {
-      vibe: SCENE_VIBES[0],
-      camera: CAMERA_OPTIONS[0],
+      vibe: fallbackVibe,
+      camera: fallbackCamera,
       model: MODEL_OPTIONS[0],
     };
   }

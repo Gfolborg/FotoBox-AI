@@ -78,6 +78,7 @@ export default function MockupResultScreen() {
     hasDesign,
     sceneType,
     sceneSetting,
+    platform,
   } = route.params;
 
   const mockupUseCase = useCase || "neutral";
@@ -140,6 +141,7 @@ export default function MockupResultScreen() {
       hasDesign,
       sceneType,
       sceneSetting,
+      platform,
     );
 
     const manipulated = await ImageManipulator.manipulateAsync(
@@ -167,22 +169,28 @@ export default function MockupResultScreen() {
     if (mockupColor) {
       formData.append("mockupColor", mockupColor);
     }
+    if (platform) {
+      formData.append("platform", platform);
+    }
 
-    const watermarkParam = requiresWatermark ? "?applyWatermark=true" : "";
     if (!token) {
       showAuthPrompt();
       throw new Error("Authentication required");
     }
-    const response = await fetch(
-      new URL(`/api/mockup${watermarkParam}`, getApiUrl()).toString(),
-      {
-        method: "POST",
-        body: formData,
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+    const retryUrl = new URL("/api/mockup", getApiUrl());
+    if (requiresWatermark) {
+      retryUrl.searchParams.set("applyWatermark", "true");
+    }
+    if (platform) {
+      retryUrl.searchParams.set("platform", platform);
+    }
+    const response = await fetch(retryUrl.toString(), {
+      method: "POST",
+      body: formData,
+      headers: {
+        Authorization: `Bearer ${token}`,
       },
-    );
+    });
 
     if (!response.ok) {
       const errorData = await response.json();
@@ -233,6 +241,7 @@ export default function MockupResultScreen() {
       hasDesign,
       sceneType,
       sceneSetting,
+      platform,
     )}${buildIterationPrompt(notes)}`;
 
     const formData = new FormData();
@@ -279,22 +288,28 @@ export default function MockupResultScreen() {
     if (mockupColor) {
       formData.append("mockupColor", mockupColor);
     }
+    if (platform) {
+      formData.append("platform", platform);
+    }
 
-    const watermarkParam = requiresWatermark ? "?applyWatermark=true" : "";
     if (!token) {
       showAuthPrompt();
       throw new Error("Authentication required");
     }
-    const response = await fetch(
-      new URL(`/api/mockup${watermarkParam}`, getApiUrl()).toString(),
-      {
-        method: "POST",
-        body: formData,
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+    const iterateUrl = new URL("/api/mockup", getApiUrl());
+    if (requiresWatermark) {
+      iterateUrl.searchParams.set("applyWatermark", "true");
+    }
+    if (platform) {
+      iterateUrl.searchParams.set("platform", platform);
+    }
+    const response = await fetch(iterateUrl.toString(), {
+      method: "POST",
+      body: formData,
+      headers: {
+        Authorization: `Bearer ${token}`,
       },
-    );
+    });
 
     if (!response.ok) {
       const errorData = await response.json();

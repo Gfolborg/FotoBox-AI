@@ -69,6 +69,7 @@ export default function BatchMockupProcessingScreen() {
     hasDesign,
     sceneType,
     sceneSetting,
+    platform,
   } = route.params;
 
   const [results, setResults] = useState<ProcessingResult[]>(
@@ -171,6 +172,7 @@ export default function BatchMockupProcessingScreen() {
       hasDesign,
       sceneType,
       sceneSetting,
+      platform,
     );
 
     let workingResults: ProcessingResult[] =
@@ -222,10 +224,16 @@ export default function BatchMockupProcessingScreen() {
         if (mockupColor) {
           formData.append("mockupColor", mockupColor);
         }
+        if (platform) {
+          formData.append("platform", platform);
+        }
 
         const controller = new AbortController();
         abortControllersRef.current.push(controller);
         const mockupUrl = new URL("/api/mockup", getApiUrl());
+        if (platform) {
+          mockupUrl.searchParams.set("platform", platform);
+        }
         if (requiresWatermark) {
           mockupUrl.searchParams.set("applyWatermark", "true");
         }
@@ -376,6 +384,7 @@ export default function BatchMockupProcessingScreen() {
         hasDesign,
         sceneType,
         sceneSetting,
+        platform,
       });
     }, 1000);
   };

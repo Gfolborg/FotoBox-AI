@@ -1,3 +1,8 @@
+import {
+  LIFESTYLE_ORIGINAL_PLATFORM,
+  getPlatformById,
+} from "@/lib/platform-requirements";
+
 // Optimized WebP images (300x300, ~99% smaller than originals)
 const tshirtImage = require("../../assets/images/mockups/white_t-shirt_mockup_preview.webp");
 const hoodieImage = require("../../assets/images/mockups/black_hoodie_mockup_preview.webp");
@@ -119,7 +124,7 @@ export interface ModelOption {
 }
 
 export type MockupUseCase = "neutral" | "listing" | "ad";
-export type MockupAdStyle = "simple" | "exaggerated" | "trending";
+export type MockupAdStyle = "simple" | "exaggerated" | "trendy";
 
 export interface ProductMaterial {
   id: string;
@@ -270,8 +275,8 @@ export const MOCKUP_AD_STYLES: {
     description: "Bold, dramatic, high impact",
   },
   {
-    id: "trending",
-    label: "Trending",
+    id: "trendy",
+    label: "Trendy",
     description: "Trend-forward, social-ready",
   },
 ];
@@ -693,154 +698,200 @@ export function getMockupPrompt(
   hasDesign?: boolean,
   sceneType?: string,
   sceneSetting?: string,
+  platform?: string,
 ): string {
   // Prompt requirements: docs/ai-prompt-requirements.md
   const isCustomProduct = mockupItem.id === "custom";
-  const productName = mockupItem.label.toLowerCase();
-  const colorDesc = mockupColor
-    ? `The ${productName} color is ${mockupColor}.`
-    : "";
+  const productName = mockupItem.label.trim();
+  const normalizedAdStyle: MockupAdStyle =
+    adStyle === "exaggerated"
+      ? "exaggerated"
+      : adStyle === "trendy"
+        ? "trendy"
+        : "simple";
 
   const vibeDescriptions: Record<string, string> = {
     dynamic:
-      "in an energetic, action-packed setting with dynamic lighting and motion. Think extreme sports, fitness, adventure. High energy and exciting.",
+      "dynamic energy with directional light and purposeful movement cues when compatible with the user request",
     professional:
-      "in a clean, professional business environment. Modern office, meeting room, or executive desk. Sophisticated and corporate.",
+      "professional, clean, and polished visual tone suited for business-ready product content",
     casual:
-      "in a relaxed, everyday lifestyle setting. Cozy coffee shop, comfortable home, or casual urban street scene. Warm and inviting.",
+      "natural, warm, and believable everyday tone with restrained styling",
     premium:
-      "in a luxurious, high-end studio setting. Perfect lighting, marble or elegant surfaces, premium aesthetic. Sophisticated and aspirational.",
-    fun: "in a vibrant, playful setting with bright colors. Party atmosphere, beach vibes, or colorful backdrop. Joyful and energetic.",
+      "premium and refined tone with controlled highlights, elegant materials, and clean composition",
+    fun: "playful, vibrant, and upbeat tone with modern styling accents",
   };
 
   const cameraDescriptions: Record<string, string> = {
-    closeup: "Shot as a close-up detail shot focusing on the product details.",
+    closeup:
+      "close-up framing that prioritizes product details, texture, and craftsmanship",
     medium:
-      "Shot as a medium shot showing the product with some environmental context.",
-    wide: "Shot as a wide environmental shot showing the full scene with the product.",
-    flatlay: "Shot as a flat lay from directly above, top-down perspective.",
+      "medium framing that balances product clarity with useful environmental context",
+    wide: "wide framing that shows more environment while keeping product readability strong",
+    flatlay:
+      "top-down flat lay framing from above with clean geometry and intentional layout",
     action:
-      "Shot with motion blur and dynamic angles conveying energy and movement.",
-    handheld: "Shot showing someone holding or actively using the product.",
+      "dynamic action framing with energetic angle and movement cues while preserving product legibility",
+    handheld:
+      "in-use handheld framing where the product interaction looks realistic and natural",
   };
 
   const modelDescriptions: Record<string, string> = {
-    none: "",
+    none: "No people should appear in the scene.",
     female:
-      "Feature an attractive adult woman wearing or using the product naturally. She should look confident and authentic, like in a lifestyle advertisement. Professional model-quality appearance.",
-    male: "Feature an attractive adult man wearing or using the product naturally. He should look confident and authentic, like in a lifestyle advertisement. Professional model-quality appearance.",
+      "Include one adult female model naturally interacting with the product. Keep pose authentic and product clearly visible.",
+    male:
+      "Include one adult male model naturally interacting with the product. Keep pose authentic and product clearly visible.",
     diverse:
-      "Feature a diverse group of attractive adults wearing or using the product together. They should look natural and authentic, like in a lifestyle advertisement for an inclusive brand.",
+      "Include a diverse adult group naturally interacting with the product in a believable way while keeping the product prominent.",
     hands:
-      "Show just human hands holding or using the product naturally. Focus on the hands and product interaction without showing the full person.",
+      "Show only hands interacting with the product. Do not show faces or full bodies.",
   };
-
-  const productInstruction = isCustomProduct
-    ? `IMPORTANT: The user specifically wants their design/logo placed on a "${productName}". Create a realistic ${productName} with their design.`
-    : `Create a professional product mockup of the provided design/logo placed on a ${productName}.`;
-
-  const designIntegrityInstruction =
-    hasDesign === false
-      ? ""
-      : "Keep the provided design/logo exactly as supplied (no edits, no recoloring, no stretching, no repositioning).";
 
   const categoryInstructions: Record<string, string> = {
     apparel:
-      "Render realistic fabric texture, folds, and seams. The design should appear naturally printed or embroidered on the garment with correct perspective.",
+      "Render realistic fabric texture, folds, and seams. Design placement must follow garment curvature accurately.",
     drinkware:
-      "Render realistic curvature, gloss, and reflections. The design should wrap naturally around the surface.",
+      "Render realistic curvature, gloss, and reflections. Design alignment should wrap naturally around the vessel.",
     phone_cases:
-      "Render a realistic phone case with correct edge curvature and material finish. The design should align cleanly on the back surface.",
+      "Render accurate phone case geometry, edge curvature, and material finish with clean design placement on the back.",
     posters_prints:
-      "Render a flat print with crisp edges and accurate scale. The design should look professionally printed on paper or canvas.",
+      "Render crisp print edges with realistic paper or canvas behavior and accurate scale.",
     stickers_labels:
-      "Render a realistic sticker or label with clean edges and proper adhesion to the surface. Keep the design crisp and legible.",
+      "Render clean sticker/label edges and realistic adhesion to the applied surface.",
     tote_bags:
-      "Render realistic canvas texture and natural folds. The design should sit naturally on the bag surface.",
-    hats: "Render realistic fabric texture and seams. The design should follow the curvature of the hat panel.",
+      "Render realistic canvas texture, folds, and handle structure with natural design placement.",
+    hats:
+      "Render realistic hat panel shape, seams, and curvature so design follows the front panel correctly.",
     tech_accessories:
-      "Render realistic materials and product geometry. The design should align correctly on the product surface.",
+      "Render accurate geometry and material properties for the accessory with precise design alignment.",
     beauty_skincare:
-      "Render a clean, premium cosmetic package with accurate materials and soft reflections. The design should appear professionally printed.",
+      "Render premium packaging materials with soft reflections and print-finish realism.",
     home_goods:
-      "Render realistic textiles or surfaces with natural folds and texture. The design should sit naturally on the product.",
+      "Render realistic household materials and scale with believable light interaction.",
   };
-
-  const categoryInstruction =
-    productCategoryId && categoryInstructions[productCategoryId]
-      ? ` ${categoryInstructions[productCategoryId]}`
-      : "";
 
   const materialLabel = productMaterial
     ? PRODUCT_MATERIALS.find((m) => m.id === productMaterial)?.label
     : undefined;
-  const materialInstruction = materialLabel
-    ? ` Material: ${materialLabel}. Render realistic ${materialLabel.toLowerCase()} texture, weight, and light interaction.`
-    : "";
-
   const sizeLabel = productSize
     ? PRODUCT_SIZES.find((s) => s.id === productSize)?.label
     : undefined;
-  const sizeInstruction = sizeLabel
-    ? ` Product size: ${sizeLabel}. Frame composition accordingly.`
-    : "";
-
   const sceneTypeObj = sceneType
     ? SCENE_TYPES.find((s) => s.id === sceneType)
     : undefined;
-  const sceneTypeInstruction = sceneTypeObj
-    ? ` Scene type: ${sceneTypeObj.description}.`
-    : "";
-
   const settingLabel = sceneSetting
     ? SCENE_SETTINGS.find((s) => s.id === sceneSetting)?.label
     : undefined;
-  const settingInstruction = settingLabel
-    ? ` Setting: ${settingLabel} environment.`
-    : "";
-
-  const customProductInstruction = isCustomProduct
-    ? ` Use the user's product description as the primary specification.${materialInstruction || " Infer realistic material, shape, size, and surface based on that description."}`
-    : "";
-
-  const desiredMockupInstruction = desiredMockup?.trim()
-    ? ` Desired mockup request: ${desiredMockup.trim()}. Prioritize this request while keeping the product realistic and the design accurate.`
-    : "";
-
-  const templateInstruction = templatePrompt?.trim()
-    ? ` Template direction: ${templatePrompt.trim()}`
-    : "";
+  const platformInfo = platform
+    ? platform === LIFESTYLE_ORIGINAL_PLATFORM.id
+      ? LIFESTYLE_ORIGINAL_PLATFORM
+      : getPlatformById(platform)
+    : undefined;
 
   const useCaseInstruction =
-    useCase === "neutral"
-      ? "Create a balanced, natural product presentation. Avoid heavy marketing styling. Keep lighting realistic, props minimal, and focus on clarity and authenticity. The product should feel real and unforced."
-      : useCase === "listing"
-        ? "Create a clean, retail-ready listing image. Keep the product clearly visible, evenly lit, and accurately represented. Use minimal props and a tidy background to maximize clarity and product detail. No distracting elements."
-        : adStyle === "exaggerated"
-          ? "Create a bold, high-impact advertising scene with dramatic lighting, dynamic props, and a striking composition. Make the product feel heroic while keeping the product and design accurate."
-          : adStyle === "trending"
-            ? "Create a trend-forward advertising scene optimized for social engagement. Use vibrant styling, modern props, and eye-catching composition. Keep the product and design accurate while making it feel current and shareable. Use slightly higher saturation and contrast for a punchier look."
-            : "Create a tasteful advertising scene with subtle props and mood lighting. Keep the product as the clear focal point. The scene should feel premium but restrained.";
+    useCase === "listing"
+      ? "Goal: Listing. Create a clean, retail-ready image focused on clarity, truthful representation, and minimal distractions."
+      : useCase === "ad"
+        ? normalizedAdStyle === "exaggerated"
+          ? "Goal: Advertise (Exaggerated). Create a bold, high-impact marketing scene with dramatic styling while preserving product and design accuracy."
+          : normalizedAdStyle === "trendy"
+            ? "Goal: Advertise (Trendy). Create a social-ready scene with modern styling, energetic composition, and contemporary color accents."
+            : "Goal: Advertise (Simple). Create a tasteful marketing scene with restrained props, subtle mood lighting, and premium composition."
+        : "Goal: Balanced. Create a natural, authentic product scene with realistic lighting, restrained props, and believable context.";
 
-  const modelInstruction =
-    modelOption && modelOption.id !== "none"
-      ? ` ${modelDescriptions[modelOption.id]}`
+  const designInstruction =
+    hasDesign === false
+      ? "No fixed logo/design lock is required for this request."
+      : "Keep the provided design/logo exactly as supplied: no recoloring, no reshaping, no stretching, and no repositioning.";
+
+  const productInstruction = isCustomProduct
+    ? `Product specification (custom): ${productName}. Treat this as the authoritative product type and build a realistic version with correct form, materials, and scale.`
+    : `Product specification: ${productName}. Place the uploaded design/logo on this product type with realistic integration.`;
+
+  const categoryInstruction =
+    productCategoryId && categoryInstructions[productCategoryId]
+      ? `Category rendering guidance: ${categoryInstructions[productCategoryId]}`
       : "";
 
-  const basePrompt = `${productInstruction} ${designIntegrityInstruction}${categoryInstruction}${customProductInstruction}${sizeInstruction}${sceneTypeInstruction}${settingInstruction} ${useCaseInstruction}${templateInstruction}${desiredMockupInstruction} ${colorDesc}${modelInstruction} The scene should be ${vibeDescriptions[sceneVibe.id] || vibeDescriptions.casual} ${cameraDescriptions[cameraOption.id] || cameraDescriptions.medium} CRITICAL: The camera angle must be followed precisely and must apply to the product framing and how the product is photographed (not just the background scene).`;
+  const userSelections = [
+    materialLabel ? `Material selection: ${materialLabel}.` : "",
+    sizeLabel ? `Size selection: ${sizeLabel}.` : "",
+    mockupColor ? `Color selection: ${mockupColor}.` : "",
+    `Camera selection: ${cameraOption.label}. ${cameraDescriptions[cameraOption.id] || cameraDescriptions.medium}.`,
+    `Mood/vibe selection: ${sceneVibe.label}. ${vibeDescriptions[sceneVibe.id] || vibeDescriptions.casual}.`,
+    modelOption
+      ? `People selection: ${modelOption.label}. ${modelDescriptions[modelOption.id] || modelDescriptions.none}`
+      : "",
+    sceneTypeObj
+      ? `Scene type selection: ${sceneTypeObj.label} (${sceneTypeObj.description}).`
+      : "",
+    settingLabel ? `Scene setting selection: ${settingLabel}.` : "",
+    platformInfo
+      ? `Platform selection: ${platformInfo.name}. Target aspect ratio: ${platformInfo.aspectRatioLabel}.`
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
-  const customAddition = customDescription
-    ? ` Additional context: ${customDescription}`
-    : "";
+  const userCreativeDirection = [
+    customScenePrompt?.trim()
+      ? `User-written scene request (highest creative priority): ${customScenePrompt.trim()}`
+      : "",
+    desiredMockup?.trim()
+      ? `Desired mockup request: ${desiredMockup.trim()}`
+      : "",
+    templatePrompt?.trim()
+      ? `Template guidance selected by user: ${templatePrompt.trim()}`
+      : "",
+    customDescription?.trim()
+      ? `Additional user notes: ${customDescription.trim()}`
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
-  const customSceneAddition = customScenePrompt
-    ? ` Custom scene request: ${customScenePrompt}`
+  const negativeDirection = negativePrompt?.trim()
+    ? `Avoid these elements exactly as requested by the user: ${negativePrompt.trim()}`
     : "";
-  const negativeAddition = negativePrompt ? ` Avoid: ${negativePrompt}` : "";
 
   const formatInstruction = outputFormatInstruction?.trim()
-    ? ` ${outputFormatInstruction.trim()}`
+    ? outputFormatInstruction.trim()
     : "";
 
-  return `Generate a high quality, photorealistic image.${formatInstruction} ${basePrompt} CRITICAL: Camera angle applies to the product framing, not just the scene. ${customAddition}${customSceneAddition}${negativeAddition} The product placement should look natural and realistic with proper perspective, lighting, and shadows. The scene must fill the entire frame edge-to-edge with no padding or borders.`;
+  return `Generate one high-quality photorealistic product mockup image. ${formatInstruction}
+
+PRIORITY ORDER:
+1) Follow the user's explicit written requests and selected controls first.
+2) Keep product identity and design accuracy exact.
+3) Apply aesthetic style and composition polishing without overriding user instructions.
+
+USER GOAL:
+${useCaseInstruction}
+
+PRODUCT + DESIGN REQUIREMENTS:
+${productInstruction}
+${designInstruction}
+${categoryInstruction}
+
+USER SELECTIONS TO APPLY:
+${userSelections}
+
+USER CREATIVE DIRECTION:
+${userCreativeDirection || "No additional freeform direction was provided beyond selected controls."}
+
+TECHNICAL OUTPUT REQUIREMENTS:
+- Photorealistic, sharp, e-commerce quality.
+- Natural lighting, shadows, reflections, and perspective.
+- Product must be the main focal point and clearly visible.
+- Camera framing must follow the selected camera option for product framing (not only background composition).
+- ${
+    platformInfo
+      ? `Generate the final image in ${platformInfo.aspectRatioLabel} aspect ratio for ${platformInfo.name}.`
+      : "Use a compositionally appropriate aspect ratio for the scene."
+  }
+- Fill the entire frame edge-to-edge with no borders, no bars, and no padding.
+- No text overlays, no watermark, and no graphic frames.
+
+${negativeDirection}`;
 }
