@@ -31,7 +31,6 @@ import { GradientButton } from "@/components/GradientButton";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
 import { IterateSheet } from "@/components/IterateSheet";
 import { ZoomableImageModal } from "@/components/ZoomableImageModal";
-import { CreditIndicator } from "@/components/CreditIndicator";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { Colors, Spacing, BorderRadius } from "@/constants/theme";
 import {
@@ -118,7 +117,7 @@ export default function ExpressResultScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
-  const { token, subscription } = useAuth();
+  const { token } = useAuth();
   const { requiresWatermark, consumeCredit } = useCredits();
   const { showNotification } = useNotification();
   const { pendingEditResult, setPendingEditResult } = useBatchEdit();
@@ -193,12 +192,6 @@ export default function ExpressResultScreen() {
   const platformName = getPlatformById(platform)?.name || platform;
   const successCount = results.filter((item) => item.status === "completed").length;
   const failedItems = results.filter((item) => item.status === "failed");
-  const planLabel =
-    subscription?.plan === "unlimited"
-      ? "Unlimited"
-      : subscription?.plan === "pro"
-        ? "Pro"
-        : "Free";
 
   const showAuthPrompt = () => {
     Alert.alert(
@@ -306,7 +299,7 @@ export default function ExpressResultScreen() {
     }
 
     if (item.kind === "background") {
-      throw new Error("Iterate is not available for background removal.");
+      throw new Error("Modify is not available for background removal.");
     }
 
     const sourceUri = item.resultUri || imageUri;
@@ -438,7 +431,7 @@ export default function ExpressResultScreen() {
     }
 
     if (selectedItem.kind === "background") {
-      Alert.alert("Not available", "Iterate is available for lifestyle and mockup images.");
+      Alert.alert("Not available", "Modify is available for lifestyle and mockup images.");
       return;
     }
 
@@ -470,11 +463,11 @@ export default function ExpressResultScreen() {
       setIterateNotes("");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Iteration failed";
+      const message = error instanceof Error ? error.message : "Modification failed";
       if (/credit|upgrade|no credit/i.test(message)) {
         setShowUpgradePrompt(true);
       }
-      Alert.alert("Iteration failed", message);
+      Alert.alert("Modification failed", message);
     } finally {
       setIsIterating(false);
     }
@@ -549,12 +542,6 @@ export default function ExpressResultScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.summaryCard}>
-          <View style={styles.summaryAccountRow}>
-            <CreditIndicator />
-            <View style={styles.summaryPlanPill}>
-              <ThemedText style={styles.summaryPlanPillText}>{planLabel} Plan</ThemedText>
-            </View>
-          </View>
           <ThemedText style={styles.summaryTitle}>Bundle Complete</ThemedText>
           <ThemedText style={styles.summaryText}>
             {successCount} of 7 generated successfully
@@ -579,7 +566,7 @@ export default function ExpressResultScreen() {
             </View>
           </View>
           <ThemedText style={styles.summarySubtext}>
-            Tap any image to open actions (Edit, Retry, Iterate).
+            Tap any image to open actions (Edit, Retry, Modify).
           </ThemedText>
         </View>
 
@@ -751,7 +738,7 @@ export default function ExpressResultScreen() {
                   if (selectedItem?.kind === "background") {
                     Alert.alert(
                       "Not available",
-                      "Iterate is available for lifestyle and mockup images.",
+                      "Modify is available for lifestyle and mockup images.",
                     );
                     return;
                   }
@@ -777,7 +764,7 @@ export default function ExpressResultScreen() {
                   )}
                 </View>
                 <ThemedText style={styles.actionCardLabel}>
-                  {isIterating ? "Iterating..." : "Iterate"}
+                  {isIterating ? "Modifying..." : "Modify"}
                 </ThemedText>
               </Pressable>
             </ScrollView>
@@ -823,26 +810,6 @@ const styles = StyleSheet.create({
     borderColor: Colors.editing.border,
     backgroundColor: "rgba(255,255,255,0.75)",
     padding: Spacing.md,
-  },
-  summaryAccountRow: {
-    marginBottom: Spacing.sm,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: Spacing.sm,
-  },
-  summaryPlanPill: {
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    borderColor: Colors.editing.border,
-    backgroundColor: "rgba(255,255,255,0.74)",
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-  },
-  summaryPlanPillText: {
-    fontSize: 12,
-    color: Colors.light.textSecondary,
-    fontWeight: "700",
   },
   summaryTitle: {
     fontSize: 18,

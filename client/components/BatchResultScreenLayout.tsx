@@ -255,11 +255,11 @@ export function BatchResultScreenLayout({
       );
       setIterateNotes("");
     } catch (error) {
-      console.error("Iteration failed:", error);
+      console.error("Modification failed:", error);
       const message =
         error instanceof Error ? error.message : "Failed to generate image";
       if (Platform.OS !== "web" && message !== "No credits remaining") {
-        Alert.alert("Iteration Failed", message);
+        Alert.alert("Modification Failed", message);
       }
     } finally {
       setIsIterating(false);
@@ -280,7 +280,7 @@ export function BatchResultScreenLayout({
   };
 
   const isWorking = isRetrying || isIterating;
-  const workingTitle = isIterating ? "Iterating" : "Regenerating";
+  const workingTitle = isIterating ? "Modifying" : "Regenerating";
 
   const renderResultItem = ({
     item,
@@ -549,7 +549,7 @@ export function BatchResultScreenLayout({
                   <View style={styles.actionIconContainer}>
                     <Feather name="repeat" size={18} color={Colors.editing.text} />
                   </View>
-                  <ThemedText style={styles.actionCardLabel}>Iterate</ThemedText>
+                  <ThemedText style={styles.actionCardLabel}>Modify</ThemedText>
                 </Pressable>
 
                 <Pressable style={styles.actionCard} onPress={handleNewSelected}>

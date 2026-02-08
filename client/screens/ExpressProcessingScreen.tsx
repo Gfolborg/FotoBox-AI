@@ -1,5 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { View, StyleSheet, Image, Alert, ScrollView } from "react-native";
+import {
+  View,
+  StyleSheet,
+  Image,
+  Alert,
+  ScrollView,
+  ActivityIndicator,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -267,20 +274,24 @@ export default function ExpressProcessingScreen() {
 
               return (
                 <View key={item.id} style={styles.itemRow}>
-                  <View
-                    style={[
-                      styles.itemIcon,
-                      item.status === "completed" && styles.itemIconSuccess,
-                      item.status === "failed" && styles.itemIconFailed,
-                      item.status === "processing" && styles.itemIconProcessing,
-                    ]}
-                  >
+                <View
+                  style={[
+                    styles.itemIcon,
+                    item.status === "completed" && styles.itemIconSuccess,
+                    item.status === "failed" && styles.itemIconFailed,
+                    item.status === "processing" && styles.itemIconProcessing,
+                  ]}
+                >
+                  {item.status === "processing" ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
                     <Feather
                       name={icon as keyof typeof Feather.glyphMap}
                       size={14}
                       color={isDone ? "#FFFFFF" : Colors.editing.textSecondary}
                     />
-                  </View>
+                  )}
+                </View>
                   <View style={styles.itemTextWrap}>
                     <ThemedText style={styles.itemTitle}>{item.title}</ThemedText>
                     <ThemedText style={styles.itemSubtitle}>

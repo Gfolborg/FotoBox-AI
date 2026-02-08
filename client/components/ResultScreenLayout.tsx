@@ -152,11 +152,11 @@ export function ResultScreenLayout({
         scrollViewRef.current?.scrollTo({ y: 0, animated: true });
       });
     } catch (error) {
-      console.error("Iterate generation failed:", error);
+      console.error("Modify generation failed:", error);
       const message =
         error instanceof Error ? error.message : "Failed to generate image";
       if (Platform.OS !== "web" && message !== "No credits remaining") {
-        Alert.alert("Iteration Failed", message);
+        Alert.alert("Modification Failed", message);
       }
     } finally {
       setIsIterating(false);
@@ -327,7 +327,7 @@ export function ResultScreenLayout({
                 <View style={styles.actionIconContainer}>
                   <Feather name="repeat" size={18} color={Colors.editing.text} />
                 </View>
-                <ThemedText style={styles.actionCardLabel}>Iterate</ThemedText>
+                <ThemedText style={styles.actionCardLabel}>Modify</ThemedText>
               </Pressable>
 
               <Pressable style={styles.actionCard} onPress={onGenerateAnother}>

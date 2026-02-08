@@ -119,7 +119,7 @@ export function IterateSheet({
         >
           <GlassCard style={styles.modalCard}>
             <View style={styles.header}>
-              <ThemedText style={styles.title}>Iterate Result</ThemedText>
+              <ThemedText style={styles.title}>Modify Result</ThemedText>
               <Pressable onPress={onClose} style={styles.closeButton}>
                 <Feather name="x" size={20} color={Colors.light.textSecondary} />
               </Pressable>
@@ -134,7 +134,7 @@ export function IterateSheet({
                   Keep building this scene
                 </ThemedText>
                 <ThemedText style={styles.heroSubtitle}>
-                  Add details or adjustments to create a new iteration.
+                  Add details or adjustments to create a modified version.
                 </ThemedText>
               </View>
             </View>
@@ -244,7 +244,7 @@ export function IterateSheet({
 
             <View style={styles.footer}>
               <GradientButton
-                title={isSubmitting ? "Iterating..." : "Apply Changes"}
+                title={isSubmitting ? "Modifying..." : "Apply Changes"}
                 onPress={onSubmit}
                 disabled={!canSubmit}
                 fullWidth
