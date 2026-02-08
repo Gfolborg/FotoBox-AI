@@ -1,5 +1,12 @@
 import React from "react";
-import { View, StyleSheet, Pressable, Image, Dimensions } from "react-native";
+import {
+  View,
+  StyleSheet,
+  Pressable,
+  Image,
+  ScrollView,
+  useWindowDimensions,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -22,9 +29,6 @@ import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { buildMockupWizardState } from "@/lib/mockup-templates";
 import { useCredits } from "@/hooks/useCredits";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const IMAGE_PREVIEW_SIZE = Math.min(SCREEN_WIDTH - Spacing.lg * 2, 350);
-
 type NavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   "PhotoAction"
@@ -38,6 +42,7 @@ interface ActionCardProps {
   color: string;
   onPress: () => void;
   delay: number;
+  minHeight: number;
 }
 
 function ActionCard({
@@ -47,6 +52,7 @@ function ActionCard({
   color,
   onPress,
   delay,
+  minHeight,
 }: ActionCardProps) {
   return (
     <Animated.View
@@ -54,7 +60,7 @@ function ActionCard({
       style={styles.cardWrapper}
     >
       <Pressable
-        style={styles.actionCard}
+        style={[styles.actionCard, { minHeight }]}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           onPress();
@@ -83,11 +89,18 @@ function ActionCard({
 
 export default function PhotoActionScreen() {
   const insets = useSafeAreaInsets();
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const { imageUri, existingResults } = route.params;
   const { canGenerate, creditsRemaining, requiresWatermark } = useCredits();
   const [showUpgradePrompt, setShowUpgradePrompt] = React.useState(false);
+  const isCompactHeight = screenHeight < 760;
+  const imagePreviewSize = Math.min(
+    screenWidth - Spacing.lg * 2,
+    isCompactHeight ? 230 : 350,
+  );
+  const cardMinHeight = isCompactHeight ? 118 : 132;
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
@@ -126,16 +139,21 @@ export default function PhotoActionScreen() {
     });
   };
 
+  const handleExpress = () => {
+    checkCreditsAndProceed(() => {
+      navigation.navigate("ExpressSetup", { imageUri });
+    });
+  };
+
   return (
     <GradientBackground theme="home">
       <StatusBar style="dark" />
       <ThemedHeader title="Choose Enhancement" />
       <View style={[styles.container, { paddingTop: insets.top + 54 }]}>
-        <View
-          style={[
-            styles.content,
-            { paddingBottom: insets.bottom + Spacing.xl },
-          ]}
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={{ paddingBottom: insets.bottom + Spacing.xl }}
+          showsVerticalScrollIndicator={false}
         >
           <Animated.View
             entering={FadeIn.delay(100).duration(400)}
@@ -151,7 +169,10 @@ export default function PhotoActionScreen() {
 
           <Animated.View
             entering={FadeIn.delay(100).duration(400)}
-            style={styles.imagePreviewContainer}
+            style={[
+              styles.imagePreviewContainer,
+              { width: imagePreviewSize, height: imagePreviewSize },
+            ]}
           >
             <Image source={{ uri: imageUri }} style={styles.imagePreview} />
             <View style={styles.imageOverlay} />
@@ -166,12 +187,22 @@ export default function PhotoActionScreen() {
 
           <View style={styles.actionsContainer}>
             <ActionCard
+              icon="zap"
+              title="Express"
+              description="One upload, seven ready-to-use assets"
+              color="#F59E0B"
+              onPress={handleExpress}
+              delay={260}
+              minHeight={cardMinHeight}
+            />
+            <ActionCard
               icon="scissors"
               title="Remove Background"
               description="Clean cutout with transparent bg"
               color={Colors.editing.primary}
               onPress={handleRemoveBackground}
               delay={300}
+              minHeight={cardMinHeight}
             />
             <ActionCard
               icon="image"
@@ -180,6 +211,7 @@ export default function PhotoActionScreen() {
               color="#10B981"
               onPress={handleCreateLifestyle}
               delay={400}
+              minHeight={cardMinHeight}
             />
             <ActionCard
               icon="box"
@@ -188,11 +220,12 @@ export default function PhotoActionScreen() {
               color="#A78BFA"
               onPress={handleCreateMockup}
               delay={500}
+              minHeight={cardMinHeight}
             />
           </View>
 
           <View style={styles.retakeContainer} />
-        </View>
+        </ScrollView>
       </View>
       
       <UpgradePrompt
@@ -226,8 +259,6 @@ const styles = StyleSheet.create({
   },
   imagePreviewContainer: {
     alignSelf: "center",
-    width: IMAGE_PREVIEW_SIZE,
-    height: IMAGE_PREVIEW_SIZE,
     borderRadius: BorderRadius.xl,
     overflow: "hidden",
     backgroundColor: Colors.editing.backgroundSecondary,
@@ -256,10 +287,11 @@ const styles = StyleSheet.create({
   },
   actionsContainer: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: Spacing.sm,
   },
   cardWrapper: {
-    flex: 1,
+    width: "48%",
   },
   actionCard: {
     flex: 1,
@@ -268,11 +300,11 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.editing.backgroundSecondary,
     borderRadius: BorderRadius.lg,
     padding: Spacing.sm,
-    paddingVertical: Spacing.lg,
+    paddingVertical: Spacing.md,
     borderWidth: 1,
     borderColor: Colors.editing.border,
     gap: Spacing.sm,
-    minHeight: 160,
+    minHeight: 132,
   },
   actionIconContainer: {
     width: 42,

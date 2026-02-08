@@ -1104,6 +1104,19 @@ The background MUST be completely removed and replaced with the exact solid colo
         const sceneVibe = req.body?.sceneVibe || "casual";
         const cameraOption = req.body?.cameraOption || "medium";
         const mockupColor = req.body?.mockupColor;
+        const modelOptionRaw =
+          typeof req.body?.modelOption === "string"
+            ? req.body.modelOption.toLowerCase()
+            : undefined;
+        const modelOption = (
+          ["none", "hands", "female", "male"] as const
+        ).includes(modelOptionRaw as "none" | "hands" | "female" | "male")
+          ? (modelOptionRaw as "none" | "hands" | "female" | "male")
+          : undefined;
+        const modelDirection =
+          typeof req.body?.modelDirection === "string"
+            ? req.body.modelDirection.trim()
+            : "";
         const rawPlatform =
           (req.body?.platform as string | undefined) ||
           (req.query.platform as string | undefined);
@@ -1123,8 +1136,38 @@ The background MUST be completely removed and replaced with the exact solid colo
         const base64Image = imageBuffer.toString("base64");
         const mimeType = req.file.mimetype || "image/jpeg";
 
+        const modelPresetInstructions: Record<
+          "none" | "hands" | "female" | "male",
+          string
+        > = {
+          none:
+            "Model preset: No people. Do not include faces, hands, bodies, animals, or characters.",
+          hands:
+            "Model preset: Only hands. Show only hands interacting with the product. Do not show faces or full bodies.",
+          female:
+            "Model preset: Female model. Include one adult female model naturally interacting with the product while keeping product visibility high.",
+          male:
+            "Model preset: Male model. Include one adult male model naturally interacting with the product while keeping product visibility high.",
+        };
+
+        const modelDirectionBlock = [
+          modelOption
+            ? `MODEL DIRECTION:\n - ${modelPresetInstructions[modelOption]}`
+            : "",
+          modelDirection
+            ? ` - Custom model direction from user (highest priority): ${modelDirection}`
+            : "",
+          modelDirection
+            ? " - If custom model direction conflicts with preset, prioritize custom direction while keeping product realism and visibility."
+            : "",
+        ]
+          .filter(Boolean)
+          .join("\n");
+
         // Build enhanced prompt for mockup generation - identical to lifestyle format
         const enhancedPrompt = `${prompt}
+
+${modelDirectionBlock}
 
 CRITICAL INSTRUCTIONS:
  - Keep the product EXACTLY the same (do not modify, repaint, or change any details of the product).
@@ -1132,6 +1175,7 @@ CRITICAL INSTRUCTIONS:
 - Generate a photorealistic lifestyle scene in HIGH RESOLUTION (at least 2048x2048 pixels).
 - The image must be sharp, detailed, and suitable for professional e-commerce use.
 - Maintain natural shadows and reflections consistent with the environment lighting.
+ - If people/subjects appear, keep them believable and secondary to product prominence.
  - CRITICAL: The specified camera angle must be followed precisely for the product framing (not just the overall scene).
  - CRITICAL: Camera angle applies to the product framing, not just the scene.
  - The scene must fill the entire frame edge-to-edge. Do NOT add padding, borders, or solid-color bars.

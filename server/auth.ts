@@ -352,6 +352,74 @@ export function registerAuthRoutes(app: Express) {
     }
   });
 
+  app.post("/api/subscription/preflight", authenticateToken, async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const requiredCreditsRaw = Number(req.body?.requiredCredits ?? 1);
+      const requiredCredits = Number.isFinite(requiredCreditsRaw)
+        ? Math.max(1, Math.floor(requiredCreditsRaw))
+        : 1;
+
+      if (isBuilder(req.user.id)) {
+        return res.json({
+          success: true,
+          requiredCredits,
+          creditsRemaining: -1,
+          isUnlimited: true,
+        });
+      }
+
+      const user = await storage.getUserById(req.user.id);
+      const subscription = applyUnlimitedOverride(
+        await storage.getSubscription(req.user.id),
+        user,
+      );
+
+      if (!subscription) {
+        return res.status(404).json({ error: "No subscription found" });
+      }
+
+      const now = new Date();
+      const hasUnlimitedAccess =
+        subscription.creditsRemaining === -1 ||
+        ((subscription.plan === "unlimited" || subscription.plan === "pro") &&
+          (!subscription.expiresAt || subscription.expiresAt > now));
+
+      if (hasUnlimitedAccess) {
+        return res.json({
+          success: true,
+          requiredCredits,
+          creditsRemaining: -1,
+          isUnlimited: true,
+        });
+      }
+
+      const creditsRemaining = subscription.creditsRemaining;
+      if (creditsRemaining < requiredCredits) {
+        return res.status(402).json({
+          success: false,
+          error: `Express requires ${requiredCredits} credits.`,
+          requiredCredits,
+          creditsRemaining,
+          requiresUpgrade: true,
+        });
+      }
+
+      return res.json({
+        success: true,
+        requiredCredits,
+        creditsRemaining,
+        isUnlimited: false,
+      });
+    } catch (error) {
+      console.error("Subscription preflight error:", error);
+      return res.status(500).json({ error: "Failed to verify credits" });
+    }
+  });
+
   app.get("/api/subscription", authenticateToken, async (req: AuthRequest, res: Response) => {
     try {
       if (!req.user) {

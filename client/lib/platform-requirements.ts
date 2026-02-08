@@ -37,7 +37,7 @@ export const DEFAULT_EXPORT_LONG_EDGE = 3500;
 
 export const LIFESTYLE_ORIGINAL_PLATFORM: PlatformRequirement = {
   id: "original_16x9",
-  name: "Original 16:9",
+  name: "16:9",
   icon: "image",
   color: "#2563EB",
   minWidth: 1280,
@@ -230,6 +230,9 @@ export function getPlatformsForService(
  * Get a platform by ID
  */
 export function getPlatformById(id: string): PlatformRequirement | undefined {
+  if (id === LIFESTYLE_ORIGINAL_PLATFORM.id) {
+    return LIFESTYLE_ORIGINAL_PLATFORM;
+  }
   return PLATFORM_REQUIREMENTS[id];
 }
 

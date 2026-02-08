@@ -4,6 +4,9 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
 import CameraScreen from "@/screens/CameraScreen";
 import PhotoActionScreen from "@/screens/PhotoActionScreen";
+import ExpressSetupScreen from "@/screens/ExpressSetupScreen";
+import ExpressProcessingScreen from "@/screens/ExpressProcessingScreen";
+import ExpressResultScreen from "@/screens/ExpressResultScreen";
 import EditImageScreen from "@/screens/EditImageScreen";
 import ResultScreen from "@/screens/ResultScreen";
 import BatchPreviewScreen from "@/screens/BatchPreviewScreen";
@@ -39,6 +42,12 @@ import {
   ModelOption,
 } from "@/lib/mockup-presets";
 import { MockupWizardState } from "@/lib/mockup-templates";
+import {
+  ExpressUseCase,
+  ExpressAdStyle,
+  ExpressModelOption,
+  ExpressResultItem,
+} from "@/lib/express-presets";
 
 export type BackgroundBatchResult = {
   originalUri: string;
@@ -65,6 +74,26 @@ export type RootStackParamList = {
     skipEnhancement?: boolean;
   };
   PhotoAction: { imageUri: string; existingResults?: BackgroundBatchResult[] };
+  ExpressSetup: { imageUri: string };
+  ExpressProcessing: {
+    imageUri: string;
+    productDescription: string;
+    useCase: ExpressUseCase;
+    adStyle?: ExpressAdStyle;
+    platform: string;
+    modelOption: ExpressModelOption;
+    customModelDirection?: string;
+  };
+  ExpressResult: {
+    imageUri: string;
+    productDescription: string;
+    useCase: ExpressUseCase;
+    adStyle?: ExpressAdStyle;
+    platform: string;
+    modelOption: ExpressModelOption;
+    customModelDirection?: string;
+    results: ExpressResultItem[];
+  };
   BackgroundColorSelection: {
     imageUri: string;
     existingResults?: BackgroundBatchResult[];
@@ -79,12 +108,12 @@ export type RootStackParamList = {
   PlatformSelection: {
     imageUri: string;
     originalUri?: string;
-    sourceService?: "background" | "lifestyle" | "mockup" | "edit";
+    sourceService?: "background" | "lifestyle" | "mockup" | "edit" | "express";
     backgroundColor?: string;
   };
   BatchPlatformSelection: {
     results: { originalUri: string; resultUri: string }[];
-    sourceService?: "background" | "lifestyle" | "mockup" | "edit";
+    sourceService?: "background" | "lifestyle" | "mockup" | "edit" | "express";
   };
 
   // Batch flow
@@ -316,6 +345,21 @@ export default function RootStackNavigator() {
       <Stack.Screen
         name="PhotoAction"
         component={PhotoActionScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ExpressSetup"
+        component={ExpressSetupScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ExpressProcessing"
+        component={ExpressProcessingScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ExpressResult"
+        component={ExpressResultScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen
